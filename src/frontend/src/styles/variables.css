@@ -1,0 +1,32 @@
+/* ── CSS Custom Properties ──────────────────────────────────────────────────── */
+:root {
+  /* Colors */
+  --bg:         #f0eef8;
+  --bg2:        #e8e5f5;
+  --surface:    #ffffff;
+  --surface2:   #f5f3fc;
+  --border:     #e2dff0;
+  --purple:     #7c6af7;
+  --purple-dk:  #6355e0;
+  --purple-lt:  #ede9ff;
+  --teal:       #3dbf9e;
+  --teal-lt:    #e0f7f2;
+  --text:       #1a1a2e;
+  --muted:      #8880aa;
+  --danger:     #e85c5c;
+  --danger-lt:  #fdeaea;
+  --warning:    #f59e0b;
+  --success:    #10b981;
+
+  /* Spacing & shape */
+  --radius:     12px;
+  --radius-lg:  18px;
+
+  /* Shadows */
+  --shadow:     0 2px 16px rgba(100, 90, 180, 0.10);
+  --shadow-lg:  0 8px 40px rgba(100, 90, 180, 0.16);
+
+  /* Typography */
+  --font-head:  'Nunito', sans-serif;
+  --font-body:  'Inter', sans-serif;
+}

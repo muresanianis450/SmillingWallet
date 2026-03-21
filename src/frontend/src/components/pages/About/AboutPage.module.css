@@ -1,0 +1,121 @@
+.wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ── Hero ── */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 60px;
+}
+
+.heroText h1 {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 2rem;
+  margin-bottom: 14px;
+}
+
+.heroText p {
+  color: var(--muted);
+  line-height: 1.8;
+  max-width: 340px;
+  font-size: 14px;
+}
+
+.heroImg {
+  flex-shrink: 0;
+  width: 160px;
+  height: 160px;
+  background: linear-gradient(135deg, #c4b5fd 0%, #a5f3d4 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72px;
+}
+
+/* ── How it works ── */
+.howTitle {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 1.7rem;
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.reverse {
+  flex-direction: row-reverse;
+}
+
+.stepImg {
+  flex-shrink: 0;
+  width: 140px;
+  height: 140px;
+  background: var(--surface);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+}
+
+.stepText h2 {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+
+.stepText p {
+  color: var(--muted);
+  line-height: 1.75;
+  font-size: 14px;
+}
+
+/* ── CTA ── */
+.cta {
+  text-align: center;
+  margin-top: 72px;
+  padding: 48px 24px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.cta h2 {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .hero {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .step,
+  .reverse {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,27 @@
+.group {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.error {
+  display: block;
+  color: var(--danger);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.hint {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+}

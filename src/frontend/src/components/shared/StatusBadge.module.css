@@ -1,0 +1,14 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.accepted { background: var(--purple);  color: #fff; }
+.sent      { background: #5ba4f5;        color: #fff; }
+.declined  { background: #d1cde8;        color: #666; }
+.pending   { background: var(--warning); color: #fff; }

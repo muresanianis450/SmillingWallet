@@ -1,0 +1,75 @@
+.input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.input:focus {
+  border-color: var(--purple);
+}
+
+.input.error {
+  border-color: var(--danger);
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* ── Price prefix wrapper ── */
+.prefix {
+  display: flex;
+  align-items: center;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.18s;
+}
+
+.prefix:focus-within {
+  border-color: var(--purple);
+}
+
+.prefix.error {
+  border-color: var(--danger);
+}
+
+.prefixIcon {
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-weight: 600;
+  align-self: stretch;
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.prefixInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  outline: none;
+}
