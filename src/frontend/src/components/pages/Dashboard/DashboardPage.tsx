@@ -11,11 +11,16 @@ import { EmptyState } from '../../shared/EmptyState';
 import { OfferFormModal } from './OfferFormModal';
 import { DeleteModal } from './DeleteModal';
 import styles from './DashboardPage.module.css';
+import { IconView, IconEdit, IconDelete} from "../../shared/Icons";
 
 const PER_PAGE = 5;
 
-export function DashboardPage() {
-  const { offers, addOffer, updateOffer, deleteOffer, stats } = useOffers(INITIAL_OFFERS);
+interface DashboardPageProps {
+    offersHook: ReturnType<typeof useOffers>;
+}
+
+export function DashboardPage({ offersHook} : DashboardPageProps) {
+  const { offers, updateOffer, deleteOffer, stats } = offersHook;
   const { toast, show: showToast } = useToast();
 
   const [search,       setSearch]       = useState('');
@@ -39,11 +44,6 @@ export function DashboardPage() {
 
   const { page, setPage, totalPages, slice } = usePagination<Offer>(filtered, PER_PAGE);
 
-  function handleAdd(fields: any) {
-    addOffer(fields);
-    setModal(null);
-    showToast('Offer sent successfully!', 'success');
-  }
 
   function handleEdit(fields: any) {
     if (!modal?.offer) return;
@@ -96,13 +96,7 @@ export function DashboardPage() {
               <option key={s}>{s}</option>
             ))}
           </select>
-          <button
-            className={styles.btnAdd}
-            onClick={() => setModal({ type: 'add' })}
-          >
-            + Add New Offer
-          </button>
-        </div>
+    </div>
 
         {/* Table */}
         <table>
@@ -138,21 +132,18 @@ export function DashboardPage() {
                   <td><StatusBadge status={o.status} /></td>
                   <td onClick={(e) => e.stopPropagation()}>
                     <div className={styles.rowActions}>
-                      <button
-                        className={`${styles.iconBtn} ${styles.view}`}
-                        title="View"
-                        onClick={() => setModal({ type: 'view', offer: o })}
-                      >👁</button>
-                      <button
-                        className={`${styles.iconBtn} ${styles.edit}`}
-                        title="Edit"
-                        onClick={() => setModal({ type: 'edit', offer: o })}
-                      >✏️</button>
-                      <button
-                        className={`${styles.iconBtn} ${styles.del}`}
-                        title="Delete"
-                        onClick={() => setModal({ type: 'delete', offer: o })}
-                      >🗑</button>
+                      <button className={`${styles.iconBtn} ${styles.view}`} title="View"
+                              onClick={() => setModal({ type: 'view', offer: o })}>
+                        <IconView />
+                      </button>
+                      <button className={`${styles.iconBtn} ${styles.edit}`} title="Edit"
+                              onClick={() => setModal({ type: 'edit', offer: o })}>
+                        <IconEdit />
+                      </button>
+                      <button className={`${styles.iconBtn} ${styles.del}`} title="Delete"
+                              onClick={() => setModal({ type: 'delete', offer: o })}>
+                        <IconDelete />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -165,9 +156,6 @@ export function DashboardPage() {
       </div>
 
       {/* ── Modals ── */}
-      {modal?.type === 'add' && (
-        <OfferFormModal onClose={() => setModal(null)} onSubmit={handleAdd} />
-      )}
       {(modal?.type === 'edit' || modal?.type === 'view') && modal.offer && (
         <OfferFormModal
           offer={modal.offer}

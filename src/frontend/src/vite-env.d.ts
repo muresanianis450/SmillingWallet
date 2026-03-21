@@ -1,8 +1,17 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
-/// <reference types="vite/client" />
-
-// CSS Modules type declaration
-declare module '*.module.css' {
-    const classes: Record<string, string>;
-    export default classes;
-}
+export default defineConfig({
+    plugins: [react()],
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, './src'),
+        },
+    },
+    test: {
+        globals:     true,
+        environment: 'jsdom',
+        setupFiles:  './src/tests/setup.ts',
+    },
+});

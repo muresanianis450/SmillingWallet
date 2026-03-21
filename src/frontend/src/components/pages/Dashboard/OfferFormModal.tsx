@@ -55,16 +55,29 @@ export function OfferFormModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const errs = validateOffer(fields);
+
+    // For accepted offers, only validate date/time (price is locked)
+    const fieldsToValidate = isAccepted
+    ? {...fields, priceQuote: offer?.priceQuote ?? fields.priceQuote}
+        : fields;
+
+    const errs = validateOffer(fieldsToValidate);
+
+    //Remove date error if no date is set (appointment not yet scheduled is valid)
+    if (!fields.date && !fields.time){
+      delete errs.date;
+      delete errs.time;
+    }
+
     setErrors(errs);
-    setTouched(Object.fromEntries(Object.keys(fields).map((k) => [k, true])) as any);
+    setTouched(Object.fromEntries(Object.keys(fields).map((k) => [k,true])) as any);
     if (Object.keys(errs).length) return;
+
     onSubmit({
       ...fields,
-      // convert null to undefined so it matches OfferFormFields (string not string|null)
       date: formatDisplayDate(fields.date) ?? undefined,
       time: formatDisplayTime(fields.time) ?? undefined,
-    });
+    })
   }
 
   const hasBlockingErrors =

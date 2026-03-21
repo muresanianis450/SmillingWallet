@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { DentalRequest } from '../../../types';
+import { useOffers } from '../../../hooks/useOffers';
 import { TREATMENT_CATEGORIES, INITIAL_REQUESTS } from '../../../data/constants';
 import { usePagination } from '../../../hooks/usePagination';
 import { useToast } from '../../../hooks/useToast';
@@ -8,10 +8,16 @@ import { EmptyState } from '../../shared/EmptyState';
 import { Toast } from '../../shared/Toast';
 import { SendOfferModal } from './SendOfferModal';
 import styles from './ReviewRequestsPage.module.css';
+import {DentalRequest, PageName} from "../../../types";
 
 const PER_PAGE = 7;
 
-export function ReviewRequestsPage() {
+interface ReviewRequestsPageProps {
+  offersHook : ReturnType<typeof useOffers>;
+  setPage: (page:PageName) => void;
+}
+
+export function ReviewRequestsPage({offersHook, setPage}: ReviewRequestsPageProps) {
   const [hiddenIds,  setHiddenIds]  = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
   const [search,     setSearch]     = useState('');
@@ -52,11 +58,13 @@ export function ReviewRequestsPage() {
     [visibleRequests, search, filterCat]
   );
 
-  const { page, setPage, totalPages, slice } = usePagination<DentalRequest>(filtered, PER_PAGE);
+  const { page: currentPage, setPage: setTablePage, totalPages, slice } = usePagination<DentalRequest>(filtered, PER_PAGE);
 
   function handleSendOffer(fields: Record<string, any>) {
+    offersHook.addOffer(fields);
     setSendModal(null);
     showToast(`Offer sent to patient #${fields.patientId}!`, 'success');
+
   }
 
   const hiddenCount = hiddenIds.size;
@@ -173,7 +181,7 @@ export function ReviewRequestsPage() {
           </tbody>
         </table>
 
-        <Pagination page={page} totalPages={totalPages} setPage={setPage} />
+        <Pagination page={currentPage} totalPages={totalPages} setPage={setTablePage} />
       </div>
 
       {sendModal && (
