@@ -137,6 +137,5 @@ smiling-wallet/
 - [ ] Email/push notification support
 
 ---
-[![View Prototype](https://www.figma.com/design/B2MNp68y6sKgQSwsArxlus/Smiling-Wallet?node-id=97-1215&t=302ufsRLVs2xKkvX-1)
-
+[![View Prototype](https://img.shields.io/badge/Figma-View_Prototype-blue?logo=figma)](https://www.figma.com/design/B2MNp68y6sKgQSwsArxlus/Smiling-Wallet?node-id=97-1215&t=302ufsRLVs2xKkvX-1)
 <!-- Proudly created with GPRM ( https://gprm.itsvg.in ) -->
