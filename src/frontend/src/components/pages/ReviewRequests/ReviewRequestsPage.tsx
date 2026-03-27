@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useOffers } from '../../../hooks/useOffers';
 import { TREATMENT_CATEGORIES, INITIAL_REQUESTS } from '../../../data/constants';
 import { usePagination } from '../../../hooks/usePagination';
@@ -7,6 +7,7 @@ import { Pagination } from '../../shared/Pagination';
 import { EmptyState } from '../../shared/EmptyState';
 import { Toast } from '../../shared/Toast';
 import { SendOfferModal } from './SendOfferModal';
+// @ts-ignore
 import styles from './ReviewRequestsPage.module.css';
 import {DentalRequest, PageName} from "../../../types";
 
@@ -17,7 +18,7 @@ interface ReviewRequestsPageProps {
   setPage: (page:PageName) => void;
 }
 
-export function ReviewRequestsPage({offersHook, setPage}: ReviewRequestsPageProps) {
+export function ReviewRequestsPage({offersHook}: ReviewRequestsPageProps) {
   const [hiddenIds,  setHiddenIds]  = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
   const [search,     setSearch]     = useState('');

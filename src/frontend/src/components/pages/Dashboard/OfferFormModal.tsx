@@ -6,6 +6,7 @@ import { Modal } from '../../shared/Modal';
 import { FormField } from '../../shared/FormField';
 import { Input, PriceInput } from '../../shared/Input';
 import { Button } from '../../shared/Button';
+// @ts-ignore
 import styles from './OfferFormModal.module.css';
 
 interface OfferFormModalProps {

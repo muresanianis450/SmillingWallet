@@ -1,6 +1,7 @@
 import React from 'react';
 import { Offer } from '../../../types';
 import { Button } from '../../shared/Button';
+// @ts-ignore
 import styles from './DeleteModal.module.css';
 
 interface DeleteModalProps {

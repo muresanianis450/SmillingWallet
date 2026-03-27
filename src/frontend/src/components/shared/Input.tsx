@@ -1,4 +1,5 @@
-import React, { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
+// @ts-ignore
 import styles from './Input.module.css';
 
 // ─── Text / Number / Date / Time Input ───────────────────────────────────────

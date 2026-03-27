@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Offer, ModalState } from '../../../types';
-import { OFFER_STATUSES, INITIAL_OFFERS } from '../../../data/constants';
+import { OFFER_STATUSES } from '../../../data/constants';
 import { useOffers } from '../../../hooks/useOffers';
 import { usePagination } from '../../../hooks/usePagination';
 import { useToast } from '../../../hooks/useToast';
@@ -10,8 +10,13 @@ import { Toast } from '../../shared/Toast';
 import { EmptyState } from '../../shared/EmptyState';
 import { OfferFormModal } from './OfferFormModal';
 import { DeleteModal } from './DeleteModal';
+import { usePageTracking } from '../../../hooks/useTracking';
+
+
+// @ts-ignore
 import styles from './DashboardPage.module.css';
 import { IconView, IconEdit, IconDelete} from "../../shared/Icons";
+import { trackEvent } from "../../../tracking/tracker";
 
 const PER_PAGE = 5;
 
@@ -20,6 +25,8 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ offersHook} : DashboardPageProps) {
+  usePageTracking("dashboard"); // <- tracking
+
   const { offers, updateOffer, deleteOffer, stats } = offersHook;
   const { toast, show: showToast } = useToast();
 
@@ -46,6 +53,7 @@ export function DashboardPage({ offersHook} : DashboardPageProps) {
 
 
   function handleEdit(fields: any) {
+    trackEvent("EDIT_OFFER", {offerId: modal?.offer?.id});
     if (!modal?.offer) return;
     updateOffer(modal.offer.id, fields);
     setModal(null);
@@ -53,6 +61,8 @@ export function DashboardPage({ offersHook} : DashboardPageProps) {
   }
 
   function handleDelete() {
+    trackEvent("DELETE_OFFER", { offerId: modal?.offer?.id});
+
     if (!modal?.offer) return;
     deleteOffer(modal.offer.id);
     setModal(null);
@@ -84,12 +94,18 @@ export function DashboardPage({ offersHook} : DashboardPageProps) {
             className={styles.searchBox}
             placeholder="Search by offer ID or patient…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) =>{
+              setSearch(e.target.value)
+            trackEvent("SEARCH", { value: e.target.value})
+            }}
           />
           <select
             className={styles.filterSel}
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value)
+              trackEvent("SEARCH", { value: e.target.value})
+            }}
           >
             <option>All</option>
             {OFFER_STATUSES.map((s) => (
@@ -121,7 +137,10 @@ export function DashboardPage({ offersHook} : DashboardPageProps) {
               slice.map((o) => (
                 <tr
                   key={o.id}
-                  onClick={() => setModal({ type: 'view', offer: o })}
+                  onClick={() => {
+                    setModal({ type: 'view', offer: o })
+                    trackEvent("SEARCH", { value: o.id })
+                  }}
                 >
                   <td><strong>#{o.id}</strong></td>
                   <td>{o.patientName}</td>
