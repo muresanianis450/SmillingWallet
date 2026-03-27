@@ -34,22 +34,30 @@ export function useOffers(initial: Offer[]): UseOffersReturn {
     []
   );
 
-  const updateOffer = useCallback(
-    (id: string, fields: Partial<OfferFormFields>): void => {
-      setOffers((prev) =>
-        prev.map((o) =>
-          o.id === id
-            ? {
-                ...o,
-                ...fields,
-                priceQuote: parseFloat(String(fields.priceQuote ?? o.priceQuote)),
-              }
-            : o
-        )
-      );
-    },
-    []
-  );
+    const updateOffer = useCallback(
+        (id: string, fields: Partial<OfferFormFields>): void => {
+            setOffers((prev) =>
+                prev.map((o): Offer => { // 1. Explicitly return the 'Offer' type here
+                    if (o.id !== id) return o;
+
+                    // 2. Calculate the new price separately to ensure it's a number
+                    let newPrice: number = o.priceQuote;
+                    if (fields.priceQuote !== undefined) {
+                        const parsed = parseFloat(String(fields.priceQuote));
+                        newPrice = isNaN(parsed) ? o.priceQuote : parsed;
+                    }
+
+                    // 3. Construct the updated object
+                    return {
+                        ...o,
+                        ...fields,
+                        priceQuote: newPrice, // This overrides any 'string' from ...fields
+                    } as Offer; // 4. Type assertion to guarantee compatibility
+                })
+            );
+        },
+        []
+    );
 
   const deleteOffer = useCallback((id: string): void => {
     setOffers((prev) => prev.filter((o) => o.id !== id));
