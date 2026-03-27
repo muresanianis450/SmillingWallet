@@ -2,7 +2,7 @@ import { PageName } from '../../../types';
 import { Button } from '../../shared/Button';
 // @ts-ignore
 import styles from './AboutPage.module.css';
-import { TeethIcon, DentistIcon } from '../../shared/Icons';
+import {TeethIcon, DentistIcon, GraphIcon, HandshakeIcon} from '../../shared/Icons';
 interface AboutPageProps {
   setPage: (page: PageName) => void;
 }
@@ -16,14 +16,14 @@ const HOW_STEPS = [
     reverse: false,
   },
   {
-    icon: <DentistIcon />,
+    icon: <GraphIcon />,
     title: '2. Compare',
     description:
         'Receive multiple anonymous price quotes. Rank them using our exclusive clinic performance metrics and database ratings.',
     reverse: true,
   },
   {
-    icon: '🤝',
+    icon: <HandshakeIcon />,
     title: '3. Match (1%)',
     description:
         'Accept the best offer and pay a 1% matchmaking fee to unlock contact details and schedule your treatment.',
@@ -44,7 +44,7 @@ export function AboutPage({ setPage }: AboutPageProps) {
               competition and data-driven ratings.
             </p>
           </div>
-          <div className={styles.heroImg}>🧑‍⚕️</div>
+          <div className={styles.heroImg}><DentistIcon/></div>
         </div>
 
         {/* ── How it works ── */}

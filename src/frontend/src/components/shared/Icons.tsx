@@ -1,5 +1,7 @@
 import TeethIconImg from '../../../assets/Teeth_About_Page.png';
 import DentistIconImg from '../../../assets/DentistIcon.png';
+import GraphIconImg from '../../../assets/graphIcon.png';
+import HandshakeImg from '../../../assets/handshakeIcon.png';
 interface IconProps {
     size?: number;
     color?: string;
@@ -56,11 +58,11 @@ export function DentistIcon() {
             src={DentistIconImg}
             alt="Dentist Illustration"
             style={{
-                width: '75%',     /* Increased from 80% to 90% to make it LARGER */
+                width: '60%',
                 height: 'auto',
                 display: 'block',
-                margin: '5 auto', /* Ensures horizontal centering */
-                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))' /* Adds depth */
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
             }}
         />
     );
@@ -73,11 +75,43 @@ export function TeethIcon() {
             src={TeethIconImg}
             alt="Teeth Illustration"
             style={{
-                width: '90%',     /* Increased from 80% to 90% to make it LARGER */
+                width: '90%',
                 height: 'auto',
                 display: 'block',
-                margin: '5 auto', /* Ensures horizontal centering */
-                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))' /* Adds depth */
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
+            }}
+        />
+    );
+}
+
+export function GraphIcon() {
+    return (
+        <img
+            src={GraphIconImg}
+            alt="Graph Illustration"
+            style={{
+                width: '90%',
+                height: 'auto',
+                display: 'block',
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
+            }}
+        />
+    );
+}
+
+export function HandshakeIcon() {
+    return (
+        <img
+            src={HandshakeImg}
+            alt="Handshake Illustration"
+            style={{
+                width: '90%',
+                height: 'auto',
+                display: 'block',
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
             }}
         />
     );
