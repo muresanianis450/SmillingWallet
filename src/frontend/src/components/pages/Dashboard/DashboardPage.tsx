@@ -60,7 +60,7 @@ export function DashboardPage({ offersHook} : DashboardPageProps) {
   }
 
   return (
-    <div className={styles.page}>
+      <div className={styles.page} data-testid="dashboard-page">
       {/* ── Header + Stats ── */}
       <div className={styles.header}>
         <h1 className={styles.title}>Clinic DashBoard</h1>
@@ -99,7 +99,7 @@ export function DashboardPage({ offersHook} : DashboardPageProps) {
     </div>
 
         {/* Table */}
-        <table>
+        <table data-testid={"offers-table"}>
           <thead>
             <tr>
               <th>Offer ID</th>
@@ -140,8 +140,15 @@ export function DashboardPage({ offersHook} : DashboardPageProps) {
                               onClick={() => setModal({ type: 'edit', offer: o })}>
                         <IconEdit />
                       </button>
-                      <button className={`${styles.iconBtn} ${styles.del}`} title="Delete"
-                              onClick={() => setModal({ type: 'delete', offer: o })}>
+                      <button
+                          data-testid="delete-offer-btn"
+                          className={`${styles.iconBtn} ${styles.del}`}
+                          title="Delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setModal({ type: 'delete', offer: o });
+                          }}
+                      >
                         <IconDelete />
                       </button>
                     </div>
@@ -163,13 +170,14 @@ export function DashboardPage({ offersHook} : DashboardPageProps) {
           onSubmit={handleEdit}
         />
       )}
-      {modal?.type === 'delete' && modal.offer && (
-        <DeleteModal
-          offer={modal.offer}
-          onClose={() => setModal(null)}
-          onConfirm={handleDelete}
-        />
-      )}
+        {modal?.type === 'delete' && modal.offer && (
+            <DeleteModal
+                data-testid="delete-modal"
+                offer={modal.offer}
+                onClose={() => setModal(null)}
+                onConfirm={handleDelete}
+            />
+        )}
 
       <Toast toast={toast} />
     </div>

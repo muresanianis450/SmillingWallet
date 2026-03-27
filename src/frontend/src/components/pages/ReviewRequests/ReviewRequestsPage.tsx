@@ -162,8 +162,9 @@ export function ReviewRequestsPage({offersHook, setPage}: ReviewRequestsPageProp
                           {isHidden ? '🙈' : '👁'}
                         </button>
                         {!isHidden && (
-                          <button
-                            className={styles.btnSendOffer}
+                            <button
+                                data-testid="open-send-offer-btn"
+                                className={styles.btnSendOffer}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSendModal(r);

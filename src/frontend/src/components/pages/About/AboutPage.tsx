@@ -1,6 +1,6 @@
-import React from 'react';
 import { PageName } from '../../../types';
 import { Button } from '../../shared/Button';
+// @ts-ignore
 import styles from './AboutPage.module.css';
 
 interface AboutPageProps {
@@ -68,7 +68,11 @@ export function AboutPage({ setPage }: AboutPageProps) {
       {/* ── CTA ── */}
       <div className={styles.cta}>
         <h2>The choice is yours!</h2>
-        <Button variant="cta" onClick={() => setPage('requests')}>
+        <Button
+            data-testid="send-request-btn"
+            variant="cta"
+            onClick={() => setPage('requests')}
+        >
           Send Request
         </Button>
       </div>

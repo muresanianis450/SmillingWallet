@@ -59,17 +59,18 @@ interface PriceInputProps {
 
 export function PriceInput({ value, onChange, hasError, placeholder = '€—' }: PriceInputProps) {
   return (
-    <div className={`${styles.prefix} ${hasError ? styles.error : ''}`}>
-      <span className={styles.prefixIcon}>€</span>
-      <input
-        className={styles.prefixInput}
-        type="number"
-        min={1}
-        max={99999}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </div>
+      <div className={`${styles.prefix} ${hasError ? styles.error : ''}`}>
+        <span className={styles.prefixIcon}>€</span>
+        <input
+            data-testid="price-input"
+            className={styles.prefixInput}
+            type="number"
+            min={1}
+            max={99999}
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
   );
 }
