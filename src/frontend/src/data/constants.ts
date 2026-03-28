@@ -143,7 +143,7 @@ export const MOCK_CLIENT_OFFERS: ClientOffer[] = [
     savingsVsAvg: 65,
     validUntil: '2025-04-15',
     treatmentCategory: 'Cosmetic Dentistry',
-    isBestValue: true,
+    isBestValue: false,
   },
   {
     id: 'CO002',
@@ -179,7 +179,7 @@ export const MOCK_CLIENT_OFFERS: ClientOffer[] = [
     savingsVsAvg: 85,
     validUntil: '2025-04-17',
     treatmentCategory: 'Cosmetic Dentistry',
-    isBestValue: false,
+    isBestValue: true,
   },
   {
     id: 'CO004',
