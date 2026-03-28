@@ -2,6 +2,18 @@ import TeethIconImg from '../../../assets/Teeth_About_Page.png';
 import DentistIconImg from '../../../assets/DentistIcon.png';
 import GraphIconImg from '../../../assets/graphIcon.png';
 import HandshakeImg from '../../../assets/handshakeIcon.png';
+import GeneralDentistryImg from '../../../assets/General Dentistry.png';
+import DentalImplantImg from '../../../assets/Dental Implant.png';
+// @ts-ignore
+import OrthodonticsImg from '../../../assets/Orthodontics.png';
+// @ts-ignore
+import CosmeticDentistryImg from '../../../assets/CosmeticDentistry.png';
+// @ts-ignore
+import PediatricDentistryImg from '../../../assets/PediatricDentistry.png';
+// @ts-ignore
+import EmergencyCareImg from '../../../assets/EmergencyCare.png';
+
+
 interface IconProps {
     size?: number;
     color?: string;
@@ -108,6 +120,101 @@ export function HandshakeIcon() {
             alt="Handshake Illustration"
             style={{
                 width: '90%',
+                height: 'auto',
+                display: 'block',
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
+            }}
+        />
+    );
+}
+
+export function GeneralDentistryIcon() {
+    return (
+        <img
+            src={GeneralDentistryImg}
+            alt="General Dentistry Illustration"
+            style={{
+                width: '65px',
+                height: 'auto',
+                display: 'block',
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
+            }}
+        />
+    );
+}
+
+export function DentalImplantIcon() {
+    return (
+        <img
+            src={DentalImplantImg}
+            alt="Dental Implant Illustration"
+            style={{
+                width: '65px',
+                height: 'auto',
+                display: 'block',
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
+            }}
+        />
+    );
+}
+export function OrthodonticsIcon() {
+    return (
+        <img
+            src={OrthodonticsImg}
+            alt="Orthodontics Illustration"
+            style={{
+                width: '65px',
+                height: '70px',
+                display: 'block',
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))',
+                objectFit: 'contain'
+            }}
+        />
+    );
+}
+export function CosmeticDentistryIcon() {
+    return (
+        <img
+            src={CosmeticDentistryImg}
+            alt="Cosmetic Dentistry Illustration"
+            style={{
+                width: '75px',
+                height: 'auto',
+                display: 'block',
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
+            }}
+        />
+    );
+}
+
+export function PediatricDentistryIcon() {
+    return (
+        <img
+            src={PediatricDentistryImg}
+            alt="Orthodontics Illustration"
+            style={{
+                width: '65px',
+                height: '70px',
+                display: 'block',
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))',
+                objectFit: 'contain'
+            }}
+        />
+    );
+}
+export function EmergencyCareIcon() {
+    return (
+        <img
+            src={EmergencyCareImg}
+            alt="Emergency Care Illustration"
+            style={{
+                width: '60px',
                 height: 'auto',
                 display: 'block',
                 margin: '5 auto',
