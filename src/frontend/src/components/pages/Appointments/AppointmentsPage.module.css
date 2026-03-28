@@ -1,0 +1,303 @@
+/* ── Layout ── */
+.wrap {
+    min-height: 100vh;
+    background: #F0EEFF;
+}
+
+.content {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+}
+
+/* ── Hero ── */
+.hero {
+    background: linear-gradient(135deg, #7F77DD 0%, #5f57c4 100%);
+    text-align: center;
+    padding: 60px 32px 48px;
+    color: #fff;
+}
+
+.heroIcon {
+    font-size: 52px;
+    margin-bottom: 12px;
+}
+
+.heroTitle {
+    font-size: 40px;
+    font-weight: 800;
+    margin: 0 0 8px;
+}
+
+.heroSub {
+    font-size: 18px;
+    opacity: 0.88;
+    margin: 0 0 24px;
+}
+
+.clinicReveal {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 14px;
+    padding: 12px 28px;
+}
+
+.clinicRevealLabel {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.8;
+}
+
+.clinicRevealName {
+    font-size: 20px;
+    font-weight: 800;
+}
+
+/* ── Sections ── */
+.section {
+    margin-top: 32px;
+}
+
+.sectionTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1A1A2E;
+    margin: 0 0 14px;
+}
+
+/* ── Table ── */
+.tableCard {
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1.5px solid #ede9ff;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table thead {
+    background: #f7f5ff;
+}
+
+.table th {
+    text-align: left;
+    padding: 12px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #6B6B8A;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.table td {
+    padding: 14px 18px;
+    font-size: 14px;
+    color: #1A1A2E;
+    border-top: 1px solid #f0eeff;
+}
+
+.statusBadge {
+    display: inline-block;
+    background: #e6f9f3;
+    color: #1D9E75;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+/* ── Two column grid ── */
+.twoCol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+/* ── Cards ── */
+.card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 22px;
+    border: 1.5px solid #ede9ff;
+}
+
+/* ── Doctor Row ── */
+.doctorRow {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.doctorAvatar {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #7F77DD, #5f57c4);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.doctorName {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1A1A2E;
+    margin-bottom: 4px;
+}
+
+.stars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 14px;
+}
+
+.starFilled { color: #f5a623; }
+.starEmpty  { color: #ddd; }
+.ratingNum  { font-size: 12px; color: #6B6B8A; margin-left: 4px; }
+
+.reviewCount {
+    font-size: 12px;
+    color: #9898b8;
+    margin-top: 3px;
+}
+
+/* ── Contact ── */
+.contactList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.contactItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: #1A1A2E;
+}
+
+.contactIcon {
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.actionBtns {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btnOutline {
+    flex: 1;
+    display: inline-block;
+    text-align: center;
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: 1.5px solid #7F77DD;
+    color: #7F77DD;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btnOutline:hover {
+    background: #f0eeff;
+}
+
+/* ── Map Placeholder ── */
+.mapPlaceholder {
+    background: #fff;
+    border-radius: 14px;
+    border: 1.5px solid #ede9ff;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    min-height: 140px;
+    justify-content: center;
+}
+
+.mapPin { font-size: 36px; }
+
+.mapAddress {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1A1A2E;
+}
+
+.mapLink {
+    font-size: 14px;
+    color: #7F77DD;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.mapLink:hover { text-decoration: underline; }
+
+/* ── Footer Summary ── */
+.footerSummary {
+    margin-top: 32px;
+    background: #fff;
+    border-radius: 14px;
+    border: 1.5px solid #ede9ff;
+    padding: 24px;
+}
+
+.summaryGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.summaryItem {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.summaryLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9898b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.summaryVal {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1A1A2E;
+}
+
+.teal { color: #1D9E75; }
+
+/* ── Responsive ── */
+@media (max-width: 800px) {
+    .twoCol { grid-template-columns: 1fr; }
+    .summaryGrid { grid-template-columns: 1fr 1fr; }
+    .content { padding: 0 16px 60px; }
+}
+
+@media (max-width: 480px) {
+    .summaryGrid { grid-template-columns: 1fr; }
+    .heroTitle { font-size: 28px; }
+}
