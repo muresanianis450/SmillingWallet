@@ -1,4 +1,4 @@
-import { PageName } from '../../../types';
+import { PageName } from '../../../types/types.ts';
 import { Button } from '../../shared/Button';
 // @ts-ignore
 import styles from './AboutPage.module.css';
