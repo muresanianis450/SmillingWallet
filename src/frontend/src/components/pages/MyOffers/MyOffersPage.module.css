@@ -1,10 +1,9 @@
 /* ── Layout ── */
 .wrap {
     min-height: 100vh;
-    background: #F0EEFF;
-    padding: 40px 32px 80px;
-    max-width: 1200px;
-    margin: 0 auto;
+    width: 100%;
+    background: linear-gradient(180deg, #8FA8E8 0%, #F0EEFF 60%);
+    padding: 40px 48px 80px;
 }
 
 .pageHead {
@@ -50,9 +49,10 @@
 /* ── Main Panel ── */
 .mainPanel {
     display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 24px;
+    grid-template-columns: 480px 1fr;
+    gap: 32px;
     align-items: start;
+
 }
 
 /* ── Left Panel ── */
@@ -61,15 +61,19 @@
     flex-direction: column;
     gap: 12px;
 }
-
 .doctorCard {
+    position: relative; /* Add this to contain the absolute badge */
+    border-radius: 20px;
+    padding: 18px;
     background: #fff;
-    border-radius: 14px;
-    padding: 16px;
     border: 1.5px solid #ede9ff;
-    cursor: pointer;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    position: relative;
+    transition: all 0.25s ease;
+    margin-top: 10px; /* Give space for the badge overlapping the top */
+}
+
+.doctorCardActive {
+    background: #E9E6FF;
+    box-shadow: inset 0 0 0 2px #7F77DD;
 }
 
 .doctorCard:hover {
@@ -87,12 +91,14 @@
     position: absolute;
     top: -10px;
     left: 14px;
+    z-index: 10; /* Ensure it stays on top */
     font-size: 11px;
     font-weight: 700;
     background: #1D9E75;
     color: #fff;
-    padding: 3px 10px;
+    padding: 4px 12px;
     border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .doctorCardRow {
@@ -149,14 +155,15 @@
 }
 
 .priceRange {
-    font-size: 12px;
+    font-size: 11px;
+    opacity: 0.6;
     color: #6B6B8A;
 }
 
 .exactQuote {
-    font-size: 15px;
-    font-weight: 800;
-    color: #1D9E75;
+    font-size: 18px;
+    font-weight: 900;
+    color: #1A1A2E;
 }
 
 /* ── Right Panel ── */
@@ -181,6 +188,24 @@
     margin: 0 0 6px;
 }
 
+
+.detailDoctorProfile {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.detailDoctorAvatarImg {
+    width: 60px; /* Sized larger than sidebar avatar */
+    height: 60px;
+    border-radius: 50%; /* Circle shape */
+    object-fit: cover; /* Ensures image doesn't stretch */
+    border: 2px solid #ede9ff; /* Optional subtle border */
+}
+.doctorInfoText {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
 .bestBadgeLg {
     font-size: 13px;
     font-weight: 700;
@@ -453,4 +478,18 @@
     .chartsRow { grid-template-columns: 1fr; }
     .statCards { grid-template-columns: 1fr; }
     .detailGrid { grid-template-columns: 1fr; }
+}
+
+
+.sectionBox {
+    background: #F6F4FF;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.doctorAvatarImg {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
 }

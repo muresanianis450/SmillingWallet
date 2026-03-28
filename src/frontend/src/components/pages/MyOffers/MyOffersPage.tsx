@@ -7,6 +7,8 @@ import { Pagination } from '../../shared/Pagination';
 import { Toast } from '../../shared/Toast';
 import { Button } from '../../shared/Button';
 // @ts-ignore
+import DefaultAvatar from '../../../../assets/default-avatar.png';
+// @ts-ignore
 import styles from './MyOffersPage.module.css';
 
 interface MyOffersPageProps {
@@ -23,17 +25,16 @@ function StarRating({ rating }: { rating: number }) {
                     key={n}
                     className={n <= Math.round(rating) ? styles.starFilled : styles.starEmpty}
                 >
-          ★
-        </span>
+                    ★
+                </span>
             ))}
             <span className={styles.ratingNum}>{rating.toFixed(1)}</span>
         </div>
     );
 }
-
-// Simple bar chart via CSS
 function BarChart({ data }: { data: { label: string; value: number; color: string }[] }) {
     const max = Math.max(...data.map((d) => d.value), 1);
+
     return (
         <div className={styles.barChart}>
             {data.map((d) => (
@@ -51,11 +52,10 @@ function BarChart({ data }: { data: { label: string; value: number; color: strin
         </div>
     );
 }
-
-// Simple pie chart via SVG
 function PieChart({ segments }: { segments: { label: string; value: number; color: string }[] }) {
     const total = segments.reduce((s, d) => s + d.value, 0) || 1;
     let cumulative = 0;
+
     const slices = segments.map((seg) => {
         const startAngle = (cumulative / total) * 360;
         cumulative += seg.value;
@@ -89,6 +89,7 @@ function PieChart({ segments }: { segments: { label: string; value: number; colo
                     />
                 ))}
             </svg>
+
             <div className={styles.pieLegend}>
                 {segments.map((s) => (
                     <div key={s.label} className={styles.pieLegendItem}>
@@ -104,9 +105,9 @@ function PieChart({ segments }: { segments: { label: string; value: number; colo
 
 export function MyOffersPage({ setPage }: MyOffersPageProps) {
     const offers = MOCK_CLIENT_OFFERS;
-    const [selected,      setSelected]      = useState<ClientOffer>(offers[0]);
-    const [showStats,     setShowStats]     = useState(false);
-    const { toast, show: showToast }        = useToast();
+    const [selected, setSelected] = useState<ClientOffer>(offers[0]);
+    const [showStats, setShowStats] = useState(false);
+    const { toast, show: showToast } = useToast();
     const { page, setPage: setTablePage, totalPages, slice } = usePagination<ClientOffer>(offers, PER_PAGE);
 
     const avgPrice = useMemo(
@@ -119,19 +120,17 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
         [offers]
     );
 
-    // Pie chart: price range buckets
     const priceBuckets = useMemo(() => {
-        const under400  = offers.filter((o) => o.exactQuote < 400).length;
-        const mid       = offers.filter((o) => o.exactQuote >= 400 && o.exactQuote < 500).length;
-        const over500   = offers.filter((o) => o.exactQuote >= 500).length;
+        const under400 = offers.filter((o) => o.exactQuote < 400).length;
+        const mid = offers.filter((o) => o.exactQuote >= 400 && o.exactQuote < 500).length;
+        const over500 = offers.filter((o) => o.exactQuote >= 500).length;
         return [
             { label: 'Under €400', value: under400, color: '#1D9E75' },
-            { label: '€400–€500', value: mid,       color: '#7F77DD' },
-            { label: 'Over €500', value: over500,   color: '#E8593C' },
+            { label: '€400–€500', value: mid, color: '#7F77DD' },
+            { label: 'Over €500', value: over500, color: '#E8593C' },
         ];
     }, [offers]);
 
-    // Bar chart: offers per star bucket
     const starBuckets = useMemo(() => {
         const buckets = ['< 4.0', '4.0–4.4', '4.5–4.9', '5.0'];
         const counts = [
@@ -164,9 +163,10 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                 </button>
             </div>
 
-            {/* ── Main Panel ── */}
+            {/* MAIN PANEL */}
             <div className={styles.mainPanel}>
-                {/* Left: Doctor Cards */}
+
+                {/* LEFT PANEL */}
                 <div className={styles.leftPanel}>
                     {slice.map((offer) => (
                         <div
@@ -175,12 +175,12 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                             onClick={() => setSelected(offer)}
                         >
                             {offer.isBestValue && (
-                                <span className={styles.bestBadge}>🏆 Best Value</span>
+                                <span className={styles.bestBadge}>Best Value</span>
                             )}
                             <div className={styles.doctorCardRow}>
-                                <div className={styles.doctorAvatar}>
-                                    {offer.doctorLabel.split(' ')[1]}
-                                </div>
+                                <img src={offer.avatar || DefaultAvatar}
+                                    className={styles.doctorAvatarImg}
+                                />
                                 <div className={styles.doctorInfo}>
                                     <div className={styles.doctorName}>{offer.doctorLabel}</div>
                                     <StarRating rating={offer.rating} />
@@ -196,56 +196,94 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                     <Pagination page={page} totalPages={totalPages} setPage={setTablePage} />
                 </div>
 
-                {/* Right: Offer Detail */}
+                {/* RIGHT PANEL */}
                 <div className={styles.rightPanel}>
+
+                    {/* HEADER - ADDED DOCTOR AVATAR HERE */}
                     <div className={styles.detailHeader}>
-                        <div>
-                            <h2 className={styles.detailDoctor}>{selected.doctorLabel}</h2>
-                            <StarRating rating={selected.rating} />
+
+                        {/* Unified Profile Block (Avatar + Name/Stars) */}
+                        <div className={styles.detailDoctorProfile}>
+                            <img
+                                src={selected.avatar || DefaultAvatar} // Use selected doctor's avatar
+                                className={styles.detailDoctorAvatarImg} // New style for the large avatar
+                                alt="Doctor Profile"
+                            />
+                            <div className={styles.doctorInfoText}>
+                                <h2 className={styles.detailDoctor}>{selected.doctorLabel}</h2>
+                                <StarRating rating={selected.rating} />
+                            </div>
                         </div>
+
+                        {/* Existing Best Value Badge */}
                         {selected.isBestValue && (
                             <span className={styles.bestBadgeLg}>🏆 Best Value</span>
                         )}
                     </div>
 
-                    <div className={styles.detailGrid}>
-                        <div className={styles.detailItem}>
-                            <span className={styles.detailLabel}>Price Range</span>
-                            <span className={styles.detailVal}>€{selected.priceMin} – €{selected.priceMax}</span>
+                    {/* PRICE + INFO */}
+                    <div className={styles.sectionBox}>
+                        <div className={styles.detailGrid}>
+                            <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>Price Range</span>
+                                <span className={styles.detailVal}>
+                                    €{selected.priceMin} – €{selected.priceMax}
+                                </span>
+                            </div>
+
+                            <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>Exact Quote</span>
+                                <span className={`${styles.detailVal} ${styles.teal}`}>
+                                    €{selected.exactQuote}
+                                </span>
+                            </div>
+
+                            <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>Date & Time</span>
+                                <span className={styles.detailVal}>
+                                    {selected.date}, {selected.time}
+                                </span>
+                            </div>
                         </div>
-                        <div className={styles.detailItem}>
-                            <span className={styles.detailLabel}>Exact Quote</span>
-                            <span className={`${styles.detailVal} ${styles.teal}`}>€{selected.exactQuote}</span>
-                        </div>
-                        <div className={styles.detailItem}>
-                            <span className={styles.detailLabel}>Date &amp; Time</span>
-                            <span className={styles.detailVal}>{selected.date}, {selected.time}</span>
-                        </div>
+                    </div>
+
+                    {/* STATS */}
+                    <div className={styles.sectionBox}>
                         <div className={styles.detailItem}>
                             <span className={styles.detailLabel}>Match Score</span>
-                            <span className={`${styles.detailVal} ${styles.purple}`}>{selected.matchScore}%</span>
+                            <span className={`${styles.detailVal} ${styles.purple}`}>
+                                {selected.matchScore}%
+                            </span>
                         </div>
+
                         <div className={styles.detailItem}>
                             <span className={styles.detailLabel}>Savings vs Avg</span>
                             <span className={`${styles.detailVal} ${selected.savingsVsAvg >= 0 ? styles.teal : styles.danger}`}>
-                {selected.savingsVsAvg >= 0 ? `Save €${selected.savingsVsAvg}` : `+€${Math.abs(selected.savingsVsAvg)} above avg`}
-              </span>
+                                {selected.savingsVsAvg >= 0
+                                    ? `Save €${selected.savingsVsAvg}`
+                                    : `+€${Math.abs(selected.savingsVsAvg)} above avg`}
+                            </span>
                         </div>
+
                         <div className={styles.detailItem}>
                             <span className={styles.detailLabel}>Offer Valid Until</span>
                             <span className={styles.detailVal}>{selected.validUntil}</span>
                         </div>
                     </div>
 
-                    <div className={styles.specialMentions}>
-                        <span className={styles.detailLabel}>Special Mentions</span>
-                        <ul className={styles.mentionList}>
-                            {selected.specialMentions.map((m) => (
-                                <li key={m} className={styles.mentionItem}>✓ {m}</li>
-                            ))}
-                        </ul>
+                    {/* SPECIAL MENTIONS */}
+                    <div className={styles.sectionBox}>
+                        <div className={styles.specialMentions}>
+                            <span className={styles.detailLabel}>Special Mentions</span>
+                            <ul className={styles.mentionList}>
+                                {selected.specialMentions.map((m) => (
+                                    <li key={m} className={styles.mentionItem}>✓ {m}</li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
 
+                    {/* ACTIONS */}
                     <div className={styles.detailActions}>
                         <button className={styles.altTimeBtn}>
                             🕐 Request Alternative Time
@@ -258,10 +296,11 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                     <div className={styles.lockNote}>
                         🔒 Clinic identity revealed after paying 1% matchmaking fee (€{Math.round(selected.exactQuote * 0.01)})
                     </div>
+
                 </div>
             </div>
 
-            {/* ── Analytics Section ── */}
+            {/* ANALYTICS */}
             {showStats && (
                 <div className={styles.analyticsSection}>
                     <h2 className={styles.analyticsTitle}>📊 Offer Analytics</h2>
@@ -272,12 +311,14 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                             <div className={styles.statLabel}>Average Price</div>
                             <div className={styles.statVal}>€{avgPrice}</div>
                         </div>
+
                         <div className={styles.statCard}>
-                            <div className={styles.statIcon}>🏆</div>
+                            <div className={styles.statIcon}></div>
                             <div className={styles.statLabel}>Best Value Offer</div>
                             <div className={`${styles.statVal} ${styles.teal}`}>€{bestOffer.exactQuote}</div>
                             <div className={styles.statSub}>{bestOffer.doctorLabel}</div>
                         </div>
+
                         <div className={styles.statCard}>
                             <div className={styles.statIcon}>📋</div>
                             <div className={styles.statLabel}>Total Offers</div>
@@ -290,6 +331,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                             <h3 className={styles.chartTitle}>Price Range Distribution</h3>
                             <PieChart segments={priceBuckets} />
                         </div>
+
                         <div className={styles.chartCard}>
                             <h3 className={styles.chartTitle}>Offers per Star Rating</h3>
                             <BarChart data={starBuckets} />
