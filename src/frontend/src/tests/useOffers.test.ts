@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useOffers } from '../hooks/useOffers';
-import { Offer } from '../types';
+import { Offer } from '../types/types.ts';
 
 const SEED: Offer[] = [
   {

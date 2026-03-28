@@ -9,7 +9,7 @@ import { Toast } from '../../shared/Toast';
 import { SendOfferModal } from './SendOfferModal';
 // @ts-ignore
 import styles from './ReviewRequestsPage.module.css';
-import {DentalRequest, PageName} from "../../../types";
+import {DentalRequest, PageName} from "../../../types/types.ts";
 
 const PER_PAGE = 7;
 

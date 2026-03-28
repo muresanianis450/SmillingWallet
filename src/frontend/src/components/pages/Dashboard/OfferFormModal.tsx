@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Offer, OfferFormFields, ValidationErrors } from '../../../types';
+import { Offer, OfferFormFields, ValidationErrors } from '../../../types/types.ts';
 import { validateOffer } from '../../../utils/validation';
 import { toInputDate, toInputTime, formatDisplayDate, formatDisplayTime } from '../../../utils/formatters';
 import { Modal } from '../../shared/Modal';

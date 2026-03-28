@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DentalRequest, SendOfferFormFields, ValidationErrors } from '../../../types';
+import { DentalRequest, SendOfferFormFields, ValidationErrors } from '../../../types/types.ts';
 import { validateSendOffer } from '../../../utils/validation';
 import { formatDisplayDate, formatDisplayTime } from '../../../utils/formatters';
 import { Modal } from '../../shared/Modal';

@@ -1,4 +1,4 @@
-import { OfferFormFields, SendOfferFormFields, ValidationErrors } from '../types';
+import { OfferFormFields, SendOfferFormFields, ValidationErrors } from '../types/types.ts';
 import { OFFER_STATUSES } from '../data/constants';
 
 // ─── Offer Form Validation ───────────────────────────────────────────────────

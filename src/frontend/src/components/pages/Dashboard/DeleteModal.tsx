@@ -1,5 +1,5 @@
 import React from 'react';
-import { Offer } from '../../../types';
+import { Offer } from '../../../types/types.ts';
 import { Button } from '../../shared/Button';
 // @ts-ignore
 import styles from './DeleteModal.module.css';

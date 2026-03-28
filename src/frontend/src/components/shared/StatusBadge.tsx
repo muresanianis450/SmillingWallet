@@ -1,5 +1,5 @@
 import React from 'react';
-import { OfferStatus } from '../../types';
+import { OfferStatus } from '../../types/types.ts';
 import styles from './StatusBadge.module.css';
 
 interface StatusBadgeProps {

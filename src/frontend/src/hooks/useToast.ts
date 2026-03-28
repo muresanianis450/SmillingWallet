@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ToastState, ToastType } from '../types';
+import { ToastState, ToastType } from '../types/types.ts';
 
 interface UseToastReturn {
   toast: ToastState | null;

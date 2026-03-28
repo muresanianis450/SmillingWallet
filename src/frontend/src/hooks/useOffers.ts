@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Offer, OfferFormFields, OfferStats } from '../types';
+import { Offer, OfferFormFields, OfferStats } from '../types/types.ts';
 import { makeId } from '../utils/formatters';
 
 interface UseOffersReturn {

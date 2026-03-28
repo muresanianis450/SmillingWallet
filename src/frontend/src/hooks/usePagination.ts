@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PaginationResult } from '../types';
+import { PaginationResult } from '../types/types.ts';
 
 export function usePagination<T>(
   items: T[],

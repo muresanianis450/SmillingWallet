@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Offer, ModalState } from '../../../types';
+import { Offer, ModalState } from '../../../types/types.ts';
 import { OFFER_STATUSES } from '../../../data/constants';
 import { useOffers } from '../../../hooks/useOffers';
 import { usePagination } from '../../../hooks/usePagination';
