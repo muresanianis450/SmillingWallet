@@ -6,6 +6,38 @@ interface NavProps {
     page: PageName;
     setPage: (page: PageName) => void;
 }
+const ALL_LINKS = [
+    { label: 'Home',         page: 'home' },
+    { label: 'Send Request', page: 'send-request' },
+    { label: 'My Offers',    page: 'my-offers' },
+    { label: 'Analytics',    page: 'dashboard' },
+    { label: 'Clinic View',  page: 'requests' },
+    { label: 'About',        page: 'about' },
+];
+
+export function Nav({ page, setPage }: NavProps) {
+    // Remove the isClinicPage logic and just map ALL_LINKS
+    return (
+        <nav className={styles.nav}>
+            {/* ... logo code ... */}
+            <div className={styles.links}>
+                {ALL_LINKS.map((link) => (
+                    <button
+                        key={link.page}
+                        className={`${styles.link} ${page === link.page ? styles.active : ''}`}
+                        onClick={() => setPage(link.page as PageName)}
+                    >
+                        {link.label}
+                    </button>
+                ))}
+            </div>
+        </nav>
+    );
+}
+
+
+//TODO ADD LATER LOGICS, for now not needed
+/*
 
 // Client-facing nav links
 const CLIENT_LINKS: { label: string; page: PageName }[] = [
@@ -26,6 +58,8 @@ const CLIENT_PAGES: PageName[] = ['home', 'send-request', 'my-offers', 'appointm
 const CLINIC_PAGES: PageName[] = ['requests', 'dashboard'];
 
 export function Nav({ page, setPage }: NavProps) {
+
+
     const isClinicPage = CLINIC_PAGES.includes(page);
     const links = isClinicPage ? CLINIC_LINKS : CLIENT_LINKS;
 
@@ -54,4 +88,4 @@ export function Nav({ page, setPage }: NavProps) {
             <div className={styles.avatar} />
         </nav>
     );
-}
+}*/
