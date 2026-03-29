@@ -1,8 +1,14 @@
+// @ts-ignore
 import TeethIconImg from '../../../assets/Teeth_About_Page.png';
+// @ts-ignore
 import DentistIconImg from '../../../assets/DentistIcon.png';
+// @ts-ignore
 import GraphIconImg from '../../../assets/graphIcon.png';
+// @ts-ignore
 import HandshakeImg from '../../../assets/handshakeIcon.png';
+// @ts-ignore
 import GeneralDentistryImg from '../../../assets/General Dentistry.png';
+// @ts-ignore
 import DentalImplantImg from '../../../assets/Dental Implant.png';
 // @ts-ignore
 import OrthodonticsImg from '../../../assets/Orthodontics.png';
@@ -12,6 +18,8 @@ import CosmeticDentistryImg from '../../../assets/CosmeticDentistry.png';
 import PediatricDentistryImg from '../../../assets/PediatricDentistry.png';
 // @ts-ignore
 import EmergencyCareImg from '../../../assets/EmergencyCare.png';
+// @ts-ignore
+import SmilingWalletImg from '../../../assets/SmilingWallet_Logo.png';
 
 
 interface IconProps {
@@ -215,6 +223,22 @@ export function EmergencyCareIcon() {
             alt="Emergency Care Illustration"
             style={{
                 width: '60px',
+                height: 'auto',
+                display: 'block',
+                margin: '5 auto',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
+            }}
+        />
+    );
+}
+
+export function SmilingWallet_LogoIcon() {
+    return (
+        <img
+            src={SmilingWalletImg}
+            alt="Smiling Wallet Logo Illustration"
+            style={{
+                width: '50px',
                 height: 'auto',
                 display: 'block',
                 margin: '5 auto',
