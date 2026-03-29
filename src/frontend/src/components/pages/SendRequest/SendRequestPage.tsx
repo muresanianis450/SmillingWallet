@@ -6,6 +6,7 @@ import { Toast } from '../../shared/Toast';
 import { Button } from '../../shared/Button';
 // @ts-ignore
 import styles from './SendRequestPage.module.css';
+import { BlobBackground } from '../../shared/BlobBackground';
 
 interface SendRequestPageProps {
     setPage: (page: PageName) => void;
@@ -69,6 +70,7 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
 
     return (
         <div className={styles.wrap}>
+            <BlobBackground/>
             <div className={styles.container}>
                 {/* ── Page Header ── */}
                 <div className={styles.pageHead}>
