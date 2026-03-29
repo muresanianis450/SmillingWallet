@@ -2,6 +2,9 @@
 import { PageName } from '@/types/types.ts';
 // @ts-ignore
 import styles from './Nav.module.css';
+import { SmilingWallet_LogoIcon} from '../shared/Icons';
+
+
 interface NavProps {
     page: PageName;
     setPage: (page: PageName) => void;
@@ -16,10 +19,16 @@ const ALL_LINKS = [
 ];
 
 export function Nav({ page, setPage }: NavProps) {
-    // Remove the isClinicPage logic and just map ALL_LINKS
     return (
         <nav className={styles.nav}>
-            {/* ... logo code ... */}
+            {/* LEFT: Logo */}
+            <div className={styles.logoContainer}>
+                <span className={styles.logo} onClick={() => setPage('home')}>
+                    <span className={styles.logoIcon}><SmilingWallet_LogoIcon/></span>
+                </span>
+            </div>
+
+            {/* MIDDLE: Centered Links */}
             <div className={styles.links}>
                 {ALL_LINKS.map((link) => (
                     <button
@@ -30,6 +39,23 @@ export function Nav({ page, setPage }: NavProps) {
                         {link.label}
                     </button>
                 ))}
+            </div>
+
+            {/* RIGHT: Auth & Profile */}
+            <div className={styles.authSection}>
+                <button
+                    className={styles.loginBtn}
+                    onClick={() => setPage('login')}
+                >
+                    Login
+                </button>
+                <button
+                    className={styles.registerBtn}
+                    onClick={() => setPage('register')}
+                >
+                    Register
+                </button>
+                <div className={styles.avatar} />
             </div>
         </nav>
     );
