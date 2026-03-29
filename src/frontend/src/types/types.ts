@@ -17,7 +17,9 @@ export type PageName =
     | 'appointments'
     | 'about'
     | 'requests'
-    | 'dashboard';
+    | 'dashboard'
+    | 'login'
+    | 'register';
 
 export type ToastType = 'success' | 'error' | 'info';
 
