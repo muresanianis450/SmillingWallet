@@ -9,24 +9,39 @@ interface RegisterPageProps {
 }
 
 export function RegisterPage({ setPage }: RegisterPageProps) {
-    const [tab, setTab] = useState<'signup' | 'login'>('signup');
+    const [firstName, setFirstName]         = useState('');
+    const [lastName, setLastName]           = useState('');
+    const [email, setEmail]                 = useState('');
+    const [password, setPassword]           = useState('');
+    const [showPassword, setShowPassword]   = useState(false);
+    const [passwordError, setPasswordError] = useState('');
+
+    function validatePassword(val: string): string {
+        if (val.length < 8)            return 'Password must be at least 8 characters';
+        if (!/\d/.test(val))           return 'Must contain at least 1 digit';
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val))
+            return 'Must contain at least 1 special character';
+        return '';
+    }
+
+    function handleRegister() {
+        const error = validatePassword(password);
+        if (error) { setPasswordError(error); return; }
+        setPage('home');
+    }
 
     return (
         <div className={styles.wrap}>
             <BlobBackground />
-
             <div className={styles.card}>
-                {/* Tab switcher */}
+
                 <div className={styles.tabs}>
-                    <button
-                        className={`${styles.tab} ${tab === 'signup' ? styles.tabActive : ''}`}
-                        onClick={() => setTab('signup')}
-                    >
+                    <button className={`${styles.tab} ${styles.tabActive}`}>
                         Sign up
                     </button>
                     <button
-                        className={`${styles.tab} ${tab === 'login' ? styles.tabActive : ''}`}
-                        onClick={() => { setTab('login'); setPage('login'); }}
+                        className={`${styles.tab}`}
+                        onClick={() => setPage('login')}
                     >
                         Log in
                     </button>
@@ -35,39 +50,68 @@ export function RegisterPage({ setPage }: RegisterPageProps) {
                 <h2 className={styles.title}>Sign up</h2>
 
                 <div className={styles.socialButtons}>
-                    <button className={styles.socialBtn}>
-                        <FacebookIcon />
-                        Continue with Facebook
-                    </button>
-                    <button className={styles.socialBtn}>
-                        <GoogleIcon />
-                        Continue with Google
-                    </button>
+                    <button className={styles.socialBtn}><FacebookIcon /> Continue with Facebook</button>
+                    <button className={styles.socialBtn}><GoogleIcon /> Continue with Google</button>
                 </div>
 
-                <div className={styles.divider}>
-                    <span>OR</span>
-                </div>
+                <div className={styles.divider}><span>OR</span></div>
 
                 <div className={styles.nameRow}>
                     <div className={styles.field}>
                         <label className={styles.label}>First name</label>
-                        <input className={styles.input} type="text" />
+                        <input
+                            className={styles.input}
+                            type="text"
+                            value={firstName}
+                            onChange={e => setFirstName(e.target.value)}
+                        />
                     </div>
                     <div className={styles.field}>
                         <label className={styles.label}>Last name</label>
-                        <input className={styles.input} type="text" />
+                        <input
+                            className={styles.input}
+                            type="text"
+                            value={lastName}
+                            onChange={e => setLastName(e.target.value)}
+                        />
                     </div>
                 </div>
 
                 <div className={styles.field}>
                     <label className={styles.label}>Email address</label>
-                    <input className={styles.input} type="email" />
+                    <input
+                        className={styles.input}
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                    />
                 </div>
 
-                <button className={styles.submitBtn} type="button">
+                <div className={styles.field}>
+                    <div className={styles.labelRow}>
+                        <label className={styles.label}>Password</label>
+                        <button
+                            className={styles.hideBtn}
+                            onClick={() => setShowPassword(p => !p)}
+                            type="button"
+                        >
+                            {showPassword ? 'Hide' : '👁 Show'}
+                        </button>
+                    </div>
+                    <input
+                        className={`${styles.input} ${passwordError ? styles.inputError : ''}`}
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={e => { setPassword(e.target.value); setPasswordError(''); }}
+                        placeholder=""
+                    />
+                    {passwordError && <p className={styles.errorMsg}>{passwordError}</p>}
+                </div>
+
+                <button className={styles.submitBtn} type="button" onClick={handleRegister}>
                     Sign up
                 </button>
+
             </div>
         </div>
     );

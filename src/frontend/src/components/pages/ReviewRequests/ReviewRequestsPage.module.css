@@ -158,3 +158,38 @@
   td:nth-child(4), th:nth-child(4),
   td:nth-child(5), th:nth-child(5) { display: none; }
 }
+
+
+/* Make table scroll horizontally instead of breaking */
+.tableCard {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  min-width: 580px;
+}
+
+/* Tighten padding on small screens */
+@media (max-width: 640px) {
+  .page {
+    padding: 16px 12px;
+  }
+
+  .title {
+    font-size: 1.4rem;
+  }
+
+  .toolbar {
+    padding: 10px 12px;
+  }
+
+  .searchBox {
+    min-width: 0;
+  }
+
+  .symptomsCell {
+    max-width: 120px;
+  }
+}

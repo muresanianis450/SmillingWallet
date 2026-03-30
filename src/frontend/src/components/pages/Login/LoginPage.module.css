@@ -224,3 +224,15 @@
     background: #6b64cc;
     transform: translateY(-1px);
 }
+
+.inputError {
+    border-color: #e53e3e !important;
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.15) !important;
+}
+
+.errorMsg {
+    color: #e53e3e;
+    font-size: 12px;
+    font-family: 'Nunito', sans-serif;
+    margin-top: 4px;
+}

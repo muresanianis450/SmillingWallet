@@ -10,52 +10,52 @@ interface LoginPageProps {
 
 export function LoginPage({ setPage }: LoginPageProps) {
     const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
-    // 1. Added the missing tab state, defaulting to 'login'
-    const [tab, setTab] = useState<'signup' | 'login'>('login');
+    const [rememberMe, setRememberMe]     = useState(false);
+    const [password, setPassword]         = useState('');
+    const [passwordError, setPasswordError] = useState('');
+
+    function validatePassword(val: string): string {
+        if (val.length < 8)            return 'Password must be at least 8 characters';
+        if (!/\d/.test(val))           return 'Must contain at least 1 digit';
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val))
+            return 'Must contain at least 1 special character';
+        return '';
+    }
+
+    function handleLogin() {
+        const error = validatePassword(password);
+        if (error) { setPasswordError(error); return; }
+        setPage('home');
+    }
 
     return (
         <div className={styles.wrap}>
             <BlobBackground />
-
             <div className={styles.card}>
-                {/* Tab switcher */}
+
                 <div className={styles.tabs}>
                     <button
-                        className={`${styles.tab} ${tab === 'signup' ? styles.tabActive : ''}`}
-                        // 2. Added setPage('register') so it actually navigates!
-                        onClick={() => { setTab('signup'); setPage('register'); }}
+                        className={`${styles.tab}`}
+                        onClick={() => setPage('register')}
                     >
                         Sign up
                     </button>
-                    <button
-                        className={`${styles.tab} ${tab === 'login' ? styles.tabActive : ''}`}
-                        onClick={() => setTab('login')}
-                    >
+                    <button className={`${styles.tab} ${styles.tabActive}`}>
                         Log in
                     </button>
                 </div>
 
-                {/* 3. Changed h1 to h2 to match register page, and removed the sub-text link */}
                 <h2 className={styles.title}>Log in</h2>
 
                 <div className={styles.socialButtons}>
-                    <button className={styles.socialBtn}>
-                        <GoogleIcon />
-                        Continue with Google
-                    </button>
-                    <button className={styles.socialBtn}>
-                        <FacebookIcon />
-                        Continue with Facebook
-                    </button>
+                    <button className={styles.socialBtn}><GoogleIcon /> Continue with Google</button>
+                    <button className={styles.socialBtn}><FacebookIcon /> Continue with Facebook</button>
                 </div>
 
-                <div className={styles.divider}>
-                    <span>Or continue with email</span>
-                </div>
+                <div className={styles.divider}><span>Or continue with email</span></div>
 
                 <div className={styles.field}>
-                    <label className={styles.label}>Email address or user name</label>
+                    <label className={styles.label}>Email address or username</label>
                     <input className={styles.input} type="text" placeholder="" />
                 </div>
 
@@ -71,14 +71,15 @@ export function LoginPage({ setPage }: LoginPageProps) {
                         </button>
                     </div>
                     <input
-                        className={styles.input}
+                        className={`${styles.input} ${passwordError ? styles.inputError : ''}`}
                         type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={e => { setPassword(e.target.value); setPasswordError(''); }}
                         placeholder=""
                     />
+                    {passwordError && <p className={styles.errorMsg}>{passwordError}</p>}
                     <div className={styles.forgotRow}>
-                        <button className={styles.link} type="button">
-                            Forget your password?
-                        </button>
+                        <button className={styles.link} type="button">Forgot your password?</button>
                     </div>
                 </div>
 
@@ -92,9 +93,10 @@ export function LoginPage({ setPage }: LoginPageProps) {
                     Remember me
                 </label>
 
-                <button className={styles.submitBtn} type="button">
+                <button className={styles.submitBtn} type="button" onClick={handleLogin}>
                     Log in
                 </button>
+
             </div>
         </div>
     );

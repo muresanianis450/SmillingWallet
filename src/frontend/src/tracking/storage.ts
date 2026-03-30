@@ -1,5 +1,4 @@
 
-
 const KEY = "app_activity";
 
 export function saveActivity(data: any) {
@@ -9,4 +8,3 @@ export function saveActivity(data: any) {
 export function getActivity() {
     return JSON.parse(localStorage.getItem(KEY) || "[]");
 }
-

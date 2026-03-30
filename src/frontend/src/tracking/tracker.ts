@@ -1,5 +1,4 @@
 
-
 import {saveActivity, getActivity} from "./storage";
 import { getCookie } from "./cookies"
 

@@ -151,3 +151,39 @@
   .header { flex-direction: column; }
   td:nth-child(4), th:nth-child(4) { display: none; }
 }
+
+
+/* Make table scroll horizontally instead of breaking */
+.tableCard {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  min-width: 560px;
+}
+
+/* Tighten padding on small screens */
+@media (max-width: 640px) {
+  .page {
+    padding: 16px 12px;
+  }
+
+  .statCard {
+    min-width: 120px;
+    padding: 10px 14px;
+  }
+
+  .statVal {
+    font-size: 1.5rem;
+  }
+
+  .toolbar {
+    padding: 10px 12px;
+  }
+
+  .searchBox {
+    min-width: 0;
+  }
+}
