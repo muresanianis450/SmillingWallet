@@ -5,6 +5,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    padding: 24px 16px;
 }
 
 .card {
@@ -14,21 +15,18 @@
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     border-radius: 20px;
-    /* Standardized padding for both cards */
     padding: 36px 40px;
     width: 100%;
-    /* Slightly tightened width to make them look more compact */
     max-width: 400px;
     box-shadow: 0 8px 40px rgba(120, 140, 200, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.7);
 }
 
-/* ── Tabs ── */
 .tabs {
     display: flex;
     border-radius: 50px;
     overflow: hidden;
-    margin-bottom: 24px; /* Tightened from 28px */
+    margin-bottom: 24px;
     border: 1px solid #ddd;
     background: #f2f2f2;
     padding: 2px;
@@ -54,7 +52,6 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* ── Title ── */
 .title {
     font-family: 'Nunito', sans-serif;
     font-size: 24px;
@@ -75,12 +72,11 @@
     text-decoration: underline;
 }
 
-/* ── Social Buttons ── */
 .socialButtons {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-bottom: 16px; /* Tightened */
+    margin-bottom: 16px;
 }
 
 .socialBtn {
@@ -99,6 +95,7 @@
     color: #222;
     cursor: pointer;
     transition: background 0.15s, box-shadow 0.15s;
+    min-height: 44px;
 }
 
 .socialBtn:hover {
@@ -106,12 +103,11 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-/* ── Divider ── */
 .divider {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 0 0 16px; /* Tightened */
+    margin: 0 0 16px;
     color: #999;
     font-size: 13px;
     font-family: 'Nunito', sans-serif;
@@ -125,7 +121,7 @@
     background: #e0e0e0;
 }
 
-/* ── Fields ── */
+/* On mobile this collapses to a single column */
 .nameRow {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -133,7 +129,7 @@
 }
 
 .field {
-    margin-bottom: 14px; /* Tightened */
+    margin-bottom: 14px;
 }
 
 .label {
@@ -160,6 +156,7 @@
     cursor: pointer;
     font-family: 'Nunito', sans-serif;
     padding: 0;
+    min-height: 44px;
 }
 
 .input {
@@ -168,12 +165,15 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     font-family: 'Nunito', sans-serif;
-    font-size: 14px;
+    /* 16px prevents iOS auto-zoom on focus */
+    font-size: 16px;
     color: #222;
     background: white;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
     box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .input:focus {
@@ -205,7 +205,6 @@
     cursor: pointer;
 }
 
-/* ── Submit Button ── */
 .submitBtn {
     width: 100%;
     margin-top: 4px;
@@ -220,6 +219,7 @@
     letter-spacing: 0.5px;
     cursor: pointer;
     transition: background 0.2s, transform 0.1s;
+    min-height: 44px;
 }
 
 .submitBtn:hover {
@@ -237,4 +237,102 @@
     font-size: 12px;
     font-family: 'Nunito', sans-serif;
     margin-top: 4px;
+}
+
+/* ── Tablet ── */
+@media (max-width: 768px) {
+    .wrap {
+        min-height: calc(100vh - 76px);
+        padding: 20px 20px;
+    }
+
+    .card {
+        padding: 28px 28px;
+        max-width: 100%;
+        border-radius: 16px;
+    }
+}
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+    .wrap {
+        min-height: calc(100vh - 70px);
+        padding: 16px 12px;
+        align-items: flex-start;
+        padding-top: 20px;
+    }
+
+    .card {
+        padding: 22px 18px;
+        border-radius: 16px;
+        max-width: 100%;
+    }
+
+    .tabs {
+        margin-bottom: 16px;
+    }
+
+    .tab {
+        font-size: 13px;
+        padding: 9px 0;
+    }
+
+    .title {
+        font-size: 20px;
+        margin-bottom: 14px;
+    }
+
+    /* Stack first/last name on mobile */
+    .nameRow {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .socialButtons {
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .socialBtn {
+        font-size: 13px;
+        padding: 10px 12px;
+    }
+
+    .divider {
+        margin-bottom: 12px;
+        font-size: 12px;
+    }
+
+    .field {
+        margin-bottom: 10px;
+    }
+
+    .input {
+        padding: 10px 12px;
+    }
+
+    .submitBtn {
+        font-size: 14px;
+        padding: 13px;
+    }
+
+    .link {
+        font-size: 12px;
+    }
+}
+
+/* ── Very small ── */
+@media (max-width: 360px) {
+    .card {
+        padding: 18px 14px;
+    }
+
+    .title {
+        font-size: 18px;
+    }
+
+    .socialBtn {
+        font-size: 12px;
+        gap: 6px;
+    }
 }

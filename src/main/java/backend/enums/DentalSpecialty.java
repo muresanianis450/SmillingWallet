@@ -1,0 +1,13 @@
+package backend.enums;
+
+public enum DentalSpecialty {
+    GENERAL_DENTISTRY,
+    IMPLANTS,
+    ORTHODONTICS,
+    COSMETIC_DENTISTRY,
+    PEDIATRIC_DENTISTRY,
+    ORAL_SURGERY,
+    PERIODONTICS,
+    ENDODONTICS
+}
+

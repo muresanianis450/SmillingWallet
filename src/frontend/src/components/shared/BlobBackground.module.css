@@ -15,7 +15,6 @@
     mix-blend-mode: multiply;
 }
 
-/* Original Blobs */
 .blob1 {
     width: 420px;
     height: 420px;
@@ -43,11 +42,10 @@
     animation: wobble3 20s ease-in-out infinite;
 }
 
-/* New Blobs */
 .blob4 {
     width: 380px;
     height: 380px;
-    background: radial-gradient(circle, #a78bfa, #fbcfe8); /* Deeper purple to soft pink */
+    background: radial-gradient(circle, #a78bfa, #fbcfe8);
     top: -5%;
     right: 15%;
     animation: wobble4 22s ease-in-out infinite reverse;
@@ -56,7 +54,7 @@
 .blob5 {
     width: 320px;
     height: 320px;
-    background: radial-gradient(circle, #34d399, #b9e0ff); /* Mint green to light blue */
+    background: radial-gradient(circle, #34d399, #b9e0ff);
     bottom: 10%;
     left: 5%;
     animation: wobble5 25s ease-in-out infinite;
@@ -65,51 +63,74 @@
 .blob6 {
     width: 450px;
     height: 450px;
-    background: radial-gradient(circle, #e0d4fc, #f0eeff); /* Very soft lavender */
+    background: radial-gradient(circle, #e0d4fc, #f0eeff);
     top: 50%;
     left: 20%;
     animation: wobble6 17s ease-in-out infinite alternate;
 }
 
-/* Animations */
 @keyframes wobble1 {
-    0%   { transform: translate(0, 0); border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%; }
-    33%  { transform: translate(25vw, 15vh); border-radius: 40% 60% 45% 55% / 60% 40% 55% 45%; }
-    66%  { transform: translate(10vw, 35vh); border-radius: 55% 45% 60% 40% / 45% 55% 50% 50%; }
-    100% { transform: translate(0, 0); border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%; }
+    0%   { transform: translate(0, 0);           border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%; }
+    33%  { transform: translate(25vw, 15vh);      border-radius: 40% 60% 45% 55% / 60% 40% 55% 45%; }
+    66%  { transform: translate(10vw, 35vh);      border-radius: 55% 45% 60% 40% / 45% 55% 50% 50%; }
+    100% { transform: translate(0, 0);           border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%; }
 }
 
 @keyframes wobble2 {
-    0%   { transform: translate(0, 0); border-radius: 50% 50% 40% 60% / 60% 40% 55% 45%; }
-    33%  { transform: translate(-30vw, -20vh); border-radius: 60% 40% 55% 45% / 45% 55% 40% 60%; }
-    66%  { transform: translate(-15vw, -40vh); border-radius: 40% 60% 50% 50% / 55% 45% 60% 40%; }
-    100% { transform: translate(0, 0); border-radius: 50% 50% 40% 60% / 60% 40% 55% 45%; }
+    0%   { transform: translate(0, 0);            border-radius: 50% 50% 40% 60% / 60% 40% 55% 45%; }
+    33%  { transform: translate(-30vw, -20vh);    border-radius: 60% 40% 55% 45% / 45% 55% 40% 60%; }
+    66%  { transform: translate(-15vw, -40vh);   border-radius: 40% 60% 50% 50% / 55% 45% 60% 40%; }
+    100% { transform: translate(0, 0);            border-radius: 50% 50% 40% 60% / 60% 40% 55% 45%; }
 }
 
 @keyframes wobble3 {
-    0%   { transform: translate(0, 0) scale(1); border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%; }
+    0%   { transform: translate(0, 0) scale(1);          border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%; }
     33%  { transform: translate(20vw, -25vh) scale(1.1); border-radius: 45% 55% 60% 40% / 60% 40% 50% 50%; }
     66%  { transform: translate(-20vw, 15vh) scale(0.9); border-radius: 60% 40% 45% 55% / 45% 60% 55% 45%; }
-    100% { transform: translate(0, 0) scale(1); border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%; }
+    100% { transform: translate(0, 0) scale(1);          border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%; }
 }
 
 @keyframes wobble4 {
-    0%   { transform: translate(0, 0); border-radius: 40% 60% 55% 45% / 50% 55% 45% 50%; }
-    33%  { transform: translate(-25vw, 30vh); border-radius: 60% 40% 45% 55% / 40% 60% 50% 50%; }
-    66%  { transform: translate(-45vw, 10vh); border-radius: 50% 50% 60% 40% / 55% 45% 60% 40%; }
-    100% { transform: translate(0, 0); border-radius: 40% 60% 55% 45% / 50% 55% 45% 50%; }
+    0%   { transform: translate(0, 0);           border-radius: 40% 60% 55% 45% / 50% 55% 45% 50%; }
+    33%  { transform: translate(-25vw, 30vh);    border-radius: 60% 40% 45% 55% / 40% 60% 50% 50%; }
+    66%  { transform: translate(-45vw, 10vh);   border-radius: 50% 50% 60% 40% / 55% 45% 60% 40%; }
+    100% { transform: translate(0, 0);           border-radius: 40% 60% 55% 45% / 50% 55% 45% 50%; }
 }
 
 @keyframes wobble5 {
-    0%   { transform: translate(0, 0); border-radius: 55% 45% 60% 40% / 45% 55% 40% 60%; }
-    33%  { transform: translate(35vw, -15vh); border-radius: 45% 55% 40% 60% / 60% 40% 55% 45%; }
-    66%  { transform: translate(15vw, -35vh); border-radius: 50% 50% 55% 45% / 50% 50% 45% 55%; }
-    100% { transform: translate(0, 0); border-radius: 55% 45% 60% 40% / 45% 55% 40% 60%; }
+    0%   { transform: translate(0, 0);           border-radius: 55% 45% 60% 40% / 45% 55% 40% 60%; }
+    33%  { transform: translate(35vw, -15vh);    border-radius: 45% 55% 40% 60% / 60% 40% 55% 45%; }
+    66%  { transform: translate(15vw, -35vh);   border-radius: 50% 50% 55% 45% / 50% 50% 45% 55%; }
+    100% { transform: translate(0, 0);           border-radius: 55% 45% 60% 40% / 45% 55% 40% 60%; }
 }
 
 @keyframes wobble6 {
-    0%   { transform: translate(0, 0) scale(0.9); border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
-    33%  { transform: translate(15vw, -10vh) scale(1.1); border-radius: 60% 40% 50% 50% / 45% 55% 60% 40%; }
-    66%  { transform: translate(30vw, 20vh) scale(1); border-radius: 45% 55% 40% 60% / 55% 45% 50% 50%; }
-    100% { transform: translate(0, 0) scale(0.9); border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+    0%   { transform: translate(0, 0) scale(0.9);         border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+    33%  { transform: translate(15vw, -10vh) scale(1.1);  border-radius: 60% 40% 50% 50% / 45% 55% 60% 40%; }
+    66%  { transform: translate(30vw, 20vh) scale(1);     border-radius: 45% 55% 40% 60% / 55% 45% 50% 50%; }
+    100% { transform: translate(0, 0) scale(0.9);         border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+}
+
+/* ── Tablet: slightly smaller blobs ── */
+@media (max-width: 768px) {
+    .blob1 { width: 320px; height: 320px; }
+    .blob2 { width: 260px; height: 260px; }
+    .blob3 { width: 200px; height: 200px; }
+    .blob4 { width: 280px; height: 280px; }
+    .blob5 { width: 240px; height: 240px; }
+    .blob6 { width: 340px; height: 340px; }
+
+    .blob { filter: blur(55px); }
+}
+
+/* ── Mobile: compact blobs, reduced blur for performance ── */
+@media (max-width: 480px) {
+    .blob1 { width: 220px; height: 220px; top: -5%; left: -15%; }
+    .blob2 { width: 180px; height: 180px; bottom: -5%; right: -15%; }
+    .blob3 { width: 150px; height: 150px; }
+    .blob4 { width: 200px; height: 200px; }
+    .blob5 { width: 160px; height: 160px; }
+    .blob6 { width: 240px; height: 240px; }
+
+    .blob { filter: blur(45px); opacity: 0.6; }
 }

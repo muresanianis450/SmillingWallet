@@ -5,6 +5,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    padding: 24px 16px;
 }
 
 .card {
@@ -21,12 +22,12 @@
     box-shadow: 0 8px 40px rgba(120, 140, 200, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.7);
 }
-/* ── Tabs ── */
+
 .tabs {
     display: flex;
     border-radius: 50px;
     overflow: hidden;
-    margin-bottom: 24px; /* Tightened from 28px */
+    margin-bottom: 24px;
     border: 1px solid #ddd;
     background: #f2f2f2;
     padding: 2px;
@@ -44,6 +45,8 @@
     cursor: pointer;
     border-radius: 50px;
     transition: all 0.2s ease;
+    /* Touch-friendly tap target */
+    min-height: 44px;
 }
 
 .tabActive {
@@ -52,7 +55,6 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* ── Title ── */
 .title {
     font-family: 'Nunito', sans-serif;
     font-size: 24px;
@@ -71,14 +73,17 @@
     cursor: pointer;
     padding: 0;
     text-decoration: underline;
+    /* Touch-friendly */
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
 }
 
-/* ── Social Buttons ── */
 .socialButtons {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-bottom: 16px; /* Tightened */
+    margin-bottom: 16px;
 }
 
 .socialBtn {
@@ -97,6 +102,7 @@
     color: #222;
     cursor: pointer;
     transition: background 0.15s, box-shadow 0.15s;
+    min-height: 44px;
 }
 
 .socialBtn:hover {
@@ -104,12 +110,16 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-/* ── Divider ── */
+/* Prevent double-tap zoom on mobile buttons */
+.socialBtn, .tab, .submitBtn, .link, .hideBtn {
+    touch-action: manipulation;
+}
+
 .divider {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 0 0 16px; /* Tightened */
+    margin: 0 0 16px;
     color: #999;
     font-size: 13px;
     font-family: 'Nunito', sans-serif;
@@ -123,7 +133,6 @@
     background: #e0e0e0;
 }
 
-/* ── Fields ── */
 .nameRow {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -131,7 +140,7 @@
 }
 
 .field {
-    margin-bottom: 14px; /* Tightened */
+    margin-bottom: 14px;
 }
 
 .label {
@@ -158,6 +167,9 @@
     cursor: pointer;
     font-family: 'Nunito', sans-serif;
     padding: 0;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .input {
@@ -166,12 +178,15 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     font-family: 'Nunito', sans-serif;
-    font-size: 14px;
+    /* 16px prevents iOS auto-zoom on focus */
+    font-size: 16px;
     color: #222;
     background: white;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
     box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .input:focus {
@@ -182,7 +197,7 @@
 .forgotRow {
     display: flex;
     justify-content: flex-end;
-    margin-top: 6px;
+    margin-top: 2px;
 }
 
 .checkboxRow {
@@ -194,20 +209,22 @@
     color: #555;
     margin-bottom: 16px;
     cursor: pointer;
+    /* Touch-friendly row height */
+    min-height: 44px;
 }
 
 .checkbox {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     accent-color: #7F77DD;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
-/* ── Submit Button ── */
 .submitBtn {
     width: 100%;
     margin-top: 4px;
-    padding: 12px;
+    padding: 14px;
     border: none;
     border-radius: 50px;
     background: #7F77DD;
@@ -218,11 +235,15 @@
     letter-spacing: 0.5px;
     cursor: pointer;
     transition: background 0.2s, transform 0.1s;
+    min-height: 48px;
 }
 
 .submitBtn:hover {
     background: #6b64cc;
-    transform: translateY(-1px);
+}
+
+.submitBtn:active {
+    transform: scale(0.98);
 }
 
 .inputError {
@@ -235,4 +256,125 @@
     font-size: 12px;
     font-family: 'Nunito', sans-serif;
     margin-top: 4px;
+}
+
+/* ── Tablet (768px and below) ── */
+@media (max-width: 768px) {
+    .wrap {
+        min-height: calc(100vh - 76px);
+        padding: 20px 20px;
+    }
+
+    .card {
+        padding: 28px 28px;
+        max-width: 480px;
+        min-height: unset;
+        border-radius: 16px;
+    }
+}
+
+/* ── Mobile (480px and below) ── */
+@media (max-width: 480px) {
+    .wrap {
+        /* On mobile, start from top so content isn't hidden behind keyboard */
+        align-items: flex-start;
+        padding: 16px 12px 32px;
+        /* Subtract mobile nav height */
+        min-height: calc(100vh - 60px);
+    }
+
+    .card {
+        padding: 22px 18px;
+        border-radius: 16px;
+        min-height: unset;
+        max-width: 100%;
+        /* Subtle shadow on mobile */
+        box-shadow: 0 4px 20px rgba(120, 140, 200, 0.12);
+    }
+
+    .tabs {
+        margin-bottom: 18px;
+    }
+
+    .tab {
+        font-size: 13px;
+        padding: 9px 0;
+    }
+
+    .title {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    .socialButtons {
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .socialBtn {
+        font-size: 13px;
+        padding: 10px 12px;
+    }
+
+    .divider {
+        margin-bottom: 12px;
+        font-size: 12px;
+    }
+
+    .field {
+        margin-bottom: 12px;
+    }
+
+    .label {
+        font-size: 11px;
+    }
+
+    .input {
+        padding: 10px 12px;
+        border-radius: 8px;
+    }
+
+    .checkboxRow {
+        margin-bottom: 14px;
+        font-size: 13px;
+    }
+
+    .submitBtn {
+        font-size: 15px;
+        padding: 14px;
+    }
+
+    .link {
+        font-size: 12px;
+    }
+
+    /* Stack nameRow on small screens */
+    .nameRow {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}
+
+/* ── Very small phones (360px and below) ── */
+@media (max-width: 360px) {
+    .wrap {
+        padding: 12px 10px 24px;
+    }
+
+    .card {
+        padding: 18px 14px;
+    }
+
+    .title {
+        font-size: 18px;
+    }
+
+    .socialBtn {
+        font-size: 12px;
+        gap: 6px;
+    }
+
+    .tab {
+        font-size: 12px;
+    }
 }
