@@ -50,7 +50,6 @@ public class DentalRequest {
 
     public DentalRequest(UUID patientPublicId, DentalSpecialty specialty,
                          String description, String preferredCity, Double budgetMax) {
-        
         this.patientPublicId = patientPublicId;
         this.specialty = specialty;
         this.description = description;
