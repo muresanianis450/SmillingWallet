@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import { PageName } from './types/types';
 import { Nav } from './components/layout/Nav';
 import { AboutPage } from './components/pages/About/AboutPage';
@@ -12,13 +12,36 @@ import { LoginPage } from './components/pages/Login/LoginPage';
 import { RegisterPage } from './components/pages/Register/RegisterPage';
 import { useOffers } from './hooks/useOffers';
 import { INITIAL_OFFERS } from './data/constants';
+import {offerService} from "./services/OfferService";
+import {useNetworkStatus} from "./hooks/useNetworkStatus";
 
 export function App() {
   const [page, setPage] = useState<PageName>('home');
   const offerHook = useOffers(INITIAL_OFFERS);
+  const isOnline = useNetworkStatus();
+
+    useEffect(() => {
+        if (isOnline) {
+            offerService.syncOfflineData();
+        }
+    }, [isOnline]);
 
   return (
       <>
+          {/* ── Offline Banner ── */}
+          {!isOnline && (
+              <div style={{
+                  background: '#E8593C',
+                  color: '#fff',
+                  textAlign: 'center',
+                  padding: '8px',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+              }}>
+                  You are currently offline. Changes will be synced once you reconnect.
+              </div>
+          )}
+
         <Nav page={page} setPage={setPage} />
 
         {/* ── Client Pages ── */}
