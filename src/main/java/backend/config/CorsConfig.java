@@ -15,6 +15,6 @@ public class CorsConfig  implements WebMvcConfigurer {
                         "http://192.168.1"          //host on LAN
                 )
                 .allowedMethods("GET","POST","PUT","DELETE","OPTIONS")
-                .allowCredentials(true)
+                .allowCredentials(true);
     }
 }
