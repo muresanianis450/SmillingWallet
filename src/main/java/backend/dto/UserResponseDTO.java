@@ -4,7 +4,6 @@ package backend.dto;
 import backend.enums.DentalSpecialty;
 import backend.enums.Role;
 import backend.model.User;
-import backend.repository.UserRepository;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

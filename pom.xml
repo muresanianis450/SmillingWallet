@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
-    <artifactId>SmillingWallet</artifactId>
+    <artifactId>SmilingWallet</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>SmillingWallet</name>
     <description>SmillingWallet</description>
@@ -117,17 +117,30 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Flyway migrations -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
+
+
+
+
 
         <!-- H2 for tests only -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
     </dependencies>

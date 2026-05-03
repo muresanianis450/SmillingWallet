@@ -59,6 +59,4 @@ public class DentalRequest {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-
-
 }

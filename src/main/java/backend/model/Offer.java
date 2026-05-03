@@ -31,7 +31,7 @@ public class Offer {
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "estimated_wait_days")
+    @Column(name = "estimated_wait_days",  nullable = false)
     private int estimatedWaitDays;
 
     @Column(name = "notes", columnDefinition = "TEXT")
