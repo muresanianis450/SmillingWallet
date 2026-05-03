@@ -13,6 +13,7 @@ import backend.repository.AppointmentRepository;
 import backend.repository.OfferRepository;
 import backend.repository.RequestRepository;
 import backend.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -135,7 +136,7 @@ public class OfferService {
      * 3. Marks the request as OFFER_ACCEPTED
      * 4. Creates an Appointment
      * 5. Notifies the winning dentist
-     */
+
     public AppointmentResponseDTO acceptOffer(UUID offerId, AppointmentRequestDTO dto) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found: " + offerId));
@@ -190,5 +191,64 @@ public class OfferService {
         );
 
         return AppointmentResponseDTO.from(appointment);
+    } */
+
+    /**
+     * Patient accept an offer.
+     *
+     * Java handles:
+     * 1. Validation (offer is PENDING, request is OPEN)
+     * 2. Mark offer as ACCEPTED -> trigger trg_after_offer_accepted:
+     *          -sets all other PENDING offers on same request to REJECTED (DB Trigger)
+     * 3. Create Appointment  -> triggers trg_after_appointment_created:
+     *           - sets dental_request status to OFFER_ACCEPTED (DB Trigger)
+     * 4. Notify the winning dentist
+     *
+     * Removed from java (now handled by the triggers)
+     *
+     *      - forEach loop rejecting other offers
+     *      - request.setStatus(OFFER_ACCEPTED) + requestRepository.save()
+     */
+    @Transactional
+    public AppointmentResponseDTO acceptOffer(UUID offerId, AppointmentRequestDTO dto){
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Offer not found: " + offerId));
+
+        if (offer.getStatus() != OfferStatus.PENDING) {
+            throw new ConflictException("Offer is already " + offer.getStatus());
+        }
+
+        DentalRequest request = requestRepository.findById(offer.getRequestId())
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found: " + offer.getRequestId()));
+
+        if (request.getStatus() != RequestStatus.OPEN) {
+            throw new ConflictException("Request is no longer open");
+        }
+
+
+        //1. Accept offer - trg_after_offer_accepted rejects all other PENDING automatically
+        offer.setStatus(OfferStatus.ACCEPTED);
+        offerRepository.save(offer);
+
+        //2. Create appointment - trg_after_appointment_created sets requests to OFFER_ACCEPTED automatically
+
+        Appointment appointment = new Appointment(
+                offer.getId(),
+                request.getPatientPublicId(),
+                offer.getDentistPublicId(),
+                dto.getScheduledAt(),
+                offer.getPrice()
+        );
+        appointmentRepository.save(appointment);
+
+        //3. Notify the winning dentist
+
+        notificationService.notifyPatient(
+                offer.getDentistPublicId(),
+                NotificationType.OFFER_ACCEPTED,
+                "Your offer was accepted! Appointment scheduled for " + dto.getScheduledAt());
+
+        return AppointmentResponseDTO.from(appointment);
+
     }
 }

@@ -3,64 +3,58 @@ package backend.service;
 import backend.dto.AppointmentResponseDTO;
 import backend.dto.DentalRequestResponseDTO;
 import backend.enums.AppointmentStatus;
-import backend.enums.OfferStatus;
 import backend.exception.ResourceNotFoundException;
-import backend.model.Offer;
 import backend.repository.AppointmentRepository;
-import backend.repository.OfferRepository;
-import backend.repository.RequestRepository;
 import backend.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class DashboardService {
 
-    private final OfferRepository offerRepository;
-    private final RequestRepository requestRepository;
+    @PersistenceContext
+    private EntityManager em;
+
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
 
-    public DashboardService(OfferRepository offerRepository,
-                            RequestRepository requestRepository,
-                            AppointmentRepository appointmentRepository,
+    public DashboardService(AppointmentRepository appointmentRepository,
                             UserRepository userRepository) {
-        this.offerRepository = offerRepository;
-        this.requestRepository = requestRepository;
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
     }
 
     /**
-     * Clinic (dentist) dashboard stats.
+     * Clinic (dentist) dashboard stats — delegates counts/revenue to get_clinic_stats().
+     * Upcoming appointments are still fetched via JPA (they need sorting + DTO mapping).
      */
+    @Transactional(readOnly = true)
     public ClinicStatsDTO getClinicStats(UUID dentistId) {
         if (!userRepository.existsById(dentistId)) {
             throw new ResourceNotFoundException("Dentist not found: " + dentistId);
         }
 
-        List<Offer> offers = offerRepository.findByDentistPublicId(dentistId);
+        // Call stored procedure via native SQL
+        Object[] row = (Object[]) em.createNativeQuery(
+                        "CALL get_clinic_stats(:dentistId, null, null, null, null, null, null)")
+                .setParameter("dentistId", dentistId)
+                .getSingleResult();
 
-        long totalOffers = offers.size();
-        long acceptedOffers = offers.stream().filter(o -> o.getStatus() == OfferStatus.ACCEPTED).count();
-        long pendingOffers = offers.stream().filter(o -> o.getStatus() == OfferStatus.PENDING).count();
-        long rejectedOffers = offers.stream().filter(o -> o.getStatus() == OfferStatus.REJECTED).count();
-
-        double acceptanceRate = totalOffers == 0 ? 0.0
-                : BigDecimal.valueOf((double) acceptedOffers / totalOffers * 100)
-                .setScale(2, RoundingMode.HALF_UP).doubleValue();
-
-        BigDecimal totalRevenue = offers.stream()
-                .filter(o -> o.getStatus() == OfferStatus.ACCEPTED)
-                .map(Offer::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long   totalOffers      = ((Number) row[1]).longValue();
+        long   acceptedOffers   = ((Number) row[2]).longValue();
+        long   pendingOffers    = ((Number) row[3]).longValue();
+        long   rejectedOffers   = ((Number) row[4]).longValue();
+        double acceptanceRate   = ((Number) row[5]).doubleValue();
+        BigDecimal totalRevenue = (BigDecimal) row[6];
 
         List<AppointmentResponseDTO> upcomingAppointments = appointmentRepository
                 .findByDentistPublicId(dentistId).stream()
@@ -77,31 +71,49 @@ public class DashboardService {
     }
 
     /**
-     * Patient history — all their requests plus the accepted offer/appointment for each.
+     * Patient history — requests and appointments, newest first.
      */
+    @Transactional(readOnly = true)
     public PatientHistoryDTO getPatientHistory(UUID patientId) {
         if (!userRepository.existsById(patientId)) {
             throw new ResourceNotFoundException("Patient not found: " + patientId);
         }
 
-        List<DentalRequestResponseDTO> requests = requestRepository
-                .findByPatientPublicId(patientId).stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .map(DentalRequestResponseDTO::from)
+        // Call stored procedure — it populates temp tables _ph_requests and _ph_appointments
+        em.createNativeQuery("CALL get_patient_history(:patientId)")
+                .setParameter("patientId", patientId)
+                .executeUpdate();
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> reqRows = em.createNativeQuery(
+                        "SELECT id, patient_public_id, description, preferred_city, " +
+                                "budget_max, created_at, updated_at, status, specialty " +
+                                "FROM _ph_requests")
+                .getResultList();
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> apptRows = em.createNativeQuery(
+                        "SELECT id, offer_id, patient_public_id, dentist_public_id, " +
+                                "scheduled_at, confirmed_price, created_at, status " +
+                                "FROM _ph_appointments")
+                .getResultList();
+
+        List<DentalRequestResponseDTO> requests = reqRows.stream()
+                .map(DentalRequestResponseDTO::fromRow)
                 .toList();
 
-        List<AppointmentResponseDTO> appointments = appointmentRepository
-                .findByPatientPublicId(patientId).stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .map(AppointmentResponseDTO::from)
+        List<AppointmentResponseDTO> appointments = apptRows.stream()
+                .map(AppointmentResponseDTO::fromRow)
                 .toList();
 
         return new PatientHistoryDTO(requests, appointments);
     }
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
+    // -------------------------------------------------------------------------
+    // DTOs
+    // -------------------------------------------------------------------------
+
+    @Getter @Setter @NoArgsConstructor
     public static class ClinicStatsDTO {
         private long totalOffers;
         private long acceptedOffers;
@@ -113,7 +125,8 @@ public class DashboardService {
 
         public ClinicStatsDTO(long totalOffers, long acceptedOffers, long pendingOffers,
                               long rejectedOffers, double acceptanceRatePercent,
-                              BigDecimal totalRevenue, List<AppointmentResponseDTO> upcomingAppointments) {
+                              BigDecimal totalRevenue,
+                              List<AppointmentResponseDTO> upcomingAppointments) {
             this.totalOffers = totalOffers;
             this.acceptedOffers = acceptedOffers;
             this.pendingOffers = pendingOffers;
@@ -124,9 +137,7 @@ public class DashboardService {
         }
     }
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
+    @Getter @Setter @NoArgsConstructor
     public static class PatientHistoryDTO {
         private List<DentalRequestResponseDTO> requests;
         private List<AppointmentResponseDTO> appointments;

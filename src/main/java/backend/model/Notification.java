@@ -38,7 +38,6 @@ public class Notification {
     private NotificationType type;
 
     public Notification(UUID recipientId, NotificationType type, String payload) {
-        this.id = UUID.randomUUID();
         this.recipientId = recipientId;
         this.type = type;
         this.payload = payload;
