@@ -1,20 +1,23 @@
 import { useState } from 'react';
-import { PageName } from '../../../types/types';
+import {AuthUser, PageName} from '../../../types/types';
 import { BlobBackground } from '../../shared/BlobBackground';
 // @ts-ignore
 import styles from './RegisterPage.module.css';
+import { api } from '../../../services/api';
 
 interface RegisterPageProps {
     setPage: (page: PageName) => void;
+    onLogin: (user: AuthUser) => void;
 }
 
-export function RegisterPage({ setPage }: RegisterPageProps) {
+export function RegisterPage({ setPage, onLogin }: RegisterPageProps) {
     const [firstName, setFirstName]         = useState('');
     const [lastName, setLastName]           = useState('');
     const [email, setEmail]                 = useState('');
     const [password, setPassword]           = useState('');
     const [showPassword, setShowPassword]   = useState(false);
     const [passwordError, setPasswordError] = useState('');
+    const [phone, setPhone] = useState('');
 
     function validatePassword(val: string): string {
         if (val.length < 8)            return 'Password must be at least 8 characters';
@@ -24,10 +27,29 @@ export function RegisterPage({ setPage }: RegisterPageProps) {
         return '';
     }
 
-    function handleRegister() {
+    async function handleRegister() {
         const error = validatePassword(password);
-        if (error) { setPasswordError(error); return; }
-        setPage('home');
+        if (error) {
+            setPasswordError(error);
+            return;
+        }
+
+        try {
+            const res = await api.post('/auth/register', {
+                email,
+                password,
+                username: firstName + " " + lastName,
+                phone: phone,
+                role: "PATIENT"
+            });
+
+            onLogin({ username: res.data.user.username,
+                role: res.data.user.role,
+                token: res.data.token });
+
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     return (
@@ -86,7 +108,15 @@ export function RegisterPage({ setPage }: RegisterPageProps) {
                         onChange={e => setEmail(e.target.value)}
                     />
                 </div>
-
+                <div className={styles.field}>
+                    <label className={styles.label}>Phone number</label>
+                    <input
+                        className={styles.input}
+                        type="tel"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                    />
+                </div>
                 <div className={styles.field}>
                     <div className={styles.labelRow}>
                         <label className={styles.label}>Password</label>

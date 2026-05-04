@@ -39,7 +39,7 @@ public class AuthService {
         User user = new User(
                 dto.getEmail(),
                 dto.getUsername(),
-                dto.getPassword(),
+                encodePassword(dto.getPassword()),
                 dto.getPhone(),
                 dto.getRole()
         );
@@ -88,7 +88,7 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("No account found for id: " + userId));
 
         user.setUsername(dto.getUsername());
-        user.setPassword(dto.getPhone());
+        user.setPhone(dto.getPhone());
 
         if (user.getRole() == Role.DENTIST) {
             user.setCity(dto.getCity());

@@ -1,6 +1,7 @@
 // ─── Domain Types ───────────────────────────────────────────────────────────
 
 export type OfferStatus = 'Accepted' | 'Sent' | 'Declined' | 'Pending';
+export type Role = 'PATIENT' | 'DENTIST' | 'ADMIN';
 
 export type TreatmentCategory =
     | 'Cosmetic Dentistry'
@@ -20,6 +21,12 @@ export type PageName =
     | 'dashboard'
     | 'login'
     | 'register';
+
+export interface AuthUser {
+  username: string;
+  role: Role;
+  token: string;
+}
 
 export type ToastType = 'success' | 'error' | 'info';
 

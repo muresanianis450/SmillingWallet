@@ -371,4 +371,10 @@
     padding: 0 12px;
     height: 52px;
   }
-}
+}.username {
+   font-family: var(--font-body);
+   font-size: 13px;
+   font-weight: 700;
+   color: var(--text);
+   margin-right: 4px;
+ }

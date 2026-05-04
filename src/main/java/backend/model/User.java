@@ -49,13 +49,13 @@ public class User {
     private DentalSpecialty specialty; //only for dentists
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role",nullable = false, length = 20)
+    @Column(name = "role", nullable = false)
     private Role role;
 
     @Column(name = "created_at",nullable = false,updatable = false)
     private LocalDateTime createdAt;
 
-    public User(String email, String username,String password, String phone, Role role) {
+    public User(String email, String username, String password, String phone, Role role) {
         this.email = email;
         this.username = username;
         this.password = password;

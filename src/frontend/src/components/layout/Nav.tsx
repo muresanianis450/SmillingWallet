@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PageName } from '@/types/types.ts';
+import { AuthUser, PageName } from '@/types/types.ts';
 // @ts-ignore
 import styles from './Nav.module.css';
 import { SmilingWallet_LogoIcon } from '../shared/Icons';
@@ -7,26 +7,35 @@ import { SmilingWallet_LogoIcon } from '../shared/Icons';
 interface NavProps {
     page: PageName;
     setPage: (page: PageName) => void;
+    user: AuthUser | null;
+    onLogout: () => void;
 }
 
-const ALL_LINKS = [
+const PATIENT_LINKS = [
     { label: 'Home',         page: 'home' },
     { label: 'Send Request', page: 'send-request' },
     { label: 'My Offers',    page: 'my-offers' },
-    { label: 'Analytics',    page: 'dashboard' },
-    { label: 'Clinic View',  page: 'requests' },
+    { label: 'Appointments', page: 'appointments' },
+];
+
+const CLINIC_LINKS = [
+    { label: 'Dashboard',    page: 'dashboard' },
+    { label: 'Requests',     page: 'requests' },
     { label: 'About',        page: 'about' },
 ];
 
-export function Nav({ page, setPage }: NavProps) {
+const ADMIN_LINKS = [...PATIENT_LINKS, ...CLINIC_LINKS];
+
+export function Nav({ page, setPage, user, onLogout }: NavProps) {
     const [menuOpen, setMenuOpen] = useState(false);
 
-    // Close drawer on page change
-    useEffect(() => {
-        setMenuOpen(false);
-    }, [page]);
+    const links = user?.role === 'ADMIN'   ? ADMIN_LINKS
+        : user?.role === 'DENTIST'  ? CLINIC_LINKS
+            : user?.role === 'PATIENT' ? PATIENT_LINKS
+                : [{ label: 'Home', page: 'home' }];
 
-    // Lock body scroll when drawer is open
+    useEffect(() => { setMenuOpen(false); }, [page]);
+
     useEffect(() => {
         document.body.style.overflow = menuOpen ? 'hidden' : '';
         return () => { document.body.style.overflow = ''; };
@@ -51,7 +60,7 @@ export function Nav({ page, setPage }: NavProps) {
 
                 {/* MIDDLE: Desktop links */}
                 <div className={styles.links}>
-                    {ALL_LINKS.map((link) => (
+                    {links.map((link) => (
                         <button
                             key={link.page}
                             className={`${styles.link} ${page === link.page ? styles.active : ''}`}
@@ -65,20 +74,19 @@ export function Nav({ page, setPage }: NavProps) {
 
                 {/* RIGHT: Auth buttons (desktop) */}
                 <div className={styles.authSection}>
-                    <button
-                        className={styles.loginBtn}
-                        onClick={() => navigate('login')}
-                        type="button"
-                    >
-                        Login
-                    </button>
-                    <button
-                        className={styles.registerBtn}
-                        onClick={() => navigate('register')}
-                        type="button"
-                    >
-                        Register
-                    </button>
+                    {user ? (
+                        <>
+                            <span className={styles.username}>{user.username}</span>
+                            <button className={styles.loginBtn} onClick={onLogout} type="button">
+                                Logout
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button className={styles.loginBtn}    onClick={() => navigate('login')}    type="button">Login</button>
+                            <button className={styles.registerBtn} onClick={() => navigate('register')} type="button">Register</button>
+                        </>
+                    )}
                     <div className={styles.avatar} />
                 </div>
 
@@ -98,7 +106,6 @@ export function Nav({ page, setPage }: NavProps) {
 
             {/* MOBILE DRAWER */}
             <div className={`${styles.drawer} ${menuOpen ? styles.drawerOpen : ''}`}>
-                {/* Tap overlay to close */}
                 <div
                     className={styles.overlay}
                     onClick={() => setMenuOpen(false)}
@@ -115,8 +122,7 @@ export function Nav({ page, setPage }: NavProps) {
                         ✕
                     </button>
 
-                    {/* Nav links */}
-                    {ALL_LINKS.map((link) => (
+                    {links.map((link) => (
                         <button
                             key={link.page}
                             className={`${styles.drawerLink} ${page === link.page ? styles.drawerLinkActive : ''}`}
@@ -129,22 +135,17 @@ export function Nav({ page, setPage }: NavProps) {
 
                     <div className={styles.drawerDivider} />
 
-                    {/* Auth buttons */}
                     <div className={styles.drawerAuth}>
-                        <button
-                            className={styles.drawerLoginBtn}
-                            onClick={() => navigate('login')}
-                            type="button"
-                        >
-                            Login
-                        </button>
-                        <button
-                            className={styles.drawerRegisterBtn}
-                            onClick={() => navigate('register')}
-                            type="button"
-                        >
-                            Register
-                        </button>
+                        {user ? (
+                            <button className={styles.drawerLoginBtn} onClick={onLogout} type="button">
+                                Logout
+                            </button>
+                        ) : (
+                            <>
+                                <button className={styles.drawerLoginBtn}    onClick={() => navigate('login')}    type="button">Login</button>
+                                <button className={styles.drawerRegisterBtn} onClick={() => navigate('register')} type="button">Register</button>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

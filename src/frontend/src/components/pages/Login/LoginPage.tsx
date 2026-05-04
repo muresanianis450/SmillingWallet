@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { PageName } from '../../../types/types';
+import {AuthUser, PageName} from '../../../types/types';
 import { BlobBackground } from '../../shared/BlobBackground';
 // @ts-ignore
 import styles from './LoginPage.module.css';
-
+import { api } from '../../../services/api';
 interface LoginPageProps {
     setPage: (page: PageName) => void;
+    onLogin: (user: AuthUser) => void;
 }
 
-export function LoginPage({ setPage }: LoginPageProps) {
+export function LoginPage({ setPage , onLogin}: LoginPageProps) {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe]     = useState(false);
     const [password, setPassword]         = useState('');
@@ -22,10 +23,30 @@ export function LoginPage({ setPage }: LoginPageProps) {
         return '';
     }
 
-    function handleLogin() {
+    async function handleLogin() {
         const error = validatePassword(password);
-        if (error) { setPasswordError(error); return; }
-        setPage('home');
+        if (error) {
+            setPasswordError(error);
+            return;
+        }
+
+        try {
+            const res = await api.post('/auth/login', {
+                email: (document.getElementById("login-email") as HTMLInputElement).value,
+                password
+            });
+
+            //localStorage.setItem("token", res.data.token);
+            onLogin({
+                username: res.data.user.username,
+                role: res.data.user.role.toUpperCase(),
+                token: res.data.token
+            });
+            //setPage('home');
+
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     return (
