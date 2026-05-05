@@ -16,6 +16,7 @@ const PATIENT_LINKS = [
     { label: 'Send Request', page: 'send-request' },
     { label: 'My Offers',    page: 'my-offers' },
     { label: 'Appointments', page: 'appointments' },
+    { label: 'About',        page: 'about' },
 ];
 
 const CLINIC_LINKS = [
@@ -24,7 +25,16 @@ const CLINIC_LINKS = [
     { label: 'About',        page: 'about' },
 ];
 
-const ADMIN_LINKS = [...PATIENT_LINKS, ...CLINIC_LINKS];
+// to this:
+const ADMIN_LINKS = [
+    { label: 'Home',         page: 'home' },
+    { label: 'Send Request', page: 'send-request' },
+    { label: 'My Offers',    page: 'my-offers' },
+    { label: 'Appointments', page: 'appointments' },
+    { label: 'Dashboard',    page: 'dashboard' },
+    { label: 'Requests',     page: 'requests' },
+    { label: 'About',        page: 'about' },
+];
 
 export function Nav({ page, setPage, user, onLogout }: NavProps) {
     const [menuOpen, setMenuOpen] = useState(false);

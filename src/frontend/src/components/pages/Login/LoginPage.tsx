@@ -38,6 +38,7 @@ export function LoginPage({ setPage , onLogin}: LoginPageProps) {
 
             //localStorage.setItem("token", res.data.token);
             onLogin({
+                id: res.data.user.id,
                 username: res.data.user.username,
                 role: res.data.user.role.toUpperCase(),
                 token: res.data.token

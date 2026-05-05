@@ -47,7 +47,12 @@ export interface Offer {
   ctScan: string | null;
   symptoms: string;
 }
-
+export interface AuthUser {
+  id: string;
+  username: string;
+  role: Role;
+  token: string;
+}
 export interface DentalRequest {
   id: string;
   category: TreatmentCategory | string;

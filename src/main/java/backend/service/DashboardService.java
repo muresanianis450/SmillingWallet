@@ -73,40 +73,19 @@ public class DashboardService {
     /**
      * Patient history — requests and appointments, newest first.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public PatientHistoryDTO getPatientHistory(UUID patientId) {
         if (!userRepository.existsById(patientId)) {
             throw new ResourceNotFoundException("Patient not found: " + patientId);
         }
 
-        // Call stored procedure — it populates temp tables _ph_requests and _ph_appointments
-        em.createNativeQuery("CALL get_patient_history(:patientId)")
-                .setParameter("patientId", patientId)
-                .executeUpdate();
-
-        @SuppressWarnings("unchecked")
-        List<Object[]> reqRows = em.createNativeQuery(
-                        "SELECT id, patient_public_id, description, preferred_city, " +
-                                "budget_max, created_at, updated_at, status, specialty " +
-                                "FROM _ph_requests")
-                .getResultList();
-
-        @SuppressWarnings("unchecked")
-        List<Object[]> apptRows = em.createNativeQuery(
-                        "SELECT id, offer_id, patient_public_id, dentist_public_id, " +
-                                "scheduled_at, confirmed_price, created_at, status " +
-                                "FROM _ph_appointments")
-                .getResultList();
-
-        List<DentalRequestResponseDTO> requests = reqRows.stream()
-                .map(DentalRequestResponseDTO::fromRow)
+        List<AppointmentResponseDTO> appointments = appointmentRepository
+                .findByPatientPublicId(patientId)
+                .stream()
+                .map(AppointmentResponseDTO::from)
                 .toList();
 
-        List<AppointmentResponseDTO> appointments = apptRows.stream()
-                .map(AppointmentResponseDTO::fromRow)
-                .toList();
-
-        return new PatientHistoryDTO(requests, appointments);
+        return new PatientHistoryDTO(List.of(), appointments);
     }
 
     // -------------------------------------------------------------------------

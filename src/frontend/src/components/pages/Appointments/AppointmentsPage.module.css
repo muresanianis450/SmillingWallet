@@ -301,3 +301,17 @@
     .summaryGrid { grid-template-columns: 1fr; }
     .heroTitle { font-size: 28px; }
 }
+
+.activeRow {
+    background: #f0eeff;
+    cursor: pointer;
+}
+
+.table tbody tr {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.table tbody tr:hover {
+    background: #f7f5ff;
+}
