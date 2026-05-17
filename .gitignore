@@ -4,6 +4,10 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 src/frontend/node_modules/
+src/main/resources/keystore/
+src/backend/resources/application-local.yml
+src/frontend/.env
+src/main/backend/resources/application.yml
 
 ### STS ###
 .apt_generated
@@ -32,3 +36,7 @@ build/
 
 ### VS Code ###
 .vscode/
+src/frontend/.env
+/src/frontend
+src/frontend/.env
+src/main/resources/application.yml
