@@ -40,3 +40,5 @@ src/frontend/.env
 /src/frontend
 src/frontend/.env
 src/main/resources/application.yml
+src/frontend/.env
+src/main/resources/application-local.yml
