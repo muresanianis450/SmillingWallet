@@ -43,9 +43,13 @@ export function RegisterPage({ setPage, onLogin }: RegisterPageProps) {
                 role: "PATIENT"
             });
 
-            onLogin({ username: res.data.user.username,
+            onLogin({
+                id: res.data.user.id,
+                username: res.data.user.username,
                 role: res.data.user.role,
-                token: res.data.token });
+                token: res.data.token,
+                refreshToken: res.data.refreshToken,
+            });
 
         } catch (err) {
             console.error(err);

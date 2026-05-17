@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useRef, useState} from 'react';
 import { PageName, AuthUser } from './types/types';
 import { Nav } from './components/layout/Nav';
 import { AboutPage } from './components/pages/About/AboutPage';
@@ -14,6 +14,8 @@ import { useOffers } from './hooks/useOffers';
 import { INITIAL_OFFERS } from './data/constants';
 import { offerService } from './services/OfferService';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
+import {ForgotPasswordPage} from './components/pages/ForgotPassword/ForgotPasswordPage';
+import { ResetPasswordPage } from './components/pages/ResetPassword/ResetPasswordPage';
 
 export function App() {
     const [page, setPage]     = useState<PageName>('home');
@@ -31,6 +33,17 @@ export function App() {
         if (stored) setUser(JSON.parse(stored));
     }, []);
 
+    useEffect(() => {
+        const stored = localStorage.getItem('user');
+        if (stored) setUser(JSON.parse(stored));
+
+        // Check if arriving from a reset-password email link
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('token')) {
+            setPage('reset-password');
+        }
+    }, []);
+
     function handleLogin(authUser: AuthUser) {
         localStorage.setItem('user', JSON.stringify(authUser));
         setUser(authUser);
@@ -39,6 +52,29 @@ export function App() {
         else if (authUser.role === 'ADMIN') setPage('dashboard');
         else setPage('home');
     }
+
+    // Inactivity TIMER
+    const inactivityTimer = useRef<ReturnType<typeof setTimeout>>();
+    const INACTIVITY_MS = 30 * 60 * 60; // 30 mins
+
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer.current);
+        inactivityTimer.current = setTimeout(() => {
+            handleLogout();
+            alert('You have been logged out due to inactivity.');
+        }, INACTIVITY_MS);
+    }
+
+    useEffect(() => {
+        if (!user) return;
+        const events = ['mousemove', 'keydown', 'click', 'scroll'];
+        events.forEach(e => window.addEventListener(e, resetInactivityTimer));
+        resetInactivityTimer();
+        return () => {
+            events.forEach(e => window.removeEventListener(e, resetInactivityTimer));
+            clearTimeout(inactivityTimer.current);
+        };
+    }, [user]);
 
     function handleLogout() {
         localStorage.removeItem('user');
@@ -53,14 +89,20 @@ export function App() {
         home:         true,
         login:        !user,
         register:     !user,
+
         // PATIENT + ADMIN
         'send-request': role === 'PATIENT' || role === 'ADMIN',
         'my-offers':    role === 'PATIENT' || role === 'ADMIN',
+        'forgot-password': !user,
         appointments:   role === 'PATIENT' || role === 'ADMIN',
         // CLINIC + ADMIN
         about:        role === 'PATIENT'  || role === 'ADMIN',
         requests:     role === 'DENTIST'  || role === 'ADMIN',
         dashboard:    role === 'DENTIST'  || role === 'ADMIN',
+
+
+        'reset-password': true,
+
     } satisfies Record<PageName, boolean>;
 
     // Guard: if current page is not allowed, bounce to home
@@ -86,6 +128,8 @@ export function App() {
             {page === 'home'     && <HomePage    setPage={setPage} />}
             {page === 'login'    && <LoginPage   setPage={setPage} onLogin={handleLogin} />}
             {page === 'register' && <RegisterPage setPage={setPage} onLogin={handleLogin} />}
+            {page === 'forgot-password' && <ForgotPasswordPage setPage={setPage} />}
+            {page === 'reset-password' && <ResetPasswordPage setPage={setPage} />}
 
             {/* ── Patient ── */}
             {canSee['send-request'] && page === 'send-request' && <SendRequestPage  setPage={setPage} />}

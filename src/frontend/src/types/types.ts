@@ -20,7 +20,9 @@ export type PageName =
     | 'requests'
     | 'dashboard'
     | 'login'
-    | 'register';
+    | 'register'
+    | 'forgot-password'
+    | 'reset-password';
 
 export interface AuthUser {
   username: string;
@@ -52,6 +54,7 @@ export interface AuthUser {
   username: string;
   role: Role;
   token: string;
+  refreshToken: string;
 }
 export interface DentalRequest {
   id: string;

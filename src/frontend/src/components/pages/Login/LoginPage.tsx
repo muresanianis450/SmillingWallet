@@ -41,7 +41,8 @@ export function LoginPage({ setPage , onLogin}: LoginPageProps) {
                 id: res.data.user.id,
                 username: res.data.user.username,
                 role: res.data.user.role.toUpperCase(),
-                token: res.data.token
+                token: res.data.token,
+                refreshToken: res.data.refreshToken,
             });
             //setPage('home');
 
@@ -123,7 +124,7 @@ export function LoginPage({ setPage , onLogin}: LoginPageProps) {
                     />
                     {passwordError && <p className={styles.errorMsg}>{passwordError}</p>}
                     <div className={styles.forgotRow}>
-                        <button className={styles.link} type="button">
+                        <button className={styles.link} type="button" onClick={() => setPage('forgot-password')}>
                             Forgot your password?
                         </button>
                     </div>
