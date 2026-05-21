@@ -15,3 +15,4 @@ public class JwtProperties {
     private long refreshTokenExpiryMs;
     private long inactivityTimeoutMs;
 }
+

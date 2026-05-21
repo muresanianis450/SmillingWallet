@@ -72,6 +72,7 @@ class AuthServiceTest {
                 passwordEncoder.encode("Pass1!xyz"),
                 "0700000000", Role.PATIENT
         );
+        user.setId(UUID.randomUUID());
     }
 
     // ── REGISTER ─────────────────────────────────────────────────────────────
@@ -110,7 +111,11 @@ class AuthServiceTest {
     @Test
     void register_shouldSucceed_andReturnRealJwt() {
         when(userRepository.existsByEmail(any())).thenReturn(false);
-        when(userRepository.save(any())).thenReturn(user);
+        when(userRepository.save(any())).thenAnswer(invocation -> {
+            User u = invocation.getArgument(0);
+            u.setId(UUID.randomUUID());
+            return u;
+        });
         when(jwtService.generateAccessToken(any(), any(), any())).thenReturn("jwt.access.token");
         when(jwtService.generateRefreshToken()).thenReturn("opaque-refresh-token");
         when(jwtService.getRefreshTokenExpiryMs()).thenReturn(604800000L);
@@ -119,9 +124,9 @@ class AuthServiceTest {
         AuthResponseDTO result = authService.register(registerDto);
 
         assertThat(result).isNotNull();
-        assertThat(result.getToken()).isEqualTo("jwt.access.token");   // real JWT, not "token_xxx"
+        assertThat(result.getToken()).isEqualTo("jwt.access.token");
         assertThat(result.getRefreshToken()).isEqualTo("opaque-refresh-token");
-        assertThat(result.getToken()).doesNotStartWith("token_");       // old stub is gone
+        assertThat(result.getToken()).doesNotStartWith("token_");
     }
 
     // ── LOGIN ─────────────────────────────────────────────────────────────────
