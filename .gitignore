@@ -42,3 +42,4 @@ src/frontend/.env
 src/main/resources/application.yml
 src/frontend/.env
 src/main/resources/application-local.yml
+.claude/settings.local.json
