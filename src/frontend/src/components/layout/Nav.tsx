@@ -97,7 +97,18 @@ export function Nav({ page, setPage, user, onLogout }: NavProps) {
                             <button className={styles.registerBtn} onClick={() => navigate('register')} type="button">Register</button>
                         </>
                     )}
-                    <div className={styles.avatar} />
+                    <div
+                        className={styles.avatar}
+                        onClick={() => user && navigate('profile')}
+                        title={user ? 'My Profile' : undefined}
+                        aria-label={user ? 'Go to profile' : undefined}
+                    >
+                        <img
+                            src={user?.profilePicture || '/avatars/avatar-default.svg'}
+                            alt=""
+                            className={styles.avatarImg}
+                        />
+                    </div>
                 </div>
 
                 {/* RIGHT: Hamburger (mobile/tablet) */}

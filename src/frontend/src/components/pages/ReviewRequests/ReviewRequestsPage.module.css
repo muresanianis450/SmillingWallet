@@ -2,6 +2,28 @@
   padding: 28px 24px;
 }
 
+.specialtyWarning {
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.goProfileLink {
+  background: none;
+  border: none;
+  color: var(--purple, #7F77DD);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
 .pageHead {
   display: flex;
   align-items: flex-start;

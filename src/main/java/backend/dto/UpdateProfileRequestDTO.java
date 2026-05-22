@@ -31,6 +31,10 @@ public class UpdateProfileRequestDTO {
 
     private DentalSpecialty specialty;
 
+    private String profilePicture;
 
+    private Boolean twoFactorEnabled;
+
+    private Boolean emailRemindersEnabled;
 
 }
