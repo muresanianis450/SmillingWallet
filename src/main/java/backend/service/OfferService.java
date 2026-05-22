@@ -6,9 +6,11 @@ import backend.enums.OfferStatus;
 import backend.enums.RequestStatus;
 import backend.exception.ConflictException;
 import backend.exception.ResourceNotFoundException;
+import backend.exception.UnprocessableEntityException;
 import backend.model.Appointment;
 import backend.model.DentalRequest;
 import backend.model.Offer;
+import backend.model.User;
 import backend.repository.AppointmentRepository;
 import backend.repository.OfferRepository;
 import backend.repository.RequestRepository;
@@ -53,8 +55,11 @@ public class OfferService {
             throw new ConflictException("Cannot send offer — request is " + request.getStatus());
         }
 
-        if (!userRepository.existsById(dto.getDentistPublicId())) {
-            throw new ResourceNotFoundException("Dentist not found: " + dto.getDentistPublicId());
+        User dentist = userRepository.findById(dto.getDentistPublicId())
+                .orElseThrow(() -> new ResourceNotFoundException("Dentist not found: " + dto.getDentistPublicId()));
+
+        if (dentist.getSpecialty() == null) {
+            throw new UnprocessableEntityException("Please set your specialty in your profile before sending offers");
         }
 
         // Prevent dentist from sending duplicate offer on the same request

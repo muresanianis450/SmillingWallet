@@ -172,10 +172,17 @@ public class AuthService {
 
         user.setUsername(dto.getUsername());
         user.setPhone(dto.getPhone());
+        user.setCity(dto.getCity());
+        user.setAddress(dto.getAddress());
+        user.setProfilePicture(dto.getProfilePicture());
+        if (dto.getTwoFactorEnabled() != null) {
+            user.setTwoFactorEnabled(dto.getTwoFactorEnabled());
+        }
+        if (dto.getEmailRemindersEnabled() != null) {
+            user.setEmailRemindersEnabled(dto.getEmailRemindersEnabled());
+        }
 
         if (user.getRole() == Role.DENTIST) {
-            user.setCity(dto.getCity());
-            user.setAddress(dto.getAddress());
             user.setRating(dto.getRating());
             user.setSpecialty(dto.getSpecialty());
         }

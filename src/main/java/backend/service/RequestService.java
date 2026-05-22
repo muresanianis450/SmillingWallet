@@ -7,7 +7,9 @@ import backend.enums.DentalSpecialty;
 import backend.enums.RequestStatus;
 import backend.exception.ConflictException;
 import backend.exception.ResourceNotFoundException;
+import backend.exception.UnprocessableEntityException;
 import backend.model.DentalRequest;
+import backend.model.User;
 import backend.repository.RequestRepository;
 import backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -30,8 +32,11 @@ public class RequestService {
      */
     public DentalRequestResponseDTO create(DentalRequestDTO dto){
 
-        if (!userRepository.existsById(dto.getPatientPublicId())) {
-            throw new ResourceNotFoundException("Patient with id " + dto.getPatientPublicId() + " not found");
+        User patient = userRepository.findById(dto.getPatientPublicId())
+                .orElseThrow(() -> new ResourceNotFoundException("Patient with id " + dto.getPatientPublicId() + " not found"));
+
+        if (patient.getCity() == null || patient.getCity().isBlank()) {
+            throw new UnprocessableEntityException("Please add your city in your profile before submitting a request");
         }
 
         DentalRequest request = new DentalRequest(

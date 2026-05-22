@@ -33,7 +33,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = req.getRequestURI();
 
-        if (path.startsWith("/api/auth")) {
+        // Skip JWT validation only for public auth endpoints, not the whole /api/auth prefix
+        if (path.equals("/api/auth/login")
+                || path.equals("/api/auth/register")
+                || path.equals("/api/auth/refresh")
+                || path.equals("/api/auth/forgot-password")
+                || path.equals("/api/auth/reset-password")) {
             chain.doFilter(req, res);
             return;
         }

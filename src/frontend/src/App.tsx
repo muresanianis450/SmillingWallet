@@ -10,6 +10,8 @@ import { MyOffersPage } from './components/pages/MyOffers/MyOffersPage';
 import { AppointmentsPage } from './components/pages/Appointments/AppointmentsPage';
 import { LoginPage } from './components/pages/Login/LoginPage';
 import { RegisterPage } from './components/pages/Register/RegisterPage';
+import { ProfilePage } from './components/pages/Profile/ProfilePage';
+import { ProfileBanner } from './components/shared/ProfileBanner';
 import { useOffers } from './hooks/useOffers';
 import { INITIAL_OFFERS } from './data/constants';
 import { offerService } from './services/OfferService';
@@ -18,10 +20,11 @@ import {ForgotPasswordPage} from './components/pages/ForgotPassword/ForgotPasswo
 import { ResetPasswordPage } from './components/pages/ResetPassword/ResetPasswordPage';
 
 export function App() {
-    const [page, setPage]     = useState<PageName>('home');
-    const [user, setUser]     = useState<AuthUser | null>(null);
-    const offerHook           = useOffers(INITIAL_OFFERS);
-    const isOnline            = useNetworkStatus();
+    const [page, setPage]               = useState<PageName>('home');
+    const [user, setUser]               = useState<AuthUser | null>(null);
+    const [profileFocusField, setProfileFocusField] = useState<string | null>(null);
+    const offerHook                     = useOffers(INITIAL_OFFERS);
+    const isOnline                      = useNetworkStatus();
 
     useEffect(() => {
         if (isOnline) offerService.syncOfflineData();
@@ -82,6 +85,26 @@ export function App() {
         setPage('home');
     }
 
+    function handleProfileUpdate(
+        pct: number,
+        missingFields: string[],
+        profilePicture?: string | null,
+        twoFactorEnabled?: boolean,
+        emailRemindersEnabled?: boolean,
+    ) {
+        if (!user) return;
+        const updated = {
+            ...user,
+            profileCompletionPct: pct,
+            missingFields,
+            profilePicture: profilePicture ?? user.profilePicture,
+            twoFactorEnabled:    twoFactorEnabled    ?? user.twoFactorEnabled,
+            emailRemindersEnabled: emailRemindersEnabled ?? user.emailRemindersEnabled,
+        };
+        localStorage.setItem('user', JSON.stringify(updated));
+        setUser(updated);
+    }
+
     const role = user?.role ?? null;
 
     const canSee = {
@@ -100,8 +123,8 @@ export function App() {
         requests:     role === 'DENTIST'  || role === 'ADMIN',
         dashboard:    role === 'DENTIST'  || role === 'ADMIN',
 
-
         'reset-password': true,
+        profile:      !!user,
 
     } satisfies Record<PageName, boolean>;
 
@@ -124,6 +147,15 @@ export function App() {
 
             <Nav page={page} setPage={setPage} user={user} onLogout={handleLogout} />
 
+            {user && (user.profileCompletionPct ?? 100) < 100 && (
+                <ProfileBanner
+                    pct={user.profileCompletionPct ?? 0}
+                    missingFields={user.missingFields ?? []}
+                    setPage={setPage}
+                    onFocusField={setProfileFocusField}
+                />
+            )}
+
             {/* ── Public ── */}
             {page === 'home'     && <HomePage    setPage={setPage} />}
             {page === 'login'    && <LoginPage   setPage={setPage} onLogin={handleLogin} />}
@@ -138,8 +170,18 @@ export function App() {
 
             {/* ── Clinic ── */}
             {canSee['about']     && page === 'about'     && <AboutPage          setPage={setPage} />}
-            {canSee['requests']  && page === 'requests'  && <ReviewRequestsPage offersHook={offerHook} setPage={setPage} />}
+            {canSee['requests']  && page === 'requests'  && <ReviewRequestsPage offersHook={offerHook} setPage={setPage} user={user} />}
             {canSee['dashboard'] && page === 'dashboard' && <DashboardPage      offersHook={offerHook} />}
+
+            {/* ── Profile ── */}
+            {canSee['profile'] && page === 'profile' && user && (
+                <ProfilePage
+                    user={user}
+                    setPage={setPage}
+                    focusField={profileFocusField}
+                    onProfileUpdate={handleProfileUpdate}
+                />
+            )}
         </>
     );
 }

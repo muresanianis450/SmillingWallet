@@ -52,6 +52,15 @@ public class User {
     @Column(name = "role", nullable = false)
     private Role role;
 
+    @Column(name = "profile_picture", columnDefinition = "TEXT")
+    private String profilePicture;
+
+    @Column(name = "two_factor_enabled", nullable = false)
+    private boolean twoFactorEnabled = false;
+
+    @Column(name = "email_reminders_enabled", nullable = false)
+    private boolean emailRemindersEnabled = true;
+
     @Column(name = "created_at",nullable = false,updatable = false)
     private LocalDateTime createdAt;
 
