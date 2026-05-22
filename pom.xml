@@ -186,6 +186,18 @@
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
+        <!-- TOTP / 2FA -->
+        <dependency>
+            <groupId>dev.samstevens.totp</groupId>
+            <artifactId>totp</artifactId>
+            <version>1.7.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.2</version>
+        </dependency>
+
     </dependencies>
 
     <build>

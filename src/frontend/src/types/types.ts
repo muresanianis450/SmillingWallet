@@ -25,6 +25,17 @@ export type PageName =
     | 'reset-password'
     | 'profile';
 
+export interface AuthUser {
+  id: string;
+  username: string;
+  role: Role;
+  token: string;
+  refreshToken: string;
+  profilePicture?: string | null;
+  twoFactorEnabled?: boolean;
+  emailRemindersEnabled?: boolean;
+}
+
 export type ToastType = 'success' | 'error' | 'info';
 
 export type PaymentMethod = 'Insurance' | 'Self-Pay' | 'Financing';
@@ -43,18 +54,6 @@ export interface Offer {
   treatmentReq: string;
   ctScan: string | null;
   symptoms: string;
-}
-export interface AuthUser {
-  id: string;
-  username: string;
-  role: Role;
-  token: string;
-  refreshToken: string;
-  profileCompletionPct?: number;
-  missingFields?: string[];
-  profilePicture?: string;
-  twoFactorEnabled?: boolean;
-  emailRemindersEnabled?: boolean;
 }
 export interface DentalRequest {
   id: string;

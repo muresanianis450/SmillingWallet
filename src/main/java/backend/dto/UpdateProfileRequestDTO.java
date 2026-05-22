@@ -1,6 +1,5 @@
 package backend.dto;
 
-
 import backend.enums.DentalSpecialty;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
@@ -13,7 +12,7 @@ import lombok.Setter;
 public class UpdateProfileRequestDTO {
 
     @NotBlank(message = "Username is required")
-    @Size(min  = 3, max = 50, message = "Username must be between 3 and 50 characters")
+    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     private String username;
 
     @NotBlank(message = "Phone is required")
@@ -23,18 +22,12 @@ public class UpdateProfileRequestDTO {
     private String city;
     private String address;
 
-
     @DecimalMin(value = "1.0", message = "Rating must be at least 1.0")
     @DecimalMax(value = "5.0", message = "Rating must be at most 5.0")
     private Double rating;
 
-
     private DentalSpecialty specialty;
 
     private String profilePicture;
-
-    private Boolean twoFactorEnabled;
-
     private Boolean emailRemindersEnabled;
-
 }

@@ -12,6 +12,10 @@ import backend.repository.UserRepository;
 import backend.service.AuthService;
 import backend.service.EmailService;
 import backend.service.JwtService;
+import backend.service.TotpEncryptionService;
+import backend.service.TotpService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +42,9 @@ class AuthServiceTest {
     @Mock private PasswordResetTokenRepository  passwordResetTokenRepository;
     @Mock private JwtService                    jwtService;
     @Mock private EmailService                  emailService;
+    @Mock private StringRedisTemplate           redisTemplate;
+    @Mock private TotpService                   totpService;
+    @Mock private TotpEncryptionService         totpEncryptionService;
 
     // Real BCrypt with cost 4 — fast enough for unit tests
     private PasswordEncoder passwordEncoder;
@@ -55,7 +62,11 @@ class AuthServiceTest {
                 passwordResetTokenRepository,
                 jwtService,
                 passwordEncoder,
-                emailService
+                emailService,
+                redisTemplate,
+                totpService,
+                totpEncryptionService,
+                new ObjectMapper()
         );
 
         // Standard PATIENT registration DTO
@@ -160,8 +171,9 @@ class AuthServiceTest {
         when(jwtService.getRefreshTokenExpiryMs()).thenReturn(604800000L);
         when(refreshTokenRepository.save(any())).thenReturn(new RefreshToken());
 
-        AuthResponseDTO result = authService.login(dto);
+        LoginResponseDTO result = authService.login(dto);
 
+        assertThat(result.isRequiresMfa()).isFalse();
         assertThat(result.getToken()).isEqualTo("jwt.access.token");
         assertThat(result.getRefreshToken()).isNotNull();
     }

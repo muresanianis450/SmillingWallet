@@ -2,4 +2,4 @@ package backend.util;
 
 import java.util.List;
 
-public record ProfileCompletionResult(int pct, List<String> missingFields) {}
+public record ProfileCompletionResult(int completionPct, List<String> missingFields) {}

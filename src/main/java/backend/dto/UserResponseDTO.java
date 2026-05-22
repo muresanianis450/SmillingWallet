@@ -1,6 +1,5 @@
 package backend.dto;
 
-
 import backend.enums.DentalSpecialty;
 import backend.enums.Role;
 import backend.model.User;
@@ -28,12 +27,11 @@ public class UserResponseDTO {
     private Double rating;
     private DentalSpecialty specialty;
     private LocalDateTime createdAt;
-    private int profileCompletionPct;
-    private List<String> missingFields;
     private String profilePicture;
     private boolean twoFactorEnabled;
     private boolean emailRemindersEnabled;
-
+    private int profileCompletionPct;
+    private List<String> missingFields;
 
     public static UserResponseDTO from(User user) {
         UserResponseDTO dto = new UserResponseDTO();
@@ -46,13 +44,14 @@ public class UserResponseDTO {
         dto.rating = user.getRating();
         dto.specialty = user.getSpecialty();
         dto.createdAt = user.getCreatedAt();
-        ProfileCompletionResult completion = ProfileCompletion.calculate(user);
-        dto.profileCompletionPct = completion.pct();
-        dto.missingFields = completion.missingFields();
         dto.profilePicture = user.getProfilePicture();
-        dto.twoFactorEnabled = user.isTwoFactorEnabled();
+        dto.twoFactorEnabled = user.isTotpEnabled();
         dto.emailRemindersEnabled = user.isEmailRemindersEnabled();
+
+        ProfileCompletionResult completion = ProfileCompletion.compute(user);
+        dto.profileCompletionPct = completion.completionPct();
+        dto.missingFields = completion.missingFields();
+
         return dto;
     }
-
 }

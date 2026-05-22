@@ -17,7 +17,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class User {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
@@ -26,7 +25,7 @@ public class User {
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(name = "username", nullable = false,length = 100)
+    @Column(name = "username", nullable = false, length = 100)
     private String username;
 
     @Column(name = "password", nullable = false)
@@ -46,23 +45,35 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "specialty", length = 50)
-    private DentalSpecialty specialty; //only for dentists
+    private DentalSpecialty specialty;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Role role;
 
-    @Column(name = "profile_picture", columnDefinition = "TEXT")
-    private String profilePicture;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    @Column(name = "two_factor_enabled", nullable = false)
-    private boolean twoFactorEnabled = false;
+    // ── Profile extras ────────────────────────────────────────────────────────
+
+    @Column(name = "profile_picture", length = 255)
+    private String profilePicture;
 
     @Column(name = "email_reminders_enabled", nullable = false)
     private boolean emailRemindersEnabled = true;
 
-    @Column(name = "created_at",nullable = false,updatable = false)
-    private LocalDateTime createdAt;
+    // ── TOTP / 2FA ────────────────────────────────────────────────────────────
+
+    /** AES-256-GCM encrypted TOTP secret (base64-encoded iv+ciphertext). */
+    @Column(name = "totp_secret", length = 256)
+    private String totpSecret;
+
+    @Column(name = "totp_enabled", nullable = false)
+    private boolean totpEnabled = false;
+
+    /** JSON array of BCrypt-hashed backup codes. */
+    @Column(name = "backup_codes", columnDefinition = "TEXT")
+    private String backupCodes;
 
     public User(String email, String username, String password, String phone, Role role) {
         this.email = email;
@@ -71,6 +82,6 @@ public class User {
         this.phone = phone;
         this.role = role;
         this.createdAt = LocalDateTime.now();
+        this.emailRemindersEnabled = true;
     }
-
 }

@@ -1,6 +1,5 @@
 package backend.config;
 
-
 import backend.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -14,16 +13,26 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
 
+    /** Paths where a JWT is never expected — skip token parsing entirely. */
+    private static final Set<String> PUBLIC_PATHS = Set.of(
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
+            "/api/auth/2fa/verify"
+    );
+
     public JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
     }
-
 
     @Override
     protected void doFilterInternal(HttpServletRequest req,
@@ -33,18 +42,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = req.getRequestURI();
 
-        // Skip JWT validation only for public auth endpoints, not the whole /api/auth prefix
-        if (path.equals("/api/auth/login")
-                || path.equals("/api/auth/register")
-                || path.equals("/api/auth/refresh")
-                || path.equals("/api/auth/forgot-password")
-                || path.equals("/api/auth/reset-password")) {
+        // Allow preflight through immediately
+        if ("OPTIONS".equalsIgnoreCase(req.getMethod())) {
             chain.doFilter(req, res);
             return;
         }
 
-        //allow preflight to pass immediately
-        if ("OPTIONS".equalsIgnoreCase(req.getMethod())) {
+        // Skip JWT parsing for known public endpoints
+        if (PUBLIC_PATHS.contains(path) || path.startsWith("/ws/")) {
             chain.doFilter(req, res);
             return;
         }
@@ -56,18 +61,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Claims claims = jwtService.validateAccessToken(token);
 
                 String userId = claims.getSubject();
-                String role = claims.get("role", String.class);
+                String role   = claims.get("role", String.class);
 
                 var auth = new UsernamePasswordAuthenticationToken(
                         userId,
                         null,
                         List.of(new SimpleGrantedAuthority("ROLE_" + role))
                 );
-
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
             } catch (JwtException ignored) {
-                // ignore invalid token
+                // Invalid/expired token — leave security context empty, rules handle 401
             }
         }
 

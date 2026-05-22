@@ -34,11 +34,6 @@ export function App() {
     useEffect(() => {
         const stored = localStorage.getItem('user');
         if (stored) setUser(JSON.parse(stored));
-    }, []);
-
-    useEffect(() => {
-        const stored = localStorage.getItem('user');
-        if (stored) setUser(JSON.parse(stored));
 
         // Check if arriving from a reset-password email link
         const params = new URLSearchParams(window.location.search);
@@ -50,15 +45,36 @@ export function App() {
     function handleLogin(authUser: AuthUser) {
         localStorage.setItem('user', JSON.stringify(authUser));
         setUser(authUser);
-        // Redirect to role's default page
         if (authUser.role === 'DENTIST') setPage('dashboard');
         else if (authUser.role === 'ADMIN') setPage('dashboard');
         else setPage('home');
     }
 
+    function handleProfileUpdate(
+        pct: number,
+        missingFields: string[],
+        profilePicture?: string | null,
+        twoFactorEnabled?: boolean,
+        emailRemindersEnabled?: boolean
+    ) {
+        const stored = localStorage.getItem('user');
+        if (!stored) return;
+        const current = JSON.parse(stored);
+        const updated = {
+            ...current,
+            profileCompletionPct: pct,
+            missingFields,
+            ...(profilePicture !== undefined ? { profilePicture } : {}),
+            ...(twoFactorEnabled !== undefined ? { twoFactorEnabled } : {}),
+            ...(emailRemindersEnabled !== undefined ? { emailRemindersEnabled } : {}),
+        };
+        localStorage.setItem('user', JSON.stringify(updated));
+        setUser(updated);
+    }
+
     // Inactivity TIMER
     const inactivityTimer = useRef<ReturnType<typeof setTimeout>>();
-    const INACTIVITY_MS = 30 * 60 * 60; // 30 mins
+    const INACTIVITY_MS = 30 * 60 * 1000;
 
     function resetInactivityTimer() {
         clearTimeout(inactivityTimer.current);
@@ -108,24 +124,18 @@ export function App() {
     const role = user?.role ?? null;
 
     const canSee = {
-        // Unauthenticated / PATIENT / ADMIN
-        home:         true,
-        login:        !user,
-        register:     !user,
-
-        // PATIENT + ADMIN
-        'send-request': role === 'PATIENT' || role === 'ADMIN',
-        'my-offers':    role === 'PATIENT' || role === 'ADMIN',
+        home:              true,
+        login:             !user,
+        register:          !user,
+        profile:           !!user,
+        'send-request':    role === 'PATIENT' || role === 'ADMIN',
+        'my-offers':       role === 'PATIENT' || role === 'ADMIN',
         'forgot-password': !user,
-        appointments:   role === 'PATIENT' || role === 'ADMIN',
-        // CLINIC + ADMIN
-        about:        role === 'PATIENT'  || role === 'ADMIN',
-        requests:     role === 'DENTIST'  || role === 'ADMIN',
-        dashboard:    role === 'DENTIST'  || role === 'ADMIN',
-
-        'reset-password': true,
-        profile:      !!user,
-
+        appointments:      role === 'PATIENT' || role === 'ADMIN',
+        about:             role === 'PATIENT' || role === 'ADMIN',
+        requests:          role === 'DENTIST'  || role === 'ADMIN',
+        dashboard:         role === 'DENTIST'  || role === 'ADMIN',
+        'reset-password':  true,
     } satisfies Record<PageName, boolean>;
 
     // Guard: if current page is not allowed, bounce to home
@@ -162,6 +172,11 @@ export function App() {
             {page === 'register' && <RegisterPage setPage={setPage} onLogin={handleLogin} />}
             {page === 'forgot-password' && <ForgotPasswordPage setPage={setPage} />}
             {page === 'reset-password' && <ResetPasswordPage setPage={setPage} />}
+
+            {/* ── Authenticated ── */}
+            {canSee['profile'] && page === 'profile' && user && (
+                <ProfilePage user={user} setPage={setPage} onProfileUpdate={handleProfileUpdate} onLogout={handleLogout} />
+            )}
 
             {/* ── Patient ── */}
             {canSee['send-request'] && page === 'send-request' && <SendRequestPage  setPage={setPage} />}
