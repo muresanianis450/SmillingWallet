@@ -4,16 +4,25 @@ import { BlobBackground } from '../../shared/BlobBackground';
 // @ts-ignore
 import styles from './LoginPage.module.css';
 import { api } from '../../../services/api';
+
 interface LoginPageProps {
     setPage: (page: PageName) => void;
     onLogin: (user: AuthUser) => void;
 }
 
-export function LoginPage({ setPage , onLogin}: LoginPageProps) {
+export function LoginPage({ setPage, onLogin }: LoginPageProps) {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe]     = useState(false);
     const [password, setPassword]         = useState('');
     const [passwordError, setPasswordError] = useState('');
+
+    // MFA second step state
+    const [mfaStep, setMfaStep]       = useState(false);
+    const [tempToken, setTempToken]   = useState('');
+    const [mfaCode, setMfaCode]       = useState('');
+    const [useBackup, setUseBackup]   = useState(false);
+    const [mfaError, setMfaError]     = useState('');
+    const [mfaLoading, setMfaLoading] = useState(false);
 
     function validatePassword(val: string): string {
         if (val.length < 8)            return 'Password must be at least 8 characters';
@@ -36,21 +45,141 @@ export function LoginPage({ setPage , onLogin}: LoginPageProps) {
                 password
             });
 
-            //localStorage.setItem("token", res.data.token);
+            if (res.data.requiresMfa) {
+                setTempToken(res.data.tempToken);
+                setMfaStep(true);
+                setMfaCode('');
+                setMfaError('');
+                setUseBackup(false);
+                return;
+            }
+
             onLogin({
                 id: res.data.user.id,
                 username: res.data.user.username,
                 role: res.data.user.role.toUpperCase(),
                 token: res.data.token,
                 refreshToken: res.data.refreshToken,
+                profilePicture: res.data.user.profilePicture ?? null,
+                twoFactorEnabled: res.data.user.twoFactorEnabled,
             });
-            //setPage('home');
 
-        } catch (err) {
-            console.error(err);
+        } catch (err: any) {
+            setPasswordError(err.response?.data?.message || 'Login failed');
         }
     }
 
+    async function handleMfaVerify(codeOverride?: string) {
+        const code = codeOverride ?? mfaCode;
+        if (!code.trim()) return;
+        setMfaLoading(true);
+        setMfaError('');
+        try {
+            const res = await api.post('/auth/2fa/verify', { tempToken, code });
+            onLogin({
+                id: res.data.user.id,
+                username: res.data.user.username,
+                role: res.data.user.role.toUpperCase(),
+                token: res.data.token,
+                refreshToken: res.data.refreshToken,
+                profilePicture: res.data.user.profilePicture ?? null,
+                twoFactorEnabled: res.data.user.twoFactorEnabled,
+            });
+        } catch (err: any) {
+            setMfaError(err.response?.data?.message || 'Invalid code — please try again');
+        } finally {
+            setMfaLoading(false);
+        }
+    }
+
+    function handleOtpChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const raw = e.target.value.replace(/\D/g, '').slice(0, 6);
+        setMfaCode(raw);
+        setMfaError('');
+        if (raw.length === 6) handleMfaVerify(raw);
+    }
+
+    function handleBackupChange(e: React.ChangeEvent<HTMLInputElement>) {
+        setMfaCode(e.target.value);
+        setMfaError('');
+    }
+
+    // ── MFA screen ────────────────────────────────────────────────────────────
+    if (mfaStep) {
+        return (
+            <div className={styles.wrap}>
+                <BlobBackground />
+                <div className={styles.card}>
+                    <h2 className={styles.title}>Two-Factor Authentication</h2>
+
+                    <p style={{ fontSize: 14, color: '#555', marginBottom: 20, textAlign: 'center' }}>
+                        {useBackup
+                            ? 'Enter one of your backup codes.'
+                            : 'Enter the 6-digit code from your authenticator app.'}
+                    </p>
+
+                    <div className={styles.field}>
+                        {useBackup ? (
+                            <input
+                                className={styles.input}
+                                type="text"
+                                placeholder="XXXX-XXXX"
+                                value={mfaCode}
+                                onChange={handleBackupChange}
+                                autoComplete="off"
+                                style={{ letterSpacing: '0.15em', textAlign: 'center' }}
+                            />
+                        ) : (
+                            <input
+                                className={styles.input}
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="000000"
+                                value={mfaCode}
+                                onChange={handleOtpChange}
+                                autoComplete="one-time-code"
+                                maxLength={6}
+                                style={{ letterSpacing: '0.3em', textAlign: 'center', fontSize: 22 }}
+                            />
+                        )}
+                        {mfaError && <p className={styles.errorMsg}>{mfaError}</p>}
+                    </div>
+
+                    {useBackup && (
+                        <button
+                            className={styles.submitBtn}
+                            type="button"
+                            onClick={() => handleMfaVerify()}
+                            disabled={mfaLoading || !mfaCode.trim()}
+                            style={{ marginBottom: 12 }}
+                        >
+                            {mfaLoading ? 'Verifying…' : 'Use backup code'}
+                        </button>
+                    )}
+
+                    <button
+                        className={styles.link}
+                        type="button"
+                        onClick={() => { setUseBackup(v => !v); setMfaCode(''); setMfaError(''); }}
+                        style={{ display: 'block', textAlign: 'center', width: '100%', marginTop: 8 }}
+                    >
+                        {useBackup ? 'Use authenticator code instead' : 'Use a backup code instead'}
+                    </button>
+
+                    <button
+                        className={styles.link}
+                        type="button"
+                        onClick={() => { setMfaStep(false); setMfaCode(''); setMfaError(''); }}
+                        style={{ display: 'block', textAlign: 'center', width: '100%', marginTop: 4, color: '#999' }}
+                    >
+                        ← Back to login
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Password screen ───────────────────────────────────────────────────────
     return (
         <div className={styles.wrap}>
             <BlobBackground />

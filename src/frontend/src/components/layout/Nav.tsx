@@ -86,9 +86,24 @@ export function Nav({ page, setPage, user, onLogout }: NavProps) {
                 <div className={styles.authSection}>
                     {user ? (
                         <>
-                            <span className={styles.username}>{user.username}</span>
-                            <button className={styles.loginBtn} onClick={onLogout} type="button">
-                                Logout
+                            <button
+                                className={`${styles.username} ${page === 'profile' ? styles.usernameActive : ''}`}
+                                onClick={() => navigate('profile')}
+                                type="button"
+                            >
+                                {user.username}
+                            </button>
+                            <button
+                                className={`${styles.avatarBtn} ${page === 'profile' ? styles.avatarBtnActive : ''}`}
+                                onClick={() => navigate('profile')}
+                                type="button"
+                                title="My Profile"
+                            >
+                                <img
+                                    src={user.profilePicture || '/avatars/avatar-default.svg'}
+                                    alt={user.username}
+                                    className={styles.avatar}
+                                />
                             </button>
                         </>
                     ) : (
@@ -97,7 +112,6 @@ export function Nav({ page, setPage, user, onLogout }: NavProps) {
                             <button className={styles.registerBtn} onClick={() => navigate('register')} type="button">Register</button>
                         </>
                     )}
-                    <div className={styles.avatar} />
                 </div>
 
                 {/* RIGHT: Hamburger (mobile/tablet) */}
@@ -147,8 +161,8 @@ export function Nav({ page, setPage, user, onLogout }: NavProps) {
 
                     <div className={styles.drawerAuth}>
                         {user ? (
-                            <button className={styles.drawerLoginBtn} onClick={onLogout} type="button">
-                                Logout
+                            <button className={styles.drawerLoginBtn} onClick={() => navigate('profile')} type="button">
+                                My Profile
                             </button>
                         ) : (
                             <>

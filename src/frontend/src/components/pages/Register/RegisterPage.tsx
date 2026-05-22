@@ -49,6 +49,8 @@ export function RegisterPage({ setPage, onLogin }: RegisterPageProps) {
                 role: res.data.user.role,
                 token: res.data.token,
                 refreshToken: res.data.refreshToken,
+                profilePicture: res.data.user.profilePicture ?? null,
+                twoFactorEnabled: res.data.user.twoFactorEnabled,
             });
 
         } catch (err) {

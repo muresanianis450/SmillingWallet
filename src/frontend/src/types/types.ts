@@ -22,12 +22,18 @@ export type PageName =
     | 'login'
     | 'register'
     | 'forgot-password'
-    | 'reset-password';
+    | 'reset-password'
+    | 'profile';
 
 export interface AuthUser {
+  id: string;
   username: string;
   role: Role;
   token: string;
+  refreshToken: string;
+  profilePicture?: string | null;
+  twoFactorEnabled?: boolean;
+  emailRemindersEnabled?: boolean;
 }
 
 export type ToastType = 'success' | 'error' | 'info';
@@ -48,13 +54,6 @@ export interface Offer {
   treatmentReq: string;
   ctScan: string | null;
   symptoms: string;
-}
-export interface AuthUser {
-  id: string;
-  username: string;
-  role: Role;
-  token: string;
-  refreshToken: string;
 }
 export interface DentalRequest {
   id: string;
