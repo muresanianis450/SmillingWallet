@@ -131,7 +131,7 @@ smiling-wallet/
 - [x] Real-time WebSocket notifications
 - [x] Offer analytics & price benchmarking
 - [x] Role-based JWT authentication
-- [ ] In-app secure messaging (patient ↔ clinic)
+- [ ] 2FA
 - [ ] Automatic clinic matching by specialty & proximity
 - [ ] Mobile app (React Native)
 - [ ] Email/push notification support

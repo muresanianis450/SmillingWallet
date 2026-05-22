@@ -9,22 +9,25 @@ import { Toast } from '../../shared/Toast';
 import { SendOfferModal } from './SendOfferModal';
 // @ts-ignore
 import styles from './ReviewRequestsPage.module.css';
-import {DentalRequest, PageName} from "../../../types/types.ts";
+import {AuthUser, DentalRequest, PageName} from "../../../types/types.ts";
 
 const PER_PAGE = 7;
 
 interface ReviewRequestsPageProps {
   offersHook : ReturnType<typeof useOffers>;
   setPage: (page:PageName) => void;
+  user?: AuthUser | null;
 }
 
-export function ReviewRequestsPage({offersHook}: ReviewRequestsPageProps) {
+export function ReviewRequestsPage({offersHook, setPage, user}: ReviewRequestsPageProps) {
   const [hiddenIds,  setHiddenIds]  = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
   const [search,     setSearch]     = useState('');
   const [filterCat,  setFilterCat]  = useState('All');
   const [sendModal,  setSendModal]  = useState<DentalRequest | null>(null);
   const { toast, show: showToast }  = useToast();
+
+  const specialtyMissing = user?.missingFields?.includes('specialty') ?? false;
 
   function toggleHide(id: string) {
     setHiddenIds((prev) => {
@@ -72,6 +75,16 @@ export function ReviewRequestsPage({offersHook}: ReviewRequestsPageProps) {
 
   return (
     <div className={styles.page}>
+      {/* ── Specialty warning ── */}
+      {specialtyMissing && (
+        <div className={styles.specialtyWarning}>
+          Your specialty is not set. You must add it before you can send offers.{' '}
+          <button className={styles.goProfileLink} onClick={() => setPage('profile')} type="button">
+            Go to Profile
+          </button>
+        </div>
+      )}
+
       {/* ── Page Header ── */}
       <div className={styles.pageHead}>
         <div>
@@ -168,6 +181,10 @@ export function ReviewRequestsPage({offersHook}: ReviewRequestsPageProps) {
                                 className={styles.btnSendOffer}
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (specialtyMissing) {
+                                showToast('Set your specialty first — go to Profile to add it', 'error');
+                                return;
+                              }
                               setSendModal(r);
                             }}
                           >

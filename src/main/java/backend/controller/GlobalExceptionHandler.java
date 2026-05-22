@@ -3,6 +3,7 @@ package backend.controller;
 import backend.dto.ErrorResponseDTO;
 import backend.exception.ConflictException;
 import backend.exception.ResourceNotFoundException;
+import backend.exception.UnprocessableEntityException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -37,6 +38,16 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+
+    @ExceptionHandler(UnprocessableEntityException.class)
+    public ResponseEntity<ErrorResponseDTO> handleUnprocessable(UnprocessableEntityException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ErrorResponseDTO(
+                        HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                        ex.getMessage(),
+                        LocalDateTime.now()
+                ));
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(IllegalArgumentException ex) {
