@@ -85,8 +85,11 @@ export function LoginPage({ setPage, onLogin }: LoginPageProps) {
                 role: res.data.user.role.toUpperCase(),
                 token: res.data.token,
                 refreshToken: res.data.refreshToken,
+                profileCompletionPct: res.data.user.profileCompletionPct,
+                missingFields: res.data.user.missingFields ?? [],
                 profilePicture: res.data.user.profilePicture ?? null,
-                twoFactorEnabled: res.data.user.twoFactorEnabled,
+                twoFactorEnabled: res.data.user.twoFactorEnabled ?? false,
+                emailRemindersEnabled: res.data.user.emailRemindersEnabled ?? true,
             });
         } catch (err: any) {
             setMfaError(err.response?.data?.message || 'Invalid code — please try again');
