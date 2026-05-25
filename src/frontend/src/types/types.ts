@@ -34,6 +34,8 @@ export interface AuthUser {
   profilePicture?: string | null;
   twoFactorEnabled?: boolean;
   emailRemindersEnabled?: boolean;
+  profileCompletionPct?: number;
+  missingFields?: string[];
 }
 
 export type ToastType = 'success' | 'error' | 'info';
