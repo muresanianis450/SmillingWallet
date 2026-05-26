@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { PageName } from '../../../types/types.ts';
-import { api } from '../../../services/api';
+import { api, AUTH_COOKIE } from '../../../services/api';
+import { getCookie } from '../../../tracking/cookies';
 import { useWebSocket, ChatMessage } from '../../../hooks/useWebSocket';
 // @ts-ignore
 import styles from './AppointmentsPage.module.css';
@@ -64,7 +65,7 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
     const [input, setInput] = useState('');
     const bottomRef = useRef<HTMLDivElement>(null);
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
 
     const { connected, sendMessage } = useWebSocket({
         appointmentId,

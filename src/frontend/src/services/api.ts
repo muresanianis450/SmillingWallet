@@ -1,8 +1,12 @@
 import axios from 'axios';
+import { getCookie, setCookie, deleteCookie } from '../tracking/cookies';
 
 const BASE_URL = "/api"
 /*const BASE_URL = "http://172.20.10.6:8080/api"*/
 //const BASE_URL = "/api"
+
+/** Cookie name used for the auth session. */
+export const AUTH_COOKIE = 'sw_user';
 
 export const api = axios.create({
     baseURL: BASE_URL,
@@ -10,13 +14,19 @@ export const api = axios.create({
         'Content-Type': 'application/json',
     },
 });
+
 // ── Attach JWT to every request ───────────────────────────────────────────
 api.interceptors.request.use(config => {
-    const user = localStorage.getItem('user');
-    if (user) {
-        const parsed = JSON.parse(user);
-        if (parsed.token) {
-            config.headers.Authorization = `Bearer ${parsed.token}`;
+    const raw = getCookie(AUTH_COOKIE);
+    if (raw) {
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed.token) {
+                config.headers.Authorization = `Bearer ${parsed.token}`;
+            }
+        } catch {
+            // Corrupt cookie — clear it
+            deleteCookie(AUTH_COOKIE);
         }
     }
     return config;
@@ -44,8 +54,8 @@ api.interceptors.response.use(
 
             isRefreshing = true;
             try {
-                const stored = localStorage.getItem('user');
-                const refreshToken = stored ? JSON.parse(stored).refreshToken : null;
+                const raw = getCookie(AUTH_COOKIE);
+                const refreshToken = raw ? JSON.parse(raw).refreshToken : null;
                 if (!refreshToken) throw new Error('No refresh token');
 
                 const { data } = await axios.post(
@@ -53,22 +63,24 @@ api.interceptors.response.use(
                     { refreshToken }
                 );
 
-                // Update stored user with new tokens
-                const currentUser = JSON.parse(localStorage.getItem('user')!);
+                // Update cookie with new tokens
+                const currentRaw = getCookie(AUTH_COOKIE);
+                const currentUser = currentRaw ? JSON.parse(currentRaw) : {};
                 const updated = {
                     ...currentUser,
                     token: data.token,
                     refreshToken: data.refreshToken,
                 };
-                localStorage.setItem('user', JSON.stringify(updated));
+                setCookie(AUTH_COOKIE, JSON.stringify(updated), 1);
 
                 queue.forEach(cb => cb(data.token));
                 queue = [];
                 original.headers.Authorization = `Bearer ${data.token}`;
                 return api(original);
             } catch {
-                localStorage.removeItem('user');
-                window.location.href = '/'; // bounce to home / login
+                // Refresh failed — clear session and redirect to home
+                deleteCookie(AUTH_COOKIE);
+                window.location.href = '/';
             } finally {
                 isRefreshing = false;
             }
