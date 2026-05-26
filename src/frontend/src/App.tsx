@@ -133,7 +133,7 @@ export function App() {
                 </div>
             )}
 
-            <Nav page={page} setPage={setPage} user={user} onLogout={handleLogout} />
+            <Nav page={page} setPage={setPage} user={user} />
 
             {user && (user.profileCompletionPct ?? 100) < 100 && (
                 <ProfileBanner

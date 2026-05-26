@@ -1,0 +1,25 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Maven build output (will be rebuilt inside Docker)
+target/
+
+# Frontend (has its own Dockerfile)
+src/frontend/
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Docs
+*.md
+HELP.md
+
+# Local secrets / env files
+.env
+.env.*
+!.env.example

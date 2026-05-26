@@ -1,4 +1,3 @@
-import React from 'react';
 import { ToastState } from '../../types/types.ts';
 import styles from './Toast.module.css';
 

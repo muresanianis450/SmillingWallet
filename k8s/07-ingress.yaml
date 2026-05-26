@@ -1,0 +1,45 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Ingress — routes external traffic into the cluster
+#
+# Local (Docker Desktop K8s):  no annotations needed
+# AWS EKS:  uses AWS Load Balancer Controller
+#           Install with: https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
+#
+# Replace your-domain.com with your actual domain (or an ALB DNS name).
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smiling-wallet-ingress
+  namespace: smiling-wallet
+  annotations:
+    # ── For local Docker Desktop K8s ─────────────────────────────────────────
+    # No annotations needed; uses the built-in ingress controller.
+
+    # ── For AWS EKS (uncomment these) ────────────────────────────────────────
+    # kubernetes.io/ingress.class: alb
+    # alb.ingress.kubernetes.io/scheme: internet-facing
+    # alb.ingress.kubernetes.io/target-type: ip
+    # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    # alb.ingress.kubernetes.io/ssl-redirect: "443"
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:REGION:ACCOUNT:certificate/CERT_ID
+
+spec:
+  # ── TLS (uncomment + update for production HTTPS) ─────────────────────────
+  # tls:
+  #   - hosts:
+  #       - your-domain.com
+  #     secretName: smiling-wallet-tls   # created by cert-manager or AWS ACM
+
+  rules:
+    - host: your-domain.com   # replace with your domain or remove for any host
+      http:
+        paths:
+          # All traffic → frontend (nginx handles /api proxy internally)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80

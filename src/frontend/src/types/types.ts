@@ -68,7 +68,7 @@ export interface DentalRequest {
 // ─── Client-side types ───────────────────────────────────────────────────────
 
 export interface ClientOffer {
-  avatar: string;
+  avatar?: string;   // optional — generated at runtime from avatarSeed when not provided
   id: string;
   doctorLabel: string;       // "Dr. #1", "Dr. #2" …
   avatarSeed: string;        // for deterministic placeholder
