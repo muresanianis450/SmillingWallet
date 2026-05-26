@@ -12,7 +12,8 @@ import { OfferFormModal } from './OfferFormModal';
 import { DeleteModal } from './DeleteModal';
 import { usePageTracking } from '../../../hooks/useTracking';
 import { useWebSocket, ChatMessage } from '../../../hooks/useWebSocket';
-import { api } from '../../../services/api';
+import { api, AUTH_COOKIE } from '../../../services/api';
+import { getCookie } from '../../../tracking/cookies';
 // @ts-ignore
 import styles from './DashboardPage.module.css';
 import { IconView, IconEdit, IconDelete } from '../../shared/Icons';
@@ -42,7 +43,7 @@ export function DashboardPage({ offersHook }: DashboardPageProps) {
   const [chatInput,    setChatInput]    = useState('');
   const bottomRef                       = useRef<HTMLDivElement>(null);
 
-  const dentist = JSON.parse(localStorage.getItem('user') || '{}');
+  const dentist = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
 
   // ── WebSocket ──
   const { connected, sendMessage } = useWebSocket({

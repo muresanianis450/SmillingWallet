@@ -18,6 +18,8 @@ import { offerService } from './services/OfferService';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import {ForgotPasswordPage} from './components/pages/ForgotPassword/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/pages/ResetPassword/ResetPasswordPage';
+import { getCookie, setCookie, deleteCookie } from './tracking/cookies';
+import { AUTH_COOKIE } from './services/api';
 
 export function App() {
     const [page, setPage]               = useState<PageName>('home');
@@ -32,8 +34,18 @@ export function App() {
 
     // Restore session on mount
     useEffect(() => {
-        const stored = localStorage.getItem('user');
-        if (stored) setUser(JSON.parse(stored));
+        // Clean up any legacy localStorage auth data (migrated to cookies)
+        localStorage.removeItem('user');
+
+        const raw = getCookie(AUTH_COOKIE);
+        if (raw) {
+            try {
+                setUser(JSON.parse(raw));
+            } catch {
+                // Cookie is corrupt — delete it so the user can log in cleanly
+                deleteCookie(AUTH_COOKIE);
+            }
+        }
 
         // Check if arriving from a reset-password email link
         const params = new URLSearchParams(window.location.search);
@@ -43,16 +55,16 @@ export function App() {
     }, []);
 
     function handleLogin(authUser: AuthUser) {
-        localStorage.setItem('user', JSON.stringify(authUser));
+        setCookie(AUTH_COOKIE, JSON.stringify(authUser), 1);
         setUser(authUser);
         if (authUser.role === 'DENTIST') setPage('dashboard');
         else if (authUser.role === 'ADMIN') setPage('dashboard');
         else setPage('home');
     }
 
-    // Inactivity TIMER
+    // Inactivity TIMER — logs out after 15 minutes of no activity
     const inactivityTimer = useRef<ReturnType<typeof setTimeout>>();
-    const INACTIVITY_MS = 30 * 60 * 1000;
+    const INACTIVITY_MS = 15 * 60 * 1000;
 
     function resetInactivityTimer() {
         clearTimeout(inactivityTimer.current);
@@ -74,7 +86,7 @@ export function App() {
     }, [user]);
 
     function handleLogout() {
-        localStorage.removeItem('user');
+        deleteCookie(AUTH_COOKIE);
         setUser(null);
         setPage('home');
     }
@@ -95,7 +107,7 @@ export function App() {
             twoFactorEnabled:    twoFactorEnabled    ?? user.twoFactorEnabled,
             emailRemindersEnabled: emailRemindersEnabled ?? user.emailRemindersEnabled,
         };
-        localStorage.setItem('user', JSON.stringify(updated));
+        setCookie(AUTH_COOKIE, JSON.stringify(updated), 1);
         setUser(updated);
     }
 
