@@ -1,5 +1,6 @@
 package backend.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,6 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -22,6 +24,15 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+
+    /**
+     * Comma-separated list of allowed origins.
+     * Dev default covers Vite dev server + LAN testing.
+     * In production set CORS_ALLOWED_ORIGINS to the deployed frontend URL(s).
+     * Example: https://smilingwallet-frontend.up.railway.app
+     */
+    @Value("${cors.allowed-origins:http://localhost:5173,https://localhost:5173,http://localhost,https://localhost}")
+    private String allowedOriginsRaw;
 
     public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
@@ -85,12 +96,13 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "https://localhost:5173",
-                "http://172.20.10.2:5173",
-                "https://172.20.10.2:5173"
-        ));
+        // Parse comma-separated origins from config / env var
+        List<String> origins = Arrays.stream(allowedOriginsRaw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

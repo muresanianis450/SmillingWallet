@@ -1,0 +1,56 @@
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # ── React SPA: all unknown routes → index.html (client-side routing) ──────
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # ── API proxy → Spring Boot backend ──────────────────────────────────────
+    # BACKEND_URL is injected at container start via envsubst.
+    # Docker Compose default : http://backend:8080
+    # Railway private network: http://<service-name>.railway.internal:8080
+    location /api/ {
+        proxy_pass         ${BACKEND_URL}/api/;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+
+        # Larger timeouts for slow API calls
+        proxy_read_timeout 90s;
+        proxy_connect_timeout 10s;
+    }
+
+    # ── WebSocket (STOMP/SockJS) proxy ────────────────────────────────────────
+    location /ws-smiling-wallet/ {
+        proxy_pass         ${BACKEND_URL}/ws-smiling-wallet/;
+        proxy_http_version 1.1;
+
+        proxy_set_header   Upgrade    $http_upgrade;
+        proxy_set_header   Connection "Upgrade";
+
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+
+        # WebSocket connections stay open; increase timeout
+        proxy_read_timeout 3600s;
+    }
+
+    # ── Security headers ──────────────────────────────────────────────────────
+    add_header X-Content-Type-Options "nosniff"    always;
+    add_header X-Frame-Options        "DENY"       always;
+    add_header X-XSS-Protection       "1; mode=block" always;
+
+    # ── Static asset caching ──────────────────────────────────────────────────
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
