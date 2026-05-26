@@ -49,12 +49,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // ── Public ──────────────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/auth/invite/verify"
+                        ).permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
+                                "/api/auth/activate",
                                 "/api/auth/2fa/verify"
                         ).permitAll()
                         // WebSocket handshake (SockJS negotiation + upgrade)

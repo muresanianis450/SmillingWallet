@@ -18,6 +18,8 @@ import { offerService } from './services/OfferService';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import {ForgotPasswordPage} from './components/pages/ForgotPassword/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/pages/ResetPassword/ResetPasswordPage';
+import { ActivateAccountPage } from './components/pages/Activate/ActivateAccountPage';
+import { AdminDentistsPage } from './components/pages/AdminDentists/AdminDentistsPage';
 
 export function App() {
     const [page, setPage]               = useState<PageName>('home');
@@ -35,9 +37,12 @@ export function App() {
         const stored = localStorage.getItem('user');
         if (stored) setUser(JSON.parse(stored));
 
-        // Check if arriving from a reset-password email link
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('token')) {
+        // Check if arriving from an email link (invite or password reset)
+        const params   = new URLSearchParams(window.location.search);
+        const pathname = window.location.pathname;
+        if (pathname === '/activate' && params.get('token')) {
+            setPage('activate');
+        } else if (params.get('token')) {
             setPage('reset-password');
         }
     }, []);
@@ -114,6 +119,8 @@ export function App() {
         requests:          role === 'DENTIST'  || role === 'ADMIN',
         dashboard:         role === 'DENTIST'  || role === 'ADMIN',
         'reset-password':  true,
+        'activate':        true,
+        'admin-dentists':  role === 'ADMIN',
     } satisfies Record<PageName, boolean>;
 
     // Guard: if current page is not allowed, bounce to home
@@ -150,6 +157,7 @@ export function App() {
             {page === 'register' && <RegisterPage setPage={setPage} onLogin={handleLogin} />}
             {page === 'forgot-password' && <ForgotPasswordPage setPage={setPage} />}
             {page === 'reset-password' && <ResetPasswordPage setPage={setPage} />}
+            {page === 'activate'       && <ActivateAccountPage setPage={setPage} />}
 
             {/* ── Patient ── */}
             {canSee['send-request'] && page === 'send-request' && <SendRequestPage  setPage={setPage} />}
@@ -160,6 +168,9 @@ export function App() {
             {canSee['about']     && page === 'about'     && <AboutPage          setPage={setPage} />}
             {canSee['requests']  && page === 'requests'  && <ReviewRequestsPage offersHook={offerHook} setPage={setPage} user={user} />}
             {canSee['dashboard'] && page === 'dashboard' && <DashboardPage      offersHook={offerHook} />}
+
+            {/* ── Admin ── */}
+            {canSee['admin-dentists'] && page === 'admin-dentists' && <AdminDentistsPage />}
 
             {/* ── Profile ── */}
             {canSee['profile'] && page === 'profile' && user && (

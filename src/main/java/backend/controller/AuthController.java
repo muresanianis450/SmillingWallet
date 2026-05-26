@@ -67,6 +67,21 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Public — frontend calls this to check if an invite token is still valid. */
+    @GetMapping("/invite/verify")
+    public ResponseEntity<Void> verifyInvite(@RequestParam String token) {
+        authService.verifyInviteToken(token);
+        return ResponseEntity.ok().build();
+    }
+
+    /** Public — dentist sets their first password to activate the account. */
+    @PostMapping("/activate")
+    public ResponseEntity<Void> activateAccount(
+            @RequestBody ResetPasswordRequestDTO dto) {
+        authService.activateAccount(dto);
+        return ResponseEntity.noContent().build();
+    }
+
     // ── Profile ───────────────────────────────────────────────────────────────
 
     @GetMapping("/user/{userId}")

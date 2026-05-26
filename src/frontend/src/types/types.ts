@@ -23,6 +23,8 @@ export type PageName =
     | 'register'
     | 'forgot-password'
     | 'reset-password'
+    | 'activate'
+    | 'admin-dentists'
     | 'profile';
 
 export interface AuthUser {

@@ -64,6 +64,9 @@ jwt:
 totp:
   encryption-key: ${APP_TOTP_ENCRYPTION_KEY}
 
+app:
+  frontend-url: ${APP_FRONTEND_URL}
+
 cors:
   # Comma-separated list — add your Railway frontend URL here via env var.
   # Example: https://smilingwallet-frontend.up.railway.app
