@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import { ReactNode } from 'react';
 // @ts-ignore
 import styles from './Modal.module.css';
 
