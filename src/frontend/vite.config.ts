@@ -7,7 +7,6 @@ export default defineConfig({
     global: 'globalThis',
   },
   server: {
-    host: '0.0.0.0',   // Vite should bind to LAN, not just localhost
     proxy: {
       '/api': {
         target: 'https://localhost:8080',

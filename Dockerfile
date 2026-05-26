@@ -1,26 +1,39 @@
 # ─── Stage 1: Build the Spring Boot JAR ──────────────────────────────────────
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
-# Cache the dependency layer — only re-downloads when pom.xml changes
-COPY mvnw pom.xml ./
+# Copy dependency descriptors first so Maven layer is cached unless pom.xml changes
+COPY pom.xml .
 COPY .mvn .mvn
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -q
+COPY mvnw mvnw.cmd ./
 
-# Compile & package (tests run in CI, not during image build)
-COPY src src
-RUN ./mvnw package -DskipTests -q
+# Download all dependencies (cached unless pom.xml changes)
+RUN mvn dependency:go-offline -B --no-transfer-progress
+
+# Copy source and build (skip tests — tests run in CI, not in image build)
+COPY src ./src
+RUN mvn package -DskipTests -B --no-transfer-progress
 
 
-# ─── Stage 2: Lean runtime image ─────────────────────────────────────────────
+# ─── Stage 2: Minimal runtime image ──────────────────────────────────────────
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
+# Non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 COPY --from=builder /app/target/*.jar app.jar
 
+# 8080 = HTTP (SSL is terminated at the load balancer / nginx in front)
 EXPOSE 8080
 
-# Activate the production profile so application-prod.yml overrides the defaults
-ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+# Activate prod profile + JVM tuning for containers
+ENTRYPOINT ["java", \
+  "-Dspring.profiles.active=prod", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75.0", \
+  "-XX:+UseG1GC", \
+  "-jar", "app.jar"]

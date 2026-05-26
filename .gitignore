@@ -1,6 +1,9 @@
 HELP.md
 target/
+
+# Docker secrets — never commit real values
 .env
+!.env.example
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

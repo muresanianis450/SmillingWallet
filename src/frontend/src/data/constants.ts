@@ -1,4 +1,4 @@
-import { TreatmentCategory, OfferStatus, Offer, DentalRequest, ClientOffer, ConfirmedAppointment, MatchedClinic } from '../types';
+import { TreatmentCategory, OfferStatus, Offer, DentalRequest, ClientOffer, ConfirmedAppointment, MatchedClinic } from '../types/types';
 
 // ─── Enums / Constant Lists ──────────────────────────────────────────────────
 

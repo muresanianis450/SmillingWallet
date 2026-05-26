@@ -1,0 +1,104 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Spring Boot Backend Deployment
+# Replace YOUR_REGISTRY with your ECR or Docker Hub path, e.g.:
+#   123456789.dkr.ecr.eu-central-1.amazonaws.com/smiling-wallet-backend:latest
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: smiling-wallet
+  labels:
+    app: backend
+spec:
+  replicas: 2          # 2 replicas = zero-downtime rolling updates
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # always keep 2 pods running during deploy
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: YOUR_REGISTRY/smiling-wallet-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+
+          # ── Non-secret config from ConfigMap ────────────────────────────────
+          envFrom:
+            - configMapRef:
+                name: smiling-wallet-config
+
+          # ── Secrets ─────────────────────────────────────────────────────────
+          env:
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smiling-wallet-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: smiling-wallet-secrets
+                  key: jwt-secret
+            - name: APP_TOTP_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: smiling-wallet-secrets
+                  key: totp-key
+            - name: SPRING_MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: smiling-wallet-secrets
+                  key: mail-username
+            - name: SPRING_MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smiling-wallet-secrets
+                  key: mail-password
+
+          # ── Health checks ────────────────────────────────────────────────────
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 45   # Spring Boot takes time to start
+            periodSeconds: 15
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            failureThreshold: 3
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: smiling-wallet
+spec:
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP

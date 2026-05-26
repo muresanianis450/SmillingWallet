@@ -186,6 +186,12 @@
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
+        <!-- Actuator — /actuator/health used by Docker & Kubernetes health probes -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- TOTP / 2FA -->
         <dependency>
             <groupId>dev.samstevens.totp</groupId>

@@ -59,6 +59,8 @@ public class SecurityConfig {
                         ).permitAll()
                         // WebSocket handshake (SockJS negotiation + upgrade)
                         .requestMatchers("/ws-smiling-wallet/**").permitAll()
+                        // Actuator health — used by Railway / Docker health probes
+                        .requestMatchers("/actuator/health").permitAll()
                         // Swagger UI (dev convenience)
                         .requestMatchers(
                                 "/swagger-ui/**",
@@ -96,7 +98,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Parse comma-separated origins from config / env var
+        // Parse comma-separated origins from config / env var (CORS_ALLOWED_ORIGINS)
         List<String> origins = Arrays.stream(allowedOriginsRaw.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
