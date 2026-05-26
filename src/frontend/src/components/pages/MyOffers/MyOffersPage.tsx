@@ -466,7 +466,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
 
     //WEBSOCKETS: Listen for programmatic updates from Java backend
     useEffect(() => {
-        const socket = new SockJS('http://localhost:8080/ws-smiling-wallet');
+        const socket = new SockJS('/ws-smiling-wallet');
         const stompClient = Stomp.over(socket);
 
         // Turn off console debugging for a cleaner look

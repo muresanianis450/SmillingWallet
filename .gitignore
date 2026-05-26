@@ -7,11 +7,17 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+# Frontend — keep node_modules and local .env out of git
 src/frontend/node_modules/
-src/main/resources/keystore/
-src/backend/resources/application-local.yml
 src/frontend/.env
+
+# Backend secrets / local overrides
+src/main/resources/keystore/
+src/main/resources/application.yml
+src/main/resources/application-local.yml
 src/main/backend/resources/application.yml
+src/backend/resources/application-local.yml
 
 ### STS ###
 .apt_generated
@@ -40,10 +46,6 @@ build/
 
 ### VS Code ###
 .vscode/
-src/frontend/.env
-/src/frontend
-src/frontend/.env
-src/main/resources/application.yml
-src/frontend/.env
-src/main/resources/application-local.yml
+
+### Claude Code ###
 .claude/settings.local.json

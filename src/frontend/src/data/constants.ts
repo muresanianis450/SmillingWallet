@@ -144,6 +144,7 @@ export const MOCK_CLIENT_OFFERS: ClientOffer[] = [
     validUntil: '2025-04-15',
     treatmentCategory: 'Cosmetic Dentistry',
     isBestValue: false,
+    avatar: '',
   },
   {
     id: 'CO002',
@@ -162,6 +163,7 @@ export const MOCK_CLIENT_OFFERS: ClientOffer[] = [
     validUntil: '2025-04-16',
     treatmentCategory: 'Cosmetic Dentistry',
     isBestValue: false,
+    avatar: '',
   },
   {
     id: 'CO003',
@@ -180,6 +182,7 @@ export const MOCK_CLIENT_OFFERS: ClientOffer[] = [
     validUntil: '2025-04-17',
     treatmentCategory: 'Cosmetic Dentistry',
     isBestValue: true,
+    avatar: '',
   },
   {
     id: 'CO004',
@@ -198,6 +201,7 @@ export const MOCK_CLIENT_OFFERS: ClientOffer[] = [
     validUntil: '2025-04-18',
     treatmentCategory: 'Cosmetic Dentistry',
     isBestValue: false,
+    avatar: '',
   },
   {
     id: 'CO005',
@@ -216,6 +220,7 @@ export const MOCK_CLIENT_OFFERS: ClientOffer[] = [
     validUntil: '2025-04-19',
     treatmentCategory: 'Cosmetic Dentistry',
     isBestValue: false,
+    avatar: '',
   },
 ];
 

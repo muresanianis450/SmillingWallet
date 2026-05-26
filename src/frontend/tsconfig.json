@@ -22,6 +22,7 @@
     "allowSyntheticDefaultImports": true
   },
   "include": ["src"],
+  "exclude": ["src/tests", "src/**/*.test.ts", "src/**/*.test.tsx", "src/e2e"],
   "references": [{ "path": "./tsconfig.node.json" }],
   "baseUrl": ".",
   "paths": {

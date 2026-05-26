@@ -1,4 +1,4 @@
-# ─── Stage 1: Build the JAR ───────────────────────────────────────────────────
+# ─── Stage 1: Build the Spring Boot JAR ──────────────────────────────────────
 FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
@@ -30,8 +30,9 @@ COPY --from=builder /app/target/*.jar app.jar
 # 8080 = HTTP (SSL is terminated at the load balancer / nginx in front)
 EXPOSE 8080
 
-# JVM tuning for containers: respect cgroup memory limits, use G1GC
+# Activate prod profile + JVM tuning for containers
 ENTRYPOINT ["java", \
+  "-Dspring.profiles.active=prod", \
   "-XX:+UseContainerSupport", \
   "-XX:MaxRAMPercentage=75.0", \
   "-XX:+UseG1GC", \
