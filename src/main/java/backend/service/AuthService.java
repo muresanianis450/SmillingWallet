@@ -367,11 +367,7 @@ public class AuthService {
         prt.setExpiresAt(Instant.now().plusSeconds(72 * 3600)); // 72 hours
         passwordResetTokenRepository.save(prt);
 
-        try {
-            emailService.sendDentistInvite(user.getEmail(), user.getUsername(), prt.getToken());
-        } catch (Exception e) {
-            log.warn("Failed to send invite email to {}: {}", user.getEmail(), e.getMessage());
-        }
+        emailService.sendDentistInvite(user.getEmail(), user.getUsername(), prt.getToken());
 
         return UserResponseDTO.from(user);
     }

@@ -2,12 +2,15 @@ package backend.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class EmailService {
 
     private final JavaMailSender mailSender;
@@ -19,14 +22,16 @@ public class EmailService {
         this.frontendUrl = frontendUrl;
     }
 
-    // ── Public methods ────────────────────────────────────────────────────────
+    // ── Public methods (async — never block the HTTP thread) ─────────────────
 
+    @Async
     public void sendPasswordReset(String toEmail, String token) {
         String resetLink = frontendUrl + "/reset-password?token=" + token;
         String html = RESET_HTML_TEMPLATE.replace("{{RESET_LINK}}", resetLink);
         sendHtml(toEmail, "Smiling Wallet – Reset Your Password", html);
     }
 
+    @Async
     public void sendDentistInvite(String toEmail, String clinicName, String token) {
         String activationLink = frontendUrl + "/activate?token=" + token;
         String html = INVITE_HTML_TEMPLATE
@@ -45,8 +50,11 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(html, true);
             mailSender.send(message);
+            log.info("Email sent to {}: {}", to, subject);
         } catch (MessagingException e) {
-            throw new RuntimeException("Failed to send email to " + to, e);
+            log.error("Failed to build email for {}: {}", to, e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to send email to {}: {}", to, e.getMessage());
         }
     }
 
