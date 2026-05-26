@@ -36,7 +36,7 @@ const ADMIN_LINKS = [
     { label: 'About',        page: 'about' },
 ];
 
-export function Nav({ page, setPage, user, onLogout }: NavProps) {
+export function Nav({ page, setPage, user, onLogout: _onLogout }: NavProps) {
     const [menuOpen, setMenuOpen] = useState(false);
 
     const links = user?.role === 'ADMIN'   ? ADMIN_LINKS
