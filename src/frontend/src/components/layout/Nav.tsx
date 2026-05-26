@@ -8,7 +8,6 @@ interface NavProps {
     page: PageName;
     setPage: (page: PageName) => void;
     user: AuthUser | null;
-    onLogout: () => void;
 }
 
 const PATIENT_LINKS = [
@@ -36,7 +35,7 @@ const ADMIN_LINKS = [
     { label: 'About',        page: 'about' },
 ];
 
-export function Nav({ page, setPage, user, onLogout }: NavProps) {
+export function Nav({ page, setPage, user }: NavProps) {
     const [menuOpen, setMenuOpen] = useState(false);
 
     const links = user?.role === 'ADMIN'   ? ADMIN_LINKS

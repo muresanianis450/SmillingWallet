@@ -50,28 +50,6 @@ export function App() {
         else setPage('home');
     }
 
-    function handleProfileUpdate(
-        pct: number,
-        missingFields: string[],
-        profilePicture?: string | null,
-        twoFactorEnabled?: boolean,
-        emailRemindersEnabled?: boolean
-    ) {
-        const stored = localStorage.getItem('user');
-        if (!stored) return;
-        const current = JSON.parse(stored);
-        const updated = {
-            ...current,
-            profileCompletionPct: pct,
-            missingFields,
-            ...(profilePicture !== undefined ? { profilePicture } : {}),
-            ...(twoFactorEnabled !== undefined ? { twoFactorEnabled } : {}),
-            ...(emailRemindersEnabled !== undefined ? { emailRemindersEnabled } : {}),
-        };
-        localStorage.setItem('user', JSON.stringify(updated));
-        setUser(updated);
-    }
-
     // Inactivity TIMER
     const inactivityTimer = useRef<ReturnType<typeof setTimeout>>();
     const INACTIVITY_MS = 30 * 60 * 1000;
@@ -155,7 +133,7 @@ export function App() {
                 </div>
             )}
 
-            <Nav page={page} setPage={setPage} user={user} onLogout={handleLogout} />
+            <Nav page={page} setPage={setPage} user={user} />
 
             {user && (user.profileCompletionPct ?? 100) < 100 && (
                 <ProfileBanner
@@ -172,11 +150,6 @@ export function App() {
             {page === 'register' && <RegisterPage setPage={setPage} onLogin={handleLogin} />}
             {page === 'forgot-password' && <ForgotPasswordPage setPage={setPage} />}
             {page === 'reset-password' && <ResetPasswordPage setPage={setPage} />}
-
-            {/* ── Authenticated ── */}
-            {canSee['profile'] && page === 'profile' && user && (
-                <ProfilePage user={user} setPage={setPage} onProfileUpdate={handleProfileUpdate} onLogout={handleLogout} />
-            )}
 
             {/* ── Patient ── */}
             {canSee['send-request'] && page === 'send-request' && <SendRequestPage  setPage={setPage} />}
@@ -195,6 +168,7 @@ export function App() {
                     setPage={setPage}
                     focusField={profileFocusField}
                     onProfileUpdate={handleProfileUpdate}
+                    onLogout={handleLogout}
                 />
             )}
         </>

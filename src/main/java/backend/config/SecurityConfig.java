@@ -48,6 +48,8 @@ public class SecurityConfig {
                         ).permitAll()
                         // WebSocket handshake
                         .requestMatchers("/ws/**").permitAll()
+                        // Actuator health — used by Docker & Kubernetes health probes
+                        .requestMatchers("/actuator/health").permitAll()
                         // Swagger UI (dev convenience)
                         .requestMatchers(
                                 "/swagger-ui/**",
@@ -85,12 +87,23 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "https://localhost:5173",
-                "http://172.20.10.2:5173",
-                "https://172.20.10.2:5173"
-        ));
+        // Origins are read from the environment variable CORS_ALLOWED_ORIGINS.
+        // Fallback covers local dev (Vite) and the Docker stack (nginx on :80).
+        String originsEnv = System.getenv("CORS_ALLOWED_ORIGINS");
+        List<String> origins;
+        if (originsEnv != null && !originsEnv.isBlank()) {
+            origins = List.of(originsEnv.split(","));
+        } else {
+            origins = List.of(
+                    "http://localhost:5173",
+                    "https://localhost:5173",
+                    "http://localhost:80",
+                    "http://localhost",
+                    "http://172.20.10.2:5173",
+                    "https://172.20.10.2:5173"
+            );
+        }
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
