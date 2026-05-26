@@ -57,8 +57,8 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/api/auth/2fa/verify"
                         ).permitAll()
-                        // WebSocket handshake
-                        .requestMatchers("/ws/**").permitAll()
+                        // WebSocket handshake (SockJS negotiation + upgrade)
+                        .requestMatchers("/ws-smiling-wallet/**").permitAll()
                         // Swagger UI (dev convenience)
                         .requestMatchers(
                                 "/swagger-ui/**",
