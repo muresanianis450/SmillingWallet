@@ -3,13 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies (layer cached unless package-lock changes)
-# --legacy-peer-deps: needed because @vitejs/plugin-react@4 declares peer dep
-# on vite ^4-7 but the project uses vite 8 (works fine at runtime)
 COPY package*.json ./
 RUN npm ci --legacy-peer-deps
 
-# Copy source and build
 COPY . .
 RUN npm run build
 
@@ -17,22 +13,24 @@ RUN npm run build
 # ─── Stage 2: Serve with Nginx ───────────────────────────────────────────────
 FROM nginx:1.27-alpine
 
-# envsubst is included in nginx:alpine; gettext provides it on other images
-# (already present here, no extra install needed)
-
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy the nginx config template — $BACKEND_URL will be substituted at startup.
-# Only $BACKEND_URL is substituted; nginx's own $host / $remote_addr etc. are
-# left intact because we pass the explicit variable list to envsubst.
-COPY nginx.conf.template /etc/nginx/templates/nginx.conf.template
+# Put the template in /tmp — NOT in /etc/nginx/templates/ because the nginx
+# Docker entrypoint auto-processes that directory with a full envsubst (which
+# would wipe out nginx's own $host / $remote_addr / $scheme variables).
+COPY nginx.conf.template /tmp/nginx.conf.template
 
 # Copy built React files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
-# Substitute only $BACKEND_URL, then hand off to nginx with PID 1
+# Override the nginx entrypoint entirely so only $BACKEND_URL is substituted.
+# 'envsubst "$BACKEND_URL"' (double-quoted) expands to the value of BACKEND_URL
+# at shell parse time — use the explicit variable-list form instead:
+#   envsubst with a literal '$BACKEND_URL' argument restricts substitution to
+#   that one variable, leaving nginx's $host / $remote_addr etc. untouched.
+ENTRYPOINT []
 CMD ["/bin/sh", "-c", \
-  "envsubst '$BACKEND_URL' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+  "envsubst '$BACKEND_URL' < /tmp/nginx.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
