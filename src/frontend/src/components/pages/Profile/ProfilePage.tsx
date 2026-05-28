@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../../services/api';
 import { AuthUser, PageName } from '../../../types/types';
+import { ROMANIAN_CITIES } from '../../../data/constants';
 import { BlobBackground } from '../../shared/BlobBackground';
 // @ts-ignore
 import styles from './ProfilePage.module.css';
@@ -83,7 +84,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
 
     const usernameRef  = useRef<HTMLInputElement>(null);
     const phoneRef     = useRef<HTMLInputElement>(null);
-    const cityRef      = useRef<HTMLInputElement>(null);
+    const cityRef      = useRef<HTMLSelectElement>(null);
     const specialtyRef = useRef<HTMLSelectElement>(null);
 
     const fieldRefs: Record<string, React.RefObject<any>> = {
@@ -427,13 +428,17 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
 
                 <div className={`${styles.field} ${missing.has('city') ? styles.fieldRequired : ''}`}>
                     <label className={styles.label}>City</label>
-                    <input
+                    <select
                         ref={cityRef}
-                        className={`${styles.input} ${missing.has('city') ? styles.inputMissing : ''}`}
+                        className={`${styles.select} ${missing.has('city') ? styles.inputMissing : ''}`}
                         value={city}
                         onChange={e => setCity(e.target.value)}
-                        placeholder="e.g. Cluj-Napoca"
-                    />
+                    >
+                        <option value="">— select city —</option>
+                        {ROMANIAN_CITIES.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                        ))}
+                    </select>
                     {missing.has('city') && (
                         <p className={styles.hint}>Required to submit requests</p>
                     )}
