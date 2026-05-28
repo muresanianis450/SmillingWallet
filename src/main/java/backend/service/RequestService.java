@@ -10,22 +10,30 @@ import backend.exception.ResourceNotFoundException;
 import backend.exception.UnprocessableEntityException;
 import backend.model.DentalRequest;
 import backend.model.User;
+import backend.repository.OfferRepository;
 import backend.repository.RequestRepository;
 import backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class RequestService {
 
     private final RequestRepository requestRepository;
     private final UserRepository userRepository;
+    private final OfferRepository offerRepository;
 
-    public RequestService(RequestRepository requestRepository, UserRepository userRepository) {
+    public RequestService(RequestRepository requestRepository,
+                          UserRepository userRepository,
+                          OfferRepository offerRepository) {
         this.requestRepository = requestRepository;
-        this.userRepository = userRepository;}
+        this.userRepository = userRepository;
+        this.offerRepository = offerRepository;
+    }
 
     /**
      * Patient creates a new dental treatment request
@@ -54,18 +62,25 @@ public class RequestService {
     public PagedResponseDTO<DentalRequestResponseDTO> findAllForDentist(
             int page, int size,
             DentalSpecialty specialty,
-            String city){
+            String city,
+            UUID dentistId) {
+
+        // Collect request IDs this dentist already bid on (any offer status)
+        Set<UUID> alreadyOffered = offerRepository.findByDentistPublicId(dentistId)
+                .stream()
+                .map(o -> o.getRequestId())
+                .collect(Collectors.toSet());
 
         List<DentalRequestResponseDTO> all = requestRepository.findAll().stream()
                 .filter(r -> r.getStatus() == RequestStatus.OPEN)
+                .filter(r -> !alreadyOffered.contains(r.getId()))
                 .filter(r -> specialty == null || r.getSpecialty() == specialty)
                 .filter(r -> city == null || r.getPreferredCity().equalsIgnoreCase(city))
-                .sorted( (a,b) -> b.getCreatedAt().compareTo(a.getCreatedAt()) ) // newest first
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .map(DentalRequestResponseDTO::from)
                 .toList();
 
-        return new PagedResponseDTO<>(all,page,size);
-
+        return new PagedResponseDTO<>(all, page, size);
     }
 
     /**

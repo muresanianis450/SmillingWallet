@@ -8,6 +8,7 @@ import backend.enums.RequestStatus;
 import backend.exception.ConflictException;
 import backend.exception.ResourceNotFoundException;
 import backend.model.DentalRequest;
+import backend.repository.OfferRepository;
 import backend.repository.UserRepository;
 import backend.service.RequestService;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,7 @@ class RequestServiceTest {
 
     @Mock private RequestRepository requestRepository;
     @Mock private UserRepository userRepository;
+    @Mock private OfferRepository offerRepository;
     @InjectMocks private RequestService requestService;
 
     private UUID patientId;
@@ -81,28 +83,32 @@ class RequestServiceTest {
 
     @Test
     void findAllForDentist_shouldReturnOnlyOpenRequests() {
-        // Changed BigDecimal.TEN to 10.0
+        UUID dentistId = UUID.randomUUID();
         DentalRequest closed = new DentalRequest(patientId, DentalSpecialty.ORTHODONTICS, "old", "Cluj", 10.0);
         closed.setStatus(RequestStatus.CLOSED);
         when(requestRepository.findAll()).thenReturn(List.of(request, closed));
-        PagedResponseDTO<DentalRequestResponseDTO> result = requestService.findAllForDentist(0, 10, null, null);
+        when(offerRepository.findByDentistPublicId(dentistId)).thenReturn(List.of());
+        PagedResponseDTO<DentalRequestResponseDTO> result = requestService.findAllForDentist(0, 10, null, null, dentistId);
         assertThat(result.getContent()).hasSize(1);
     }
 
     @Test
     void findAllForDentist_shouldFilterBySpecialty() {
+        UUID dentistId = UUID.randomUUID();
         DentalRequest other = new DentalRequest(patientId, DentalSpecialty.IMPLANTS, "implant", "Cluj", Double.valueOf(1000));
         when(requestRepository.findAll()).thenReturn(List.of(request, other));
-        PagedResponseDTO<DentalRequestResponseDTO> result = requestService.findAllForDentist(0, 10, DentalSpecialty.ORTHODONTICS, null);
+        when(offerRepository.findByDentistPublicId(dentistId)).thenReturn(List.of());
+        PagedResponseDTO<DentalRequestResponseDTO> result = requestService.findAllForDentist(0, 10, DentalSpecialty.ORTHODONTICS, null, dentistId);
         assertThat(result.getContent()).hasSize(1);
     }
 
     @Test
     void findAllForDentist_shouldFilterByCity() {
-        // Changed BigDecimal.TEN to 10.0
+        UUID dentistId = UUID.randomUUID();
         DentalRequest other = new DentalRequest(patientId, DentalSpecialty.ORTHODONTICS, "desc", "Bucharest", 10.0);
         when(requestRepository.findAll()).thenReturn(List.of(request, other));
-        PagedResponseDTO<DentalRequestResponseDTO> result = requestService.findAllForDentist(0, 10, null, "Cluj");
+        when(offerRepository.findByDentistPublicId(dentistId)).thenReturn(List.of());
+        PagedResponseDTO<DentalRequestResponseDTO> result = requestService.findAllForDentist(0, 10, null, "Cluj", dentistId);
         assertThat(result.getContent()).hasSize(1);
     }
 

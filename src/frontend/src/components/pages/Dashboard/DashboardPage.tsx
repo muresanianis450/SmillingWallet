@@ -46,10 +46,11 @@ export function DashboardPage() {
 
   const { toast, show: showToast } = useToast();
 
-  const [offers,       setOffers]       = useState<Offer[]>([]);
-  const [search,       setSearch]       = useState('');
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [modal,        setModal]        = useState<ModalState | null>(null);
+  const [offers,        setOffers]        = useState<Offer[]>([]);
+  const [search,        setSearch]        = useState('');
+  const [filterStatus,  setFilterStatus]  = useState('All');
+  const [modal,         setModal]         = useState<ModalState | null>(null);
+  const [appointments,  setAppointments]  = useState<any[]>([]);
 
   const dentist = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -58,6 +59,14 @@ export function DashboardPage() {
     if (!dentist?.id) return;
     api.get(`/offers/dentist/${dentist.id}?page=0&size=50`)
       .then((res) => setOffers((res.data.content || []).map(mapApiOffer)))
+      .catch(() => {});
+  }, []);
+
+  // Load accepted appointments (includes patient identity)
+  useEffect(() => {
+    if (!dentist?.id) return;
+    api.get(`/dashboard/clinic/${dentist.id}`)
+      .then((res) => setAppointments(res.data.upcomingAppointments || []))
       .catch(() => {});
   }, []);
 
@@ -188,6 +197,45 @@ export function DashboardPage() {
         </table>
 
         <Pagination page={page} totalPages={totalPages} setPage={setPage} />
+      </div>
+
+      {/* Accepted appointments — patient identity revealed post-acceptance */}
+      <div className={styles.tableCard} style={{ marginTop: 28 }}>
+        <div className={styles.toolbar}>
+          <span style={{ fontWeight: 700, fontSize: 15 }}>Accepted Appointments</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Patient Name</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Price</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {appointments.length === 0 ? (
+              <tr>
+                <td colSpan={6}>
+                  <EmptyState icon="📅" message="No accepted appointments yet" />
+                </td>
+              </tr>
+            ) : (
+              appointments.map((apt) => (
+                <tr key={apt.id}>
+                  <td>{apt.scheduledAt ? new Date(apt.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
+                  <td><strong>{apt.patientName || '—'}</strong></td>
+                  <td>{apt.patientPhone || '—'}</td>
+                  <td>{apt.patientEmail || '—'}</td>
+                  <td className={styles.priceTeal}>€{apt.confirmedPrice}</td>
+                  <td>{apt.status}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {(modal?.type === 'edit' || modal?.type === 'view') && modal.offer && (

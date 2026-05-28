@@ -61,7 +61,10 @@ public class DashboardService {
                 .filter(a -> a.getStatus() == AppointmentStatus.PENDING
                         || a.getStatus() == AppointmentStatus.CONFIRMED)
                 .sorted((a, b) -> a.getScheduledAt().compareTo(b.getScheduledAt()))
-                .map(AppointmentResponseDTO::from)
+                .map(a -> {
+                    var patient = userRepository.findById(a.getPatientPublicId()).orElse(null);
+                    return AppointmentResponseDTO.fromWithPatient(a, patient);
+                })
                 .toList();
 
         return new ClinicStatsDTO(
