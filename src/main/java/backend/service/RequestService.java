@@ -35,10 +35,6 @@ public class RequestService {
         User patient = userRepository.findById(dto.getPatientPublicId())
                 .orElseThrow(() -> new ResourceNotFoundException("Patient with id " + dto.getPatientPublicId() + " not found"));
 
-        if (patient.getCity() == null || patient.getCity().isBlank()) {
-            throw new UnprocessableEntityException("Please add your city in your profile before submitting a request");
-        }
-
         DentalRequest request = new DentalRequest(
                 dto.getPatientPublicId(),
                 dto.getSpecialty(),

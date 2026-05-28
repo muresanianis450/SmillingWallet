@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PageName } from '../../../types/types.ts';
 import { api } from '../../../services/api';
-import { useWebSocket, ChatMessage } from '../../../hooks/useWebSocket';
 // @ts-ignore
 import styles from './AppointmentsPage.module.css';
 
@@ -58,18 +57,8 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
     const [appointments, setAppointments] = useState<AppointmentDTO[]>([]);
     const [clinic, setClinic] = useState<ClinicInfo | null>(null);
     const [loading, setLoading] = useState(true);
-    const [appointmentId, setAppointmentId] = useState<string | null>(null);
-
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [input, setInput] = useState('');
-    const bottomRef = useRef<HTMLDivElement>(null);
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-
-    const { connected, sendMessage } = useWebSocket({
-        appointmentId,
-        onMessage: (msg) => setMessages((prev) => [...prev, msg]),
-    });
 
     useEffect(() => {
         if (!user?.id) {
@@ -83,78 +72,45 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                 setAppointments(appts);
 
                 if (appts.length > 0) {
-                    setAppointmentId(appts[0].id);
-
-                    const dentistRes = await api.get(
-                        `/auth/user/${appts[0].dentistPublicId}`
-                    );
-                    const d = dentistRes.data;
-
-                    setClinic({
-                        name: d.username,
-                        doctorName: d.username,
-                        rating: d.rating ?? 0,
-                        phone: d.phone || 'N/A',
-                        email: d.email || 'N/A',
-                        address: d.address || d.city || 'N/A',
-                        specialty: d.specialty || '',
-                    });
+                    try {
+                        const dentistRes = await api.get(`/auth/user/${appts[0].dentistPublicId}`);
+                        const d = dentistRes.data;
+                        setClinic({
+                            name: d.username,
+                            doctorName: d.username,
+                            rating: d.rating ?? 0,
+                            phone: d.phone || 'N/A',
+                            email: d.email || 'N/A',
+                            address: d.address || d.city || 'N/A',
+                            specialty: d.specialty || '',
+                        });
+                    } catch {
+                        setClinic({ name: 'Unknown', doctorName: 'Unknown', rating: 0, phone: 'N/A', email: 'N/A', address: 'N/A', specialty: '' });
+                    }
                 } else {
-                    setClinic({
-                        name: 'No clinic assigned',
-                        doctorName: 'No doctor assigned',
-                        rating: 0,
-                        phone: 'N/A',
-                        email: 'N/A',
-                        address: 'N/A',
-                        specialty: '',
-                    });
+                    setClinic(null);
                 }
             })
+            .catch(() => setClinic(null))
             .finally(() => setLoading(false));
     }, []);
 
-    useEffect(() => {
-        if (!appointmentId) return;
-
-        setMessages([]);
-
-        api.get(`/chat/${appointmentId}/history`)
-            .then((res) => setMessages(res.data))
-            .catch(() => {});
-    }, [appointmentId]);
-
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
-    const handleSend = () => {
-        if (!input.trim() || !appointmentId) return;
-
-        sendMessage({
-            appointmentId,
-            senderId: String(user.id),
-            senderName: user.username || 'You',
-            senderRole: user.role || 'PATIENT',
-            content: input.trim(),
-        });
-
-        setInput('');
-    };
-
     if (loading) return <div className={styles.wrap}>Loading...</div>;
-    if (!clinic) return <div className={styles.wrap}>Loading clinic info...</div>;
 
     return (
         <div className={styles.wrap}>
             <div className={styles.hero}>
-                <div className={styles.heroIcon}>🎉</div>
-                <h1 className={styles.heroTitle}>Congratulations!</h1>
-                <p className={styles.heroSub}>Your Perfect Smile is on its way.</p>
-                <div className={styles.clinicReveal}>
-                    <span className={styles.clinicRevealLabel}>Matched Clinic</span>
-                    <span className={styles.clinicRevealName}>{clinic.name}</span>
-                </div>
+                <div className={styles.heroIcon}>{clinic ? '🎉' : '📋'}</div>
+                <h1 className={styles.heroTitle}>{clinic ? 'Congratulations!' : 'My Appointments'}</h1>
+                <p className={styles.heroSub}>
+                    {clinic ? 'Your Perfect Smile is on its way.' : 'No appointments yet. Accept an offer to get started.'}
+                </p>
+                {clinic && (
+                    <div className={styles.clinicReveal}>
+                        <span className={styles.clinicRevealLabel}>Matched Clinic</span>
+                        <span className={styles.clinicRevealName}>{clinic.name}</span>
+                    </div>
+                )}
             </div>
 
             <div className={styles.content}>
@@ -178,14 +134,7 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                                 </tr>
                             ) : (
                                 appointments.map((apt) => (
-                                    <tr
-                                        key={apt.id}
-                                        onClick={() => setAppointmentId(apt.id)}
-                                        className={
-                                            apt.id === appointmentId ? styles.activeRow : ''
-                                        }
-                                        style={{ cursor: 'pointer' }}
-                                    >
+                                    <tr key={apt.id}>
                                         <td>{formatDate(apt.scheduledAt)}</td>
                                         <td>{formatTime(apt.scheduledAt)}</td>
                                         <td>€{apt.confirmedPrice?.toFixed(2)}</td>
@@ -203,6 +152,7 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                 </section>
 
                 {/* TEAM + CONTACT */}
+                {clinic && (
                 <div className={styles.twoCol}>
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Your Dental Team</h2>
@@ -249,8 +199,10 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                         </div>
                     </section>
                 </div>
+                )}
 
                 {/* MAP */}
+                {clinic && (
                 <section className={styles.section}>
                     <h2 className={styles.sectionTitle}>Directions</h2>
                     <div className={styles.mapPlaceholder}>
@@ -268,107 +220,8 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                         </a>
                     </div>
                 </section>
+                )}
 
-                {/* CHAT */}
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>
-                        Chat with {clinic.name}
-                        <span
-                            className={
-                                connected ? styles.dotOnline : styles.dotOffline
-                            }
-                        />
-                    </h2>
-
-                    {!appointmentId ? (
-                        <div className={styles.chatEmpty}>
-                            Chat is available once your appointment is confirmed.
-                        </div>
-                    ) : (
-                        <div className={styles.chatCard}>
-                            <div className={styles.chatMessages}>
-                                {messages.length === 0 && (
-                                    <div className={styles.chatNoMessages}>
-                                        No messages yet. Say hello! 👋
-                                    </div>
-                                )}
-
-                                {messages.map((msg) => {
-                                    const isMe = msg.senderId === String(user.id);
-
-                                    return (
-                                        <div
-                                            key={msg.messageId}
-                                            className={
-                                                isMe
-                                                    ? styles.msgRowMe
-                                                    : styles.msgRowOther
-                                            }
-                                        >
-                                            {!isMe && (
-                                                <div className={styles.msgAvatar}>
-                                                    {msg.senderName?.[0] ?? '?'}
-                                                </div>
-                                            )}
-
-                                            <div className={styles.msgBubbleWrap}>
-                                                {!isMe && (
-                                                    <div className={styles.msgSender}>
-                                                        {msg.senderName}
-                                                    </div>
-                                                )}
-
-                                                <div
-                                                    className={
-                                                        isMe
-                                                            ? styles.bubbleMe
-                                                            : styles.bubbleOther
-                                                    }
-                                                >
-                                                    {msg.content}
-                                                </div>
-
-                                                <div className={styles.msgTime}>
-                                                    {new Date(
-                                                        msg.timestamp
-                                                    ).toLocaleTimeString([], {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-
-                                <div ref={bottomRef} />
-                            </div>
-
-                            <div className={styles.chatInputRow}>
-                                <input
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSend();
-                                        }
-                                    }}
-                                    placeholder="Type a message…"
-                                    className={styles.chatInput}
-                                    maxLength={1000}
-                                />
-                                <button
-                                    onClick={handleSend}
-                                    disabled={!connected || !input.trim()}
-                                    className={styles.chatSendBtn}
-                                >
-                                    Send
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </section>
             </div>
         </div>
     );

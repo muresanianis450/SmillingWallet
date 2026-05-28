@@ -50,10 +50,23 @@ export function validateOffer(
   return errors;
 }
 
-// ─── Send-Offer Form Validation (lighter — only price + optional date/time) ──
+// ─── Send-Offer Form Validation ──────────────────────────────────────────────
 
-export function validateSendOffer(
-  fields: Partial<SendOfferFormFields>
-): ValidationErrors {
-  return validateOffer(fields as Partial<OfferFormFields>);
+export function validateSendOffer(fields: Partial<SendOfferFormFields>): ValidationErrors {
+  const errors: ValidationErrors = {};
+  const price = parseFloat(String(fields.priceQuote));
+  if (fields.priceQuote === '' || fields.priceQuote === null || fields.priceQuote === undefined) {
+    errors.priceQuote = 'Price is required';
+  } else if (isNaN(price) || price <= 0) {
+    errors.priceQuote = 'Price must be a positive number';
+  } else if (price > 99999) {
+    errors.priceQuote = 'Price cannot exceed €99,999';
+  }
+  if (fields.estimatedWaitDays !== undefined && fields.estimatedWaitDays !== '') {
+    const days = parseInt(String(fields.estimatedWaitDays), 10);
+    if (isNaN(days) || days < 0 || days > 365) {
+      errors.estimatedWaitDays = 'Wait days must be between 0 and 365';
+    }
+  }
+  return errors;
 }

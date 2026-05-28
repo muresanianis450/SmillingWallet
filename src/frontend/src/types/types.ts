@@ -61,10 +61,13 @@ export interface Offer {
 }
 export interface DentalRequest {
   id: string;
-  category: TreatmentCategory | string;
-  symptoms: string;
-  timeSlot: string;
-  ctScan: string | null;
+  patientPublicId: string;
+  specialty: string;
+  description: string;
+  preferredCity: string;
+  budgetMax: number | null;
+  status: string;
+  createdAt: string;
 }
 
 // ─── Client-side types ───────────────────────────────────────────────────────
@@ -144,8 +147,8 @@ export interface OfferFormFields {
 
 export interface SendOfferFormFields {
   priceQuote: string | number;
-  date: string;
-  time: string;
+  estimatedWaitDays: string | number;
+  notes: string;
 }
 
 // ─── Validation ──────────────────────────────────────────────────────────────

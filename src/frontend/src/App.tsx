@@ -12,10 +12,6 @@ import { LoginPage } from './components/pages/Login/LoginPage';
 import { RegisterPage } from './components/pages/Register/RegisterPage';
 import { ProfilePage } from './components/pages/Profile/ProfilePage';
 import { ProfileBanner } from './components/shared/ProfileBanner';
-import { useOffers } from './hooks/useOffers';
-import { INITIAL_OFFERS } from './data/constants';
-import { offerService } from './services/OfferService';
-import { useNetworkStatus } from './hooks/useNetworkStatus';
 import {ForgotPasswordPage} from './components/pages/ForgotPassword/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/pages/ResetPassword/ResetPasswordPage';
 import { ActivateAccountPage } from './components/pages/Activate/ActivateAccountPage';
@@ -25,12 +21,6 @@ export function App() {
     const [page, setPage]               = useState<PageName>('home');
     const [user, setUser]               = useState<AuthUser | null>(null);
     const [profileFocusField, setProfileFocusField] = useState<string | null>(null);
-    const offerHook                     = useOffers(INITIAL_OFFERS);
-    const isOnline                      = useNetworkStatus();
-
-    useEffect(() => {
-        if (isOnline) offerService.syncOfflineData();
-    }, [isOnline]);
 
     // Restore session on mount
     useEffect(() => {
@@ -130,16 +120,6 @@ export function App() {
 
     return (
         <>
-            {!isOnline && (
-                <div style={{
-                    background: '#E8593C', color: '#fff',
-                    textAlign: 'center', padding: '8px',
-                    fontSize: '14px', fontWeight: 'bold'
-                }}>
-                    You are currently offline. Changes will be synced once you reconnect.
-                </div>
-            )}
-
             <Nav page={page} setPage={setPage} user={user} />
 
             {user && (user.profileCompletionPct ?? 100) < 100 && (
@@ -166,8 +146,8 @@ export function App() {
 
             {/* ── Clinic ── */}
             {canSee['about']     && page === 'about'     && <AboutPage          setPage={setPage} />}
-            {canSee['requests']  && page === 'requests'  && <ReviewRequestsPage offersHook={offerHook} setPage={setPage} user={user} />}
-            {canSee['dashboard'] && page === 'dashboard' && <DashboardPage      offersHook={offerHook} />}
+            {canSee['requests']  && page === 'requests'  && <ReviewRequestsPage setPage={setPage} user={user} />}
+            {canSee['dashboard'] && page === 'dashboard' && <DashboardPage />}
 
             {/* ── Admin ── */}
             {canSee['admin-dentists'] && page === 'admin-dentists' && <AdminDentistsPage />}

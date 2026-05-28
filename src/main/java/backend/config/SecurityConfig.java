@@ -61,8 +61,6 @@ public class SecurityConfig {
                                 "/api/auth/activate",
                                 "/api/auth/2fa/verify"
                         ).permitAll()
-                        // WebSocket handshake (SockJS negotiation + upgrade)
-                        .requestMatchers("/ws-smiling-wallet/**").permitAll()
                         // Actuator health — used by Railway / Docker health probes
                         .requestMatchers("/actuator/health").permitAll()
                         // Swagger UI (dev convenience)
@@ -75,16 +73,21 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/auth/user/**").authenticated()
 
-                        // DENTIST routes
-                        .requestMatchers(
-                                "/api/requests",
-                                "/api/dashboard/**"
-                        ).hasAnyRole("DENTIST", "ADMIN")
+                        // DENTIST: browse marketplace (GET /api/requests) + clinic dashboard
+                        .requestMatchers(HttpMethod.GET, "/api/requests").hasAnyRole("DENTIST", "ADMIN")
+                        .requestMatchers("/api/dashboard/clinic/**").hasAnyRole("DENTIST", "ADMIN")
 
-                        // PATIENT routes
-                        .requestMatchers(
-                                "/api/dental-requests/**"
-                        ).hasAnyRole("PATIENT", "ADMIN")
+                        // PATIENT: their own appointment history
+                        .requestMatchers("/api/dashboard/patient/**").hasAnyRole("PATIENT", "ADMIN")
+
+                        // PATIENT: submit a new request
+                        .requestMatchers(HttpMethod.POST, "/api/requests").hasAnyRole("PATIENT", "ADMIN")
+
+                        // All other /api/requests/** — both roles need access (patient edits, dentist views single)
+                        .requestMatchers("/api/requests/**").authenticated()
+
+                        // PATIENT routes (legacy path kept for compatibility)
+                        .requestMatchers("/api/dental-requests/**").hasAnyRole("PATIENT", "ADMIN")
 
                         // everything else requires auth
                         .anyRequest().authenticated()
