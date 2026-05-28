@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PageName, SendRequestFormFields, PaymentMethod, ValidationErrors } from '../../../types/types.ts';
-import { TREATMENT_CATEGORIES, BUDGET_RANGES, INSURANCE_PROVIDERS } from '../../../data/constants';
+import { TREATMENT_CATEGORIES, BUDGET_RANGES, INSURANCE_PROVIDERS, ROMANIAN_CITIES } from '../../../data/constants';
 import { useToast } from '../../../hooks/useToast';
 import { Toast } from '../../shared/Toast';
 import { Button } from '../../shared/Button';
@@ -118,13 +118,16 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
 
                         <div className={styles.field}>
                             <label>Location <span className={styles.required}>*</span></label>
-                            <input
-                                type="text"
-                                placeholder="e.g. Cluj-Napoca"
+                            <select
                                 value={form.location}
                                 onChange={(e) => handleChange('location', e.target.value)}
                                 className={errors.location ? styles.inputError : ''}
-                            />
+                            >
+                                <option value="">Select a city…</option>
+                                {ROMANIAN_CITIES.map((c) => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
                             {errors.location && <span className={styles.errorMsg}>{errors.location}</span>}
                         </div>
 
