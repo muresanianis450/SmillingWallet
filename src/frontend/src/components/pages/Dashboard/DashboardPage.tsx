@@ -207,6 +207,7 @@ export function DashboardPage() {
         <table>
           <thead>
             <tr>
+              <th>Request</th>
               <th>Date & Time</th>
               <th>Patient Name</th>
               <th>Phone</th>
@@ -218,13 +219,14 @@ export function DashboardPage() {
           <tbody>
             {appointments.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <EmptyState icon="📅" message="No accepted appointments yet" />
                 </td>
               </tr>
             ) : (
               appointments.map((apt) => (
                 <tr key={apt.id}>
+                  <td><strong>#{apt.requestId ? String(apt.requestId).substring(0, 8) : '—'}</strong></td>
                   <td>{apt.scheduledAt ? new Date(apt.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
                   <td><strong>{apt.patientName || '—'}</strong></td>
                   <td>{apt.patientPhone || '—'}</td>

@@ -5,6 +5,7 @@ import backend.dto.DentalRequestResponseDTO;
 import backend.enums.AppointmentStatus;
 import backend.exception.ResourceNotFoundException;
 import backend.repository.AppointmentRepository;
+import backend.repository.OfferRepository;
 import backend.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -25,11 +26,14 @@ public class DashboardService {
     private EntityManager em;
 
     private final AppointmentRepository appointmentRepository;
+    private final OfferRepository offerRepository;
     private final UserRepository userRepository;
 
     public DashboardService(AppointmentRepository appointmentRepository,
+                            OfferRepository offerRepository,
                             UserRepository userRepository) {
         this.appointmentRepository = appointmentRepository;
+        this.offerRepository = offerRepository;
         this.userRepository = userRepository;
     }
 
@@ -63,7 +67,9 @@ public class DashboardService {
                 .sorted((a, b) -> a.getScheduledAt().compareTo(b.getScheduledAt()))
                 .map(a -> {
                     var patient = userRepository.findById(a.getPatientPublicId()).orElse(null);
-                    return AppointmentResponseDTO.fromWithPatient(a, patient);
+                    UUID requestId = offerRepository.findById(a.getOfferId())
+                            .map(o -> o.getRequestId()).orElse(null);
+                    return AppointmentResponseDTO.fromWithPatientAndRequest(a, patient, requestId);
                 })
                 .toList();
 
