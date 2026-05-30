@@ -19,7 +19,8 @@ const EMPTY_FORM: SendRequestFormFields = {
     firstName: '',
     lastName: '',
     location: '',
-    date: '',
+    availableFrom: '',
+    availableTo: '',
     phone: '',
     email: '',
     treatmentCategory: '',
@@ -36,6 +37,10 @@ function validate(form: SendRequestFormFields): ValidationErrors {
     if (!form.firstName.trim())            errors.firstName            = 'First name is required';
     if (!form.lastName.trim())             errors.lastName             = 'Last name is required';
     if (!form.location.trim())             errors.location             = 'Location is required';
+    if (!form.availableFrom)               errors.availableFrom        = 'Arrival date is required';
+    if (!form.availableTo)                 errors.availableTo          = 'Departure date is required';
+    else if (form.availableFrom && form.availableTo && form.availableTo < form.availableFrom)
+                                           errors.availableTo          = 'Departure must be after arrival';
     if (!form.phone.trim())                errors.phone                = 'Phone is required';
     if (!form.email.trim())                errors.email                = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(form.email)) errors.email           = 'Invalid email address';
@@ -108,6 +113,8 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                 description,
                 preferredCity:   form.location,
                 budgetMax:       BUDGET_MAP[form.budgetRange] ?? null,
+                availableFrom:   form.availableFrom,
+                availableTo:     form.availableTo,
             });
             showToast('Request submitted! Clinics will respond shortly.', 'success');
             setTimeout(() => setPage('my-offers'), 1800);
@@ -179,12 +186,27 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                         </div>
 
                         <div className={styles.field}>
-                            <label>Preferred Date</label>
+                            <label>Arriving in country <span className={styles.required}>*</span></label>
                             <input
                                 type="date"
-                                value={form.date}
-                                onChange={(e) => handleChange('date', e.target.value)}
+                                value={form.availableFrom}
+                                min={new Date().toISOString().split('T')[0]}
+                                onChange={(e) => handleChange('availableFrom', e.target.value)}
+                                className={errors.availableFrom ? styles.inputError : ''}
                             />
+                            {errors.availableFrom && <span className={styles.errorMsg}>{errors.availableFrom}</span>}
+                        </div>
+
+                        <div className={styles.field}>
+                            <label>Leaving the country <span className={styles.required}>*</span></label>
+                            <input
+                                type="date"
+                                value={form.availableTo}
+                                min={form.availableFrom || new Date().toISOString().split('T')[0]}
+                                onChange={(e) => handleChange('availableTo', e.target.value)}
+                                className={errors.availableTo ? styles.inputError : ''}
+                            />
+                            {errors.availableTo && <span className={styles.errorMsg}>{errors.availableTo}</span>}
                         </div>
 
                         <div className={styles.field}>

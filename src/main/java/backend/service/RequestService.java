@@ -48,7 +48,9 @@ public class RequestService {
                 dto.getSpecialty(),
                 dto.getDescription(),
                 dto.getPreferredCity(),
-                dto.getBudgetMax()
+                dto.getBudgetMax(),
+                dto.getAvailableFrom(),
+                dto.getAvailableTo()
         );
 
         return DentalRequestResponseDTO.from(requestRepository.save(request));

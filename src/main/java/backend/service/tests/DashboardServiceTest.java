@@ -102,7 +102,7 @@ class DashboardServiceTest {
     }
 
     private Offer mockOffer(OfferStatus status, BigDecimal price) {
-        Offer o = new Offer(UUID.randomUUID(), dentistId, price, 5, "note", false, false);
+        Offer o = new Offer(UUID.randomUUID(), dentistId, price, 5, "note", false, false, null, null, null);
         o.setStatus(status);
         return o;
     }

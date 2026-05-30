@@ -53,10 +53,19 @@ public class Offer {
     @Column(name = "status", nullable = false, length = 30)
     private OfferStatus status;
 
+    @Column(name = "proposed_slot_1")
+    private LocalDateTime proposedSlot1;
+
+    @Column(name = "proposed_slot_2")
+    private LocalDateTime proposedSlot2;
+
+    @Column(name = "proposed_slot_3")
+    private LocalDateTime proposedSlot3;
 
     public Offer(UUID requestId, UUID dentistPublicId, BigDecimal price,
                  int estimatedWaitDays, String notes,
-                 boolean includesXray, boolean includesAnesthesia) {
+                 boolean includesXray, boolean includesAnesthesia,
+                 LocalDateTime proposedSlot1, LocalDateTime proposedSlot2, LocalDateTime proposedSlot3) {
         this.requestId = requestId;
         this.dentistPublicId = dentistPublicId;
         this.price = price;
@@ -64,6 +73,9 @@ public class Offer {
         this.notes = notes;
         this.includesXray = includesXray;
         this.includesAnesthesia = includesAnesthesia;
+        this.proposedSlot1 = proposedSlot1;
+        this.proposedSlot2 = proposedSlot2;
+        this.proposedSlot3 = proposedSlot3;
         this.status = OfferStatus.PENDING;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();

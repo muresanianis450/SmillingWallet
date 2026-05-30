@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/offers")
@@ -45,12 +46,25 @@ public class OfferController {
         return offerService.findByDentist(dentistId, page,size);
     }
 
-    @PatchMapping("/{offerId}/accepted")
-    public AppointmentResponseDTO acceptOffer(
+    @PatchMapping("/{offerId}/select-slot")
+    public AppointmentResponseDTO selectSlot(
             @PathVariable UUID offerId,
-            @Valid @RequestBody AppointmentRequestDTO dto
-    ){
-        return offerService.acceptOffer(offerId, dto);
+            @Valid @RequestBody SelectSlotRequestDTO dto
+    ) {
+        return offerService.selectSlot(offerId, dto);
+    }
+
+    @PatchMapping("/{offerId}/request-reschedule")
+    public ResponseEntity<OfferResponseDTO> requestReschedule(@PathVariable UUID offerId) {
+        return ResponseEntity.ok(offerService.requestReschedule(offerId));
+    }
+
+    @PatchMapping("/{offerId}/repropose-slots")
+    public ResponseEntity<OfferResponseDTO> reproposeSlots(
+            @PathVariable UUID offerId,
+            @Valid @RequestBody ReproposeSlotRequestDTO dto
+    ) {
+        return ResponseEntity.ok(offerService.reproposeSlots(offerId, dto));
     }
 
 }

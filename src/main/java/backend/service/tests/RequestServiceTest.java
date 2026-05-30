@@ -48,7 +48,7 @@ class RequestServiceTest {
         dto.setPreferredCity("Cluj");
         dto.setBudgetMax(Double.valueOf(500));
 
-        request = new DentalRequest(patientId, DentalSpecialty.ORTHODONTICS, "Need braces", "Cluj", Double.valueOf(500));
+        request = new DentalRequest(patientId, DentalSpecialty.ORTHODONTICS, "Need braces", "Cluj", Double.valueOf(500), null, null);
     }
 
     @Test
@@ -84,7 +84,7 @@ class RequestServiceTest {
     @Test
     void findAllForDentist_shouldReturnOnlyOpenRequests() {
         UUID dentistId = UUID.randomUUID();
-        DentalRequest closed = new DentalRequest(patientId, DentalSpecialty.ORTHODONTICS, "old", "Cluj", 10.0);
+        DentalRequest closed = new DentalRequest(patientId, DentalSpecialty.ORTHODONTICS, "old", "Cluj", 10.0, null, null);
         closed.setStatus(RequestStatus.CLOSED);
         when(requestRepository.findAll()).thenReturn(List.of(request, closed));
         when(offerRepository.findByDentistPublicId(dentistId)).thenReturn(List.of());
@@ -95,7 +95,7 @@ class RequestServiceTest {
     @Test
     void findAllForDentist_shouldFilterBySpecialty() {
         UUID dentistId = UUID.randomUUID();
-        DentalRequest other = new DentalRequest(patientId, DentalSpecialty.IMPLANTS, "implant", "Cluj", Double.valueOf(1000));
+        DentalRequest other = new DentalRequest(patientId, DentalSpecialty.IMPLANTS, "implant", "Cluj", Double.valueOf(1000), null, null);
         when(requestRepository.findAll()).thenReturn(List.of(request, other));
         when(offerRepository.findByDentistPublicId(dentistId)).thenReturn(List.of());
         PagedResponseDTO<DentalRequestResponseDTO> result = requestService.findAllForDentist(0, 10, DentalSpecialty.ORTHODONTICS, null, dentistId);
@@ -105,7 +105,7 @@ class RequestServiceTest {
     @Test
     void findAllForDentist_shouldFilterByCity() {
         UUID dentistId = UUID.randomUUID();
-        DentalRequest other = new DentalRequest(patientId, DentalSpecialty.ORTHODONTICS, "desc", "Bucharest", 10.0);
+        DentalRequest other = new DentalRequest(patientId, DentalSpecialty.ORTHODONTICS, "desc", "Bucharest", 10.0, null, null);
         when(requestRepository.findAll()).thenReturn(List.of(request, other));
         when(offerRepository.findByDentistPublicId(dentistId)).thenReturn(List.of());
         PagedResponseDTO<DentalRequestResponseDTO> result = requestService.findAllForDentist(0, 10, null, "Cluj", dentistId);

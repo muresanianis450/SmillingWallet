@@ -165,25 +165,33 @@ export function OfferFormModal({
             </div>
           </FormField>
 
-          {/* Date + Time — always editable */}
-          <div className={styles.formRow}>
-            <FormField label="📅 Date" error={touched.date ? errors.date : undefined}>
-              <Input
-                  type="date"
-                  value={fields.date}
-                  hasError={!!(touched.date && errors.date)}
-                  onChange={(e) => set('date', e.target.value)}
-              />
-            </FormField>
-            <FormField label="🕐 Time" error={touched.time ? errors.time : undefined}>
-              <Input
-                  type="time"
-                  value={fields.time}
-                  hasError={!!(touched.time && errors.time)}
-                  onChange={(e) => set('time', e.target.value)}
-              />
-            </FormField>
-          </div>
+          {/* Proposed time slots — read-only */}
+          {offer?.proposedSlots && offer.proposedSlots.length > 0 && (
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontWeight: 600, fontSize: '0.875rem', display: 'block', marginBottom: '8px' }}>
+                📅 Proposed Time Slots
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {offer.proposedSlots.map((slot, i) => {
+                  const d = new Date(slot);
+                  return (
+                    <div key={i} style={{
+                      padding: '8px 12px', borderRadius: '6px',
+                      background: '#f5f4ff', border: '1px solid #c7c4f7',
+                      fontSize: '0.875rem', color: '#4a3fbf',
+                    }}>
+                      {d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                      {' · '}
+                      {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {offer?.proposedSlots?.length === 0 && (
+            <p style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '16px' }}>No time slots proposed yet.</p>
+          )}
 
           <div className={styles.actions}>
             <Button variant="secondary" type="button" onClick={onClose}>

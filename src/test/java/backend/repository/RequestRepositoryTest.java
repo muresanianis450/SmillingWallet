@@ -36,9 +36,9 @@ class RequestRepositoryTest {
         patientA = UUID.randomUUID();
         patientB = UUID.randomUUID();
 
-        req1 = new DentalRequest(patientA, DentalSpecialty.ORTHODONTICS, "Braces needed", "Cluj", 1500.0);
-        req2 = new DentalRequest(patientA, DentalSpecialty.IMPLANTS, "Implant needed", "Timisoara", 3000.0);
-        req3 = new DentalRequest(patientB, DentalSpecialty.ORTHODONTICS, "Retainer", "Bucuresti", 500.0);
+        req1 = new DentalRequest(patientA, DentalSpecialty.ORTHODONTICS, "Braces needed", "Cluj", 1500.0, null, null);
+        req2 = new DentalRequest(patientA, DentalSpecialty.IMPLANTS, "Implant needed", "Timisoara", 3000.0, null, null);
+        req3 = new DentalRequest(patientB, DentalSpecialty.ORTHODONTICS, "Retainer", "Bucuresti", 500.0, null, null);
 
         requestRepository.save(req1);
         requestRepository.save(req2);
@@ -98,7 +98,7 @@ class RequestRepositoryTest {
     void findByStatus_offerAccepted_returnsCorrect() {
         // status is updatable=false on entity but we can test the query method itself
         // by saving a new request manually with a different status via the repo
-        DentalRequest closed = new DentalRequest(patientB, DentalSpecialty.IMPLANTS, "done", "Cluj", 2000.0);
+        DentalRequest closed = new DentalRequest(patientB, DentalSpecialty.IMPLANTS, "done", "Cluj", 2000.0, null, null);
         requestRepository.save(closed);
 
         // Use query to verify OPEN ones don't include extra noise

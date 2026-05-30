@@ -44,15 +44,15 @@ class OfferRepositoryTest {
         dentistB = UUID.randomUUID();
 
         DentalRequest request = new DentalRequest(UUID.randomUUID(), DentalSpecialty.ORTHODONTICS,
-                "Need braces", "Cluj", 1500.0);
+                "Need braces", "Cluj", 1500.0, null, null);
         requestRepository.save(request);
         requestId = request.getId();
 
-        offer1 = new Offer(requestId, dentistA, new BigDecimal("800.00"), 5, "Includes check-up", true, false);
-        offer2 = new Offer(requestId, dentistB, new BigDecimal("950.00"), 3, "Fast service", false, true);
+        offer1 = new Offer(requestId, dentistA, new BigDecimal("800.00"), 5, "Includes check-up", true, false, null, null, null);
+        offer2 = new Offer(requestId, dentistB, new BigDecimal("950.00"), 3, "Fast service", false, true, null, null, null);
 
         UUID otherRequestId = UUID.randomUUID(); // no FK constraint since offers.request_id has no FK to a missing row in H2 test
-        offer3 = new Offer(otherRequestId, dentistA, new BigDecimal("600.00"), 7, null, false, false);
+        offer3 = new Offer(otherRequestId, dentistA, new BigDecimal("600.00"), 7, null, false, false, null, null, null);
 
         offerRepository.save(offer1);
         offerRepository.save(offer2);
