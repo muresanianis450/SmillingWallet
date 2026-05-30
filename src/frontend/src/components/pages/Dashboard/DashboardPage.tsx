@@ -10,7 +10,8 @@ import { EmptyState } from '../../shared/EmptyState';
 import { OfferFormModal } from './OfferFormModal';
 import { DeleteModal } from './DeleteModal';
 import { usePageTracking } from '../../../hooks/useTracking';
-import { api } from '../../../services/api';
+import { api, AUTH_COOKIE } from '../../../services/api';
+import { getCookie } from '../../../tracking/cookies';
 // @ts-ignore
 import styles from './DashboardPage.module.css';
 import { IconView, IconEdit, IconDelete } from '../../shared/Icons';
@@ -52,7 +53,7 @@ export function DashboardPage() {
   const [modal,         setModal]         = useState<ModalState | null>(null);
   const [appointments,  setAppointments]  = useState<any[]>([]);
 
-  const dentist = JSON.parse(localStorage.getItem('user') || '{}');
+  const dentist = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
 
   // Load dentist's sent offers
   useEffect(() => {

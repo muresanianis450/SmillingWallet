@@ -58,6 +58,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
     const [saved, setSaved]                   = useState(false);
     const [error, setError]                   = useState('');
     const [pickerOpen, setPickerOpen]         = useState(false);
+    const [profileError, setProfileError]     = useState(false);
 
     // ── 2FA wizard state ──────────────────────────────────────────────────────
     const [wizardOpen, setWizardOpen]         = useState(false);
@@ -96,18 +97,22 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
 
     useEffect(() => {
         if (!user?.id) return;
-        api.get(`/auth/user/${user.id}`).then(res => {
-            const data: ProfileData = res.data;
-            setProfile(data);
-            setUsername(data.username || '');
-            setPhone(data.phone || '');
-            setCity(data.city || '');
-            setAddress(data.address || '');
-            setSpecialty(data.specialty || '');
-            setAvatar(data.profilePicture || null);
-            setTwoFactor(data.twoFactorEnabled ?? false);
-            setEmailReminders(data.emailRemindersEnabled ?? true);
-        });
+        api.get(`/auth/user/${user.id}`)
+            .then(res => {
+                const data: ProfileData = res.data;
+                setProfile(data);
+                setUsername(data.username || '');
+                setPhone(data.phone || '');
+                setCity(data.city || '');
+                setAddress(data.address || '');
+                setSpecialty(data.specialty || '');
+                setAvatar(data.profilePicture || null);
+                setTwoFactor(data.twoFactorEnabled ?? false);
+                setEmailReminders(data.emailRemindersEnabled ?? true);
+            })
+            .catch(() => {
+                setProfileError(true);
+            });
     }, [user?.id]);
 
     useEffect(() => {
@@ -310,7 +315,21 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
         return (
             <div className={styles.pageWrap}>
                 <BlobBackground />
-                <div className={styles.page}><p className={styles.loading}>Loading profile…</p></div>
+                <div className={styles.page}>
+                    <p className={styles.loading}>
+                        {profileError ? 'Failed to load profile. You can log out and try again.' : 'Loading profile…'}
+                    </p>
+                    {/* Always show logout so the user is never locked in */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+                        <button
+                            type="button"
+                            className={styles.logoutBtn}
+                            onClick={onLogout}
+                        >
+                            Log out
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }

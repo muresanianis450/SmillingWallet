@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PageName } from '../../../types/types.ts';
-import { api } from '../../../services/api';
+import { api, AUTH_COOKIE } from '../../../services/api';
+import { getCookie } from '../../../tracking/cookies';
 // @ts-ignore
 import styles from './AppointmentsPage.module.css';
 
@@ -58,7 +59,7 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
     const [clinic, setClinic] = useState<ClinicInfo | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
 
     useEffect(() => {
         if (!user?.id) {
