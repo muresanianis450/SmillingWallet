@@ -11,6 +11,7 @@ target/
 # Frontend — keep node_modules and local .env out of git
 src/frontend/node_modules/
 src/frontend/.env
+src/frontend/dist/
 
 # Backend secrets / local overrides
 src/main/resources/keystore/
