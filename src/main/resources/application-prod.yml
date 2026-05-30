@@ -47,13 +47,17 @@ spring:
 
   mail:
     host: smtp.gmail.com
-    port: 465
+    port: 587
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
     properties:
       mail.smtp.auth: true
-      mail.smtp.starttls.enable: false
-      mail.smtp.ssl.enable: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.ssl.enable: false
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
 
 jwt:
   secret: ${JWT_SECRET}
@@ -63,6 +67,9 @@ jwt:
 
 totp:
   encryption-key: ${APP_TOTP_ENCRYPTION_KEY}
+
+app:
+  frontend-url: ${APP_FRONTEND_URL}
 
 cors:
   # Comma-separated list — add your Railway frontend URL here via env var.

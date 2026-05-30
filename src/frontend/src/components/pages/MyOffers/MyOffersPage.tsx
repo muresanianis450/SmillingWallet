@@ -1,17 +1,16 @@
-/*import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { PageName, ClientOffer } from '../../../types/types.ts';
-import { MOCK_CLIENT_OFFERS } from '../../../data/constants';
 import { useToast } from '../../../hooks/useToast';
 import { usePagination } from '../../../hooks/usePagination';
 import { Pagination } from '../../shared/Pagination';
 import { Toast } from '../../shared/Toast';
 import { Button } from '../../shared/Button';
+import { EmptyState } from '../../shared/EmptyState';
+import { api } from '../../../services/api';
 // @ts-ignore
 import DefaultAvatar from '../../../../assets/default-avatar.png';
 // @ts-ignore
 import styles from './MyOffersPage.module.css';
-import SockJS from 'sockjs-client';
-import Stomp from 'stompjs';
 
 interface MyOffersPageProps {
     setPage: (page: PageName) => void;
@@ -20,78 +19,42 @@ interface MyOffersPageProps {
 const PER_PAGE = 4;
 
 function StarRating({ rating }: { rating: number }) {
+    if (rating === 0) return <span style={{ color: '#888', fontSize: '0.8rem' }}>No rating yet</span>;
     return (
         <div className={styles.stars}>
             {[1, 2, 3, 4, 5].map((n) => (
-                <span
-                    key={n}
-                    className={n <= Math.round(rating) ? styles.starFilled : styles.starEmpty}
-                >
-                    ★
-                </span>
+                <span key={n} className={n <= Math.round(rating) ? styles.starFilled : styles.starEmpty}>★</span>
             ))}
             <span className={styles.ratingNum}>{rating.toFixed(1)}</span>
         </div>
     );
 }
-function BarChart({ data }: { data: { label: string; value: number; color: string }[] }) {
-    const max = Math.max(...data.map((d) => d.value), 1);
 
-    return (
-        <div className={styles.barChart}>
-            {data.map((d) => (
-                <div key={d.label} className={styles.barGroup}>
-                    <div className={styles.barTrack}>
-                        <div
-                            className={styles.barFill}
-                            style={{ height: `${(d.value / max) * 100}%`, background: d.color }}
-                        />
-                    </div>
-                    <span className={styles.barLabel}>{d.label}</span>
-                    <span className={styles.barVal}>{d.value}</span>
-                </div>
-            ))}
-        </div>
-    );
-}
 function PieChart({ segments }: { segments: { label: string; value: number; color: string }[] }) {
     const total = segments.reduce((s, d) => s + d.value, 0) || 1;
     let cumulative = 0;
-
     const slices = segments.map((seg) => {
         const startAngle = (cumulative / total) * 360;
         cumulative += seg.value;
-        const endAngle = (cumulative / total) * 360;
-        return { ...seg, startAngle, endAngle };
+        return { ...seg, startAngle, endAngle: (cumulative / total) * 360 };
     });
-
     function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
         const rad = ((angleDeg - 90) * Math.PI) / 180;
         return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
     }
-
     function describeSlice(cx: number, cy: number, r: number, start: number, end: number) {
         if (end - start >= 360) end = 359.99;
         const s = polarToCartesian(cx, cy, r, start);
         const e = polarToCartesian(cx, cy, r, end);
-        const large = end - start > 180 ? 1 : 0;
-        return `M${cx},${cy} L${s.x},${s.y} A${r},${r} 0 ${large} 1 ${e.x},${e.y} Z`;
+        return `M${cx},${cy} L${s.x},${s.y} A${r},${r} 0 ${end - start > 180 ? 1 : 0} 1 ${e.x},${e.y} Z`;
     }
-
     return (
         <div className={styles.pieWrap}>
             <svg viewBox="0 0 120 120" className={styles.pieSvg}>
                 {slices.map((s) => (
-                    <path
-                        key={s.label}
-                        d={describeSlice(60, 60, 54, s.startAngle, s.endAngle)}
-                        fill={s.color}
-                        stroke="#fff"
-                        strokeWidth="2"
-                    />
+                    <path key={s.label} d={describeSlice(60, 60, 54, s.startAngle, s.endAngle)} fill={s.color} stroke="#fff" strokeWidth="2" />
                 ))}
             </svg>
-
             <div className={styles.pieLegend}>
                 {segments.map((s) => (
                     <div key={s.label} className={styles.pieLegendItem}>
@@ -105,58 +68,148 @@ function PieChart({ segments }: { segments: { label: string; value: number; colo
     );
 }
 
-export function MyOffersPage({ setPage }: MyOffersPageProps) {
+function mapToClientOffer(o: any, avgPrice: number): ClientOffer {
+    const price = Number(o.price);
+    const specialMentions: string[] = [];
+    if (o.notes) specialMentions.push(o.notes);
+    if (o.includesXray) specialMentions.push('X-ray included');
+    if (o.includesAnesthesia) specialMentions.push('Anesthesia included');
+    if (o.estimatedWaitDays > 0) specialMentions.push(`Est. ${o.estimatedWaitDays}-day wait`);
+    if (specialMentions.length === 0) specialMentions.push('Standard consultation');
+    const validUntilDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    return {
+        id: o.id,
+        doctorLabel: `Dr. #${String(o.dentistPublicId).substring(0, 6)}`,
+        avatarSeed: String(o.dentistPublicId),
+        rating: 0,
+        reviewCount: 0,
+        priceMin: Math.round(price * 0.9),
+        priceMax: Math.round(price * 1.1),
+        exactQuote: price,
+        date: new Date(o.createdAt).toLocaleDateString('ro-RO'),
+        time: new Date(o.createdAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }),
+        specialMentions,
+        matchScore: 0,
+        savingsVsAvg: Math.round(avgPrice - price),
+        validUntil: validUntilDate.toISOString().split('T')[0],
+        treatmentCategory: '',
+        isBestValue: false,
+        avatar: '',
+    };
+}
 
-    const offers = MOCK_CLIENT_OFFERS;
-    const [selected, setSelected] = useState<ClientOffer>(offers[0]);
+export function MyOffersPage({ setPage }: MyOffersPageProps) {
+    const [offers,    setOffers]    = useState<ClientOffer[]>([]);
+    const [selected,  setSelected]  = useState<ClientOffer | null>(null);
+    const [loading,   setLoading]   = useState(true);
     const [showStats, setShowStats] = useState(false);
+    const [acceptModal, setAcceptModal] = useState(false);
+    const [scheduledAt, setScheduledAt] = useState('');
+    const [accepting,   setAccepting]   = useState(false);
     const { toast, show: showToast } = useToast();
     const { page, setPage: setTablePage, totalPages, slice } = usePagination<ClientOffer>(offers, PER_PAGE);
 
-    const avgPrice = useMemo(
-        () => Math.round(offers.reduce((s, o) => s + o.exactQuote, 0) / offers.length),
-        [offers]
-    );
-
-    const bestOffer = useMemo(
-        () => offers.reduce((best, o) => (o.exactQuote < best.exactQuote ? o : best), offers[0]),
-        [offers]
-    );
-
-    const priceBuckets = useMemo(() => {
-        const under400 = offers.filter((o) => o.exactQuote < 400).length;
-        const mid = offers.filter((o) => o.exactQuote >= 400 && o.exactQuote < 500).length;
-        const over500 = offers.filter((o) => o.exactQuote >= 500).length;
-        return [
-            { label: 'Under €400', value: under400, color: '#1D9E75' },
-            { label: '€400–€500', value: mid, color: '#7F77DD' },
-            { label: 'Over €500', value: over500, color: '#E8593C' },
-        ];
-    }, [offers]);
-
-    const starBuckets = useMemo(() => {
-        const buckets = ['< 4.0', '4.0–4.4', '4.5–4.9', '5.0'];
-        const counts = [
-            offers.filter((o) => o.rating < 4.0).length,
-            offers.filter((o) => o.rating >= 4.0 && o.rating < 4.5).length,
-            offers.filter((o) => o.rating >= 4.5 && o.rating < 5.0).length,
-            offers.filter((o) => o.rating === 5.0).length,
-        ];
-        const colors = ['#E8593C', '#f5a623', '#1D9E75', '#7F77DD'];
-        return buckets.map((label, i) => ({ label, value: counts[i], color: colors[i] }));
-    }, [offers]);
-
-    function handleAccept() {
-        showToast(`Offer from ${selected.doctorLabel} accepted! Redirecting…`, 'success');
-        setTimeout(() => setPage('appointments'), 1800);
+    async function load() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user?.id) { setLoading(false); return; }
+        try {
+            const reqRes = await api.get(`/requests/patient/${user.id}?page=0&size=20`);
+            const requests: any[] = reqRes.data.content || [];
+            const activeRequests = requests.filter((r: any) =>
+                r.status === 'OPEN' || r.status === 'OFFER_ACCEPTED'
+            );
+            const allRaw: any[] = [];
+            await Promise.all(
+                activeRequests.map(async (req: any) => {
+                    try {
+                        const offRes = await api.get(`/offers/request/${req.id}?page=0&size=20`);
+                        const offerList: any[] = offRes.data.content || [];
+                        allRaw.push(...offerList);
+                    } catch {}
+                })
+            );
+            const prices = allRaw.map((o) => Number(o.price));
+            const avg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
+            const mapped = allRaw.map((o) => mapToClientOffer(o, avg));
+            if (mapped.length > 0) {
+                const best = mapped.reduce((b, o) => o.exactQuote < b.exactQuote ? o : b, mapped[0]);
+                best.isBestValue = true;
+            }
+            setOffers(mapped);
+            if (mapped.length > 0 && !selected) setSelected(mapped[0]);
+        } catch {}
+        setLoading(false);
     }
+
+    useEffect(() => {
+        load();
+        const interval = setInterval(load, 30_000);
+        return () => clearInterval(interval);
+    }, []);
+
+    async function handleAcceptConfirm() {
+        if (!selected || !scheduledAt) {
+            showToast('Please select a date and time.', 'error');
+            return;
+        }
+        setAccepting(true);
+        try {
+            await api.patch(`/offers/${selected.id}/accepted`, {
+                offerId:     selected.id,
+                scheduledAt: scheduledAt,
+            });
+            showToast('Offer accepted! Appointment created.', 'success');
+            setAcceptModal(false);
+            setTimeout(() => setPage('appointments'), 1800);
+        } catch (err: any) {
+            showToast(err?.response?.data?.message || 'Failed to accept offer.', 'error');
+        } finally {
+            setAccepting(false);
+        }
+    }
+
+    const avgPrice = useMemo(
+        () => offers.length > 0 ? Math.round(offers.reduce((s, o) => s + o.exactQuote, 0) / offers.length) : 0,
+        [offers]
+    );
+    const bestOffer = useMemo(
+        () => offers.length > 0 ? offers.reduce((best, o) => (o.exactQuote < best.exactQuote ? o : best), offers[0]) : null,
+        [offers]
+    );
+    const priceBuckets = useMemo(() => [
+        { label: 'Under €400', value: offers.filter((o) => o.exactQuote < 400).length,                color: '#1D9E75' },
+        { label: '€400–€500',  value: offers.filter((o) => o.exactQuote >= 400 && o.exactQuote < 500).length, color: '#7F77DD' },
+        { label: 'Over €500',  value: offers.filter((o) => o.exactQuote >= 500).length,               color: '#E8593C' },
+    ], [offers]);
+
+    if (loading) {
+        return (
+            <div className={styles.wrap}>
+                <EmptyState icon="⏳" message="Loading your offers…" />
+            </div>
+        );
+    }
+
+    if (offers.length === 0) {
+        return (
+            <div className={styles.wrap}>
+                <div className={styles.pageHead}>
+                    <h1 className={styles.title}>My Offers</h1>
+                </div>
+                <EmptyState icon="📭" message="No offers yet. Submit a request and clinics will respond." />
+                <Toast toast={toast} />
+            </div>
+        );
+    }
+
+    const current = selected ?? offers[0];
 
     return (
         <div className={styles.wrap}>
             <div className={styles.pageHead}>
                 <div>
                     <h1 className={styles.title}>My Offers</h1>
-                    <p className={styles.sub}>{offers.length} clinics responded to your request</p>
+                    <p className={styles.sub}>{offers.length} clinic{offers.length !== 1 ? 's' : ''} responded to your request</p>
                 </div>
                 <button
                     className={`${styles.statsToggle} ${showStats ? styles.statsToggleActive : ''}`}
@@ -166,28 +219,20 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                 </button>
             </div>
 
-            {/!* MAIN PANEL *!/}
             <div className={styles.mainPanel}>
-
-                {/!* LEFT PANEL *!/}
                 <div className={styles.leftPanel}>
                     {slice.map((offer) => (
                         <div
                             key={offer.id}
-                            className={`${styles.doctorCard} ${selected.id === offer.id ? styles.doctorCardActive : ''}`}
+                            className={`${styles.doctorCard} ${current.id === offer.id ? styles.doctorCardActive : ''}`}
                             onClick={() => setSelected(offer)}
                         >
-                            {offer.isBestValue && (
-                                <span className={styles.bestBadge}>Best Value</span>
-                            )}
+                            {offer.isBestValue && <span className={styles.bestBadge}>Best Value</span>}
                             <div className={styles.doctorCardRow}>
-                                <img src={offer.avatar || DefaultAvatar}
-                                    className={styles.doctorAvatarImg}
-                                />
+                                <img src={DefaultAvatar} className={styles.doctorAvatarImg} alt="" />
                                 <div className={styles.doctorInfo}>
                                     <div className={styles.doctorName}>{offer.doctorLabel}</div>
                                     <StarRating rating={offer.rating} />
-                                    <div className={styles.reviewCount}>{offer.reviewCount} reviews</div>
                                 </div>
                                 <div className={styles.doctorPrice}>
                                     <div className={styles.priceRange}>€{offer.priceMin}–€{offer.priceMax}</div>
@@ -199,438 +244,100 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                     <Pagination page={page} totalPages={totalPages} setPage={setTablePage} />
                 </div>
 
-                {/!* RIGHT PANEL *!/}
                 <div className={styles.rightPanel}>
-
-                    {/!* HEADER - ADDED DOCTOR AVATAR HERE *!/}
                     <div className={styles.detailHeader}>
-
-                        {/!* Unified Profile Block (Avatar + Name/Stars) *!/}
                         <div className={styles.detailDoctorProfile}>
-                            <img
-                                src={selected.avatar || DefaultAvatar} // Use selected doctor's avatar
-                                className={styles.detailDoctorAvatarImg} // New style for the large avatar
-                                alt="Doctor Profile"
-                            />
+                            <img src={DefaultAvatar} className={styles.detailDoctorAvatarImg} alt="Doctor" />
                             <div className={styles.doctorInfoText}>
-                                <h2 className={styles.detailDoctor}>{selected.doctorLabel}</h2>
-                                <StarRating rating={selected.rating} />
+                                <h2 className={styles.detailDoctor}>{current.doctorLabel}</h2>
+                                <StarRating rating={current.rating} />
                             </div>
                         </div>
-
-                        {/!* Existing Best Value Badge *!/}
-                        {selected.isBestValue && (
-                            <span className={styles.bestBadgeLg}>🏆 Best Value</span>
-                        )}
+                        {current.isBestValue && <span className={styles.bestBadgeLg}>🏆 Best Value</span>}
                     </div>
 
-                    {/!* PRICE + INFO *!/}
                     <div className={styles.sectionBox}>
                         <div className={styles.detailGrid}>
                             <div className={styles.detailItem}>
                                 <span className={styles.detailLabel}>Price Range</span>
-                                <span className={styles.detailVal}>
-                                    €{selected.priceMin} – €{selected.priceMax}
-                                </span>
+                                <span className={styles.detailVal}>€{current.priceMin} – €{current.priceMax}</span>
                             </div>
-
                             <div className={styles.detailItem}>
                                 <span className={styles.detailLabel}>Exact Quote</span>
-                                <span className={`${styles.detailVal} ${styles.teal}`}>
-                                    €{selected.exactQuote}
-                                </span>
+                                <span className={`${styles.detailVal} ${styles.teal}`}>€{current.exactQuote}</span>
                             </div>
-
                             <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>Date & Time</span>
-                                <span className={styles.detailVal}>
-                                    {selected.date}, {selected.time}
-                                </span>
+                                <span className={styles.detailLabel}>Offer Received</span>
+                                <span className={styles.detailVal}>{current.date}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/!* STATS *!/}
                     <div className={styles.sectionBox}>
-                        <div className={styles.detailItem}>
-                            <span className={styles.detailLabel}>Match Score</span>
-                            <span className={`${styles.detailVal} ${styles.purple}`}>
-                                {selected.matchScore}%
-                            </span>
-                        </div>
-
                         <div className={styles.detailItem}>
                             <span className={styles.detailLabel}>Savings vs Avg</span>
-                            <span className={`${styles.detailVal} ${selected.savingsVsAvg >= 0 ? styles.teal : styles.danger}`}>
-                                {selected.savingsVsAvg >= 0
-                                    ? `Save €${selected.savingsVsAvg}`
-                                    : `+€${Math.abs(selected.savingsVsAvg)} above avg`}
+                            <span className={`${styles.detailVal} ${current.savingsVsAvg >= 0 ? styles.teal : styles.danger}`}>
+                                {current.savingsVsAvg >= 0
+                                    ? `Save €${current.savingsVsAvg}`
+                                    : `+€${Math.abs(current.savingsVsAvg)} above avg`}
                             </span>
                         </div>
-
                         <div className={styles.detailItem}>
                             <span className={styles.detailLabel}>Offer Valid Until</span>
-                            <span className={styles.detailVal}>{selected.validUntil}</span>
+                            <span className={styles.detailVal}>{current.validUntil}</span>
                         </div>
                     </div>
 
-                    {/!* SPECIAL MENTIONS *!/}
                     <div className={styles.sectionBox}>
                         <div className={styles.specialMentions}>
-                            <span className={styles.detailLabel}>Special Mentions</span>
+                            <span className={styles.detailLabel}>Details</span>
                             <ul className={styles.mentionList}>
-                                {selected.specialMentions.map((m) => (
-                                    <li key={m} className={styles.mentionItem}>✓ {m}</li>
+                                {current.specialMentions.map((m, i) => (
+                                    <li key={i} className={styles.mentionItem}>✓ {m}</li>
                                 ))}
                             </ul>
                         </div>
                     </div>
 
-                    {/!* ACTIONS *!/}
                     <div className={styles.detailActions}>
-                        <button className={styles.altTimeBtn}>
-                            🕐 Request Alternative Time
-                        </button>
-                        <Button variant="cta" onClick={handleAccept}>
+                        <Button variant="cta" onClick={() => setAcceptModal(true)}>
                             Accept Offer
                         </Button>
                     </div>
-
-                    <div className={styles.lockNote}>
-                        🔒 Clinic identity revealed after paying 1% matchmaking fee (€{Math.round(selected.exactQuote * 0.01)})
-                    </div>
-
                 </div>
             </div>
 
-            {/!* ANALYTICS *!/}
-            {showStats && (
-                <div className={styles.analyticsSection}>
-                    <h2 className={styles.analyticsTitle}>📊 Offer Analytics</h2>
-
-                    <div className={styles.statCards}>
-                        <div className={styles.statCard}>
-                            <div className={styles.statIcon}>💰</div>
-                            <div className={styles.statLabel}>Average Price</div>
-                            <div className={styles.statVal}>€{avgPrice}</div>
-                        </div>
-
-                        <div className={styles.statCard}>
-                            <div className={styles.statIcon}></div>
-                            <div className={styles.statLabel}>Best Value Offer</div>
-                            <div className={`${styles.statVal} ${styles.teal}`}>€{bestOffer.exactQuote}</div>
-                            <div className={styles.statSub}>{bestOffer.doctorLabel}</div>
-                        </div>
-
-                        <div className={styles.statCard}>
-                            <div className={styles.statIcon}>📋</div>
-                            <div className={styles.statLabel}>Total Offers</div>
-                            <div className={`${styles.statVal} ${styles.purple}`}>{offers.length}</div>
-                        </div>
-                    </div>
-
-                    <div className={styles.chartsRow}>
-                        <div className={styles.chartCard}>
-                            <h3 className={styles.chartTitle}>Price Range Distribution</h3>
-                            <PieChart segments={priceBuckets} />
-                        </div>
-
-                        <div className={styles.chartCard}>
-                            <h3 className={styles.chartTitle}>Offers per Star Rating</h3>
-                            <BarChart data={starBuckets} />
+            {/* Accept Offer Modal */}
+            {acceptModal && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                }}>
+                    <div style={{
+                        background: '#fff', borderRadius: '12px', padding: '32px',
+                        maxWidth: '400px', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                    }}>
+                        <h3 style={{ marginBottom: '16px' }}>Choose Appointment Date &amp; Time</h3>
+                        <p style={{ color: '#666', marginBottom: '16px', fontSize: '0.9rem' }}>
+                            Accepting offer from <strong>{current.doctorLabel}</strong> — €{current.exactQuote}
+                        </p>
+                        <input
+                            type="datetime-local"
+                            value={scheduledAt}
+                            onChange={(e) => setScheduledAt(e.target.value)}
+                            min={new Date(Date.now() + 3600_000).toISOString().slice(0, 16)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '20px' }}
+                        />
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <Button variant="secondary" onClick={() => setAcceptModal(false)}>Cancel</Button>
+                            <Button variant="cta" onClick={handleAcceptConfirm} disabled={!scheduledAt || accepting}>
+                                {accepting ? 'Confirming…' : 'Confirm Appointment'}
+                            </Button>
                         </div>
                     </div>
                 </div>
             )}
 
-            <Toast toast={toast} />
-        </div>
-    );
-}*/
-
-import { useState, useMemo, useEffect } from 'react';
-import { PageName, ClientOffer } from '../../../types/types.ts';
-import { MOCK_CLIENT_OFFERS } from '../../../data/constants';
-import { useToast } from '../../../hooks/useToast';
-import { usePagination } from '../../../hooks/usePagination';
-import { Pagination } from '../../shared/Pagination';
-import { Toast } from '../../shared/Toast';
-import { Button } from '../../shared/Button';
-// @ts-ignore
-import DefaultAvatar from '../../../../assets/default-avatar.png';
-// @ts-ignore
-import styles from './MyOffersPage.module.css';
-import SockJS from 'sockjs-client';
-import Stomp from 'stompjs';
-
-interface MyOffersPageProps {
-    setPage: (page: PageName) => void;
-}
-
-const PER_PAGE = 4;
-
-function StarRating({ rating }: { rating: number }) {
-    return (
-        <div className={styles.stars}>
-            {[1, 2, 3, 4, 5].map((n) => (
-                <span
-                    key={n}
-                    className={n <= Math.round(rating) ? styles.starFilled : styles.starEmpty}
-                >
-                    ★
-                </span>
-            ))}
-            <span className={styles.ratingNum}>{rating.toFixed(1)}</span>
-        </div>
-    );
-}
-
-function BarChart({ data }: { data: { label: string; value: number; color: string }[] }) {
-    const max = Math.max(...data.map((d) => d.value), 1);
-    return (
-        <div className={styles.barChart}>
-            {data.map((d) => (
-                <div key={d.label} className={styles.barGroup}>
-                    <div className={styles.barTrack}>
-                        <div
-                            className={styles.barFill}
-                            style={{ height: `${(d.value / max) * 100}%`, background: d.color }}
-                        />
-                    </div>
-                    <span className={styles.barLabel}>{d.label}</span>
-                    <span className={styles.barVal}>{d.value}</span>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function PieChart({ segments }: { segments: { label: string; value: number; color: string }[] }) {
-    const total = segments.reduce((s, d) => s + d.value, 0) || 1;
-    let cumulative = 0;
-
-    const slices = segments.map((seg) => {
-        const startAngle = (cumulative / total) * 360;
-        cumulative += seg.value;
-        const endAngle = (cumulative / total) * 360;
-        return { ...seg, startAngle, endAngle };
-    });
-
-    function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
-        const rad = ((angleDeg - 90) * Math.PI) / 180;
-        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-    }
-
-    function describeSlice(cx: number, cy: number, r: number, start: number, end: number) {
-        if (end - start >= 360) end = 359.99;
-        const s = polarToCartesian(cx, cy, r, start);
-        const e = polarToCartesian(cx, cy, r, end);
-        const large = end - start > 180 ? 1 : 0;
-        return `M${cx},${cy} L${s.x},${s.y} A${r},${r} 0 ${large} 1 ${e.x},${e.y} Z`;
-    }
-
-    return (
-        <div className={styles.pieWrap}>
-            <svg viewBox="0 0 120 120" className={styles.pieSvg}>
-                {slices.map((s) => (
-                    <path
-                        key={s.label}
-                        d={describeSlice(60, 60, 54, s.startAngle, s.endAngle)}
-                        fill={s.color}
-                        stroke="#fff"
-                        strokeWidth="2"
-                    />
-                ))}
-            </svg>
-            <div className={styles.pieLegend}>
-                {segments.map((s) => (
-                    <div key={s.label} className={styles.pieLegendItem}>
-                        <span className={styles.pieDot} style={{ background: s.color }} />
-                        <span>{s.label}</span>
-                        <strong>{s.value}</strong>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-export function MyOffersPage({ setPage }: MyOffersPageProps) {
-    //STATE: Start with mock data, but allow updates
-    const [offers, setOffers] = useState<ClientOffer[]>(MOCK_CLIENT_OFFERS);
-    const [selected, setSelected] = useState<ClientOffer>(offers[0]);
-    const [showStats, setShowStats] = useState(false);
-
-    const { toast, show: showToast } = useToast();
-    const { page, setPage: setTablePage, totalPages, slice } = usePagination<ClientOffer>(offers, PER_PAGE);
-
-    //WEBSOCKETS: Listen for programmatic updates from Java backend
-    useEffect(() => {
-        const socket = new SockJS('/ws-smiling-wallet');
-        const stompClient = Stomp.over(socket);
-
-        // Turn off console debugging for a cleaner look
-        stompClient.debug = () => {};
-
-        stompClient.connect({}, () => {
-            stompClient.subscribe('/topic/offers', (message) => {
-                const newOffer: ClientOffer = JSON.parse(message.body);
-
-                setOffers(prev => {
-
-                    if (prev.find(o => o.id === newOffer.id)) return prev;
-
-
-                    return [newOffer, ...prev];
-                });
-
-                showToast(`New offer from ${newOffer.doctorLabel}!`, 'success');
-            });
-        });
-
-        return () => {
-            if (stompClient.connected) {
-                stompClient.disconnect(() => {});
-            }
-        };
-    }, []);
-
-    //ANALYTICS: Automatically recalculates when 'offers' state changes
-    const avgPrice = useMemo(
-        () => offers.length > 0 ? Math.round(offers.reduce((s, o) => s + o.exactQuote, 0) / offers.length) : 0,
-        [offers]
-    );
-
-    const bestOffer = useMemo(
-        () => offers.reduce((best, o) => (o.exactQuote < best.exactQuote ? o : best), offers[0]),
-        [offers]
-    );
-
-    const priceBuckets = useMemo(() => {
-        const under400 = offers.filter((o) => o.exactQuote < 400).length;
-        const mid = offers.filter((o) => o.exactQuote >= 400 && o.exactQuote < 500).length;
-        const over500 = offers.filter((o) => o.exactQuote >= 500).length;
-        return [
-            { label: 'Under €400', value: under400, color: '#1D9E75' },
-            { label: '€400–€500', value: mid, color: '#7F77DD' },
-            { label: 'Over €500', value: over500, color: '#E8593C' },
-        ];
-    }, [offers]);
-
-    const starBuckets = useMemo(() => {
-        const buckets = ['< 4.0', '4.0–4.4', '4.5–4.9', '5.0'];
-        const counts = [
-            offers.filter((o) => o.rating < 4.0).length,
-            offers.filter((o) => o.rating >= 4.0 && o.rating < 4.5).length,
-            offers.filter((o) => o.rating >= 4.5 && o.rating < 5.0).length,
-            offers.filter((o) => o.rating === 5.0).length,
-        ];
-        const colors = ['#E8593C', '#f5a623', '#1D9E75', '#7F77DD'];
-        return buckets.map((label, i) => ({ label, value: counts[i], color: colors[i] }));
-    }, [offers]);
-
-    function handleAccept() {
-        showToast(`Offer from ${selected.doctorLabel} accepted! Redirecting…`, 'success');
-        setTimeout(() => setPage('appointments'), 1800);
-    }
-
-    return (
-        <div className={styles.wrap}>
-            <div className={styles.pageHead}>
-                <div>
-                    <h1 className={styles.title}>My Offers</h1>
-                    <p className={styles.sub}>{offers.length} clinics responded to your request</p>
-                </div>
-                <button
-                    className={`${styles.statsToggle} ${showStats ? styles.statsToggleActive : ''}`}
-                    onClick={() => setShowStats((s) => !s)}
-                >
-                    {showStats ? '📊 Hide Statistics' : '📊 Show Statistics'}
-                </button>
-            </div>
-
-            <div className={styles.mainPanel}>
-                {/* LEFT PANEL: MASTER LIST */}
-                <div className={styles.leftPanel}>
-                    {slice.map((offer) => (
-                        <div
-                            key={offer.id}
-                            className={`${styles.doctorCard} ${selected.id === offer.id ? styles.doctorCardActive : ''}`}
-                            onClick={() => setSelected(offer)}
-                        >
-                            {offer.isBestValue && <span className={styles.bestBadge}>Best Value</span>}
-                            <div className={styles.doctorCardRow}>
-                                <img src={offer.avatar || DefaultAvatar} className={styles.doctorAvatarImg} />
-                                <div className={styles.doctorInfo}>
-                                    <div className={styles.doctorName}>{offer.doctorLabel}</div>
-                                    <StarRating rating={offer.rating} />
-                                    <div className={styles.reviewCount}>{offer.reviewCount} reviews</div>
-                                </div>
-                                <div className={styles.doctorPrice}>
-                                    <div className={styles.priceRange}>€{offer.priceMin}–€{offer.priceMax}</div>
-                                    <div className={styles.exactQuote}>€{offer.exactQuote} quoted</div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    <Pagination page={page} totalPages={totalPages} setPage={setTablePage} />
-                </div>
-
-                {/* RIGHT PANEL: DETAILS */}
-                <div className={styles.rightPanel}>
-                    <div className={styles.detailHeader}>
-                        <div className={styles.detailDoctorProfile}>
-                            <img src={selected.avatar || DefaultAvatar} className={styles.detailDoctorAvatarImg} alt="Doctor" />
-                            <div className={styles.doctorInfoText}>
-                                <h2 className={styles.detailDoctor}>{selected.doctorLabel}</h2>
-                                <StarRating rating={selected.rating} />
-                            </div>
-                        </div>
-                        {selected.isBestValue && <span className={styles.bestBadgeLg}>🏆 Best Value</span>}
-                    </div>
-
-                    <div className={styles.sectionBox}>
-                        <div className={styles.detailGrid}>
-                            <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>Price Range</span>
-                                <span className={styles.detailVal}>€{selected.priceMin} – €{selected.priceMax}</span>
-                            </div>
-                            <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>Exact Quote</span>
-                                <span className={`${styles.detailVal} ${styles.teal}`}>€{selected.exactQuote}</span>
-                            </div>
-                            <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>Date & Time</span>
-                                <span className={styles.detailVal}>{selected.date || 'TBD'}, {selected.time || 'TBD'}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={styles.sectionBox}>
-                        <div className={styles.detailItem}>
-                            <span className={styles.detailLabel}>Match Score</span>
-                            <span className={`${styles.detailVal} ${styles.purple}`}>{selected.matchScore}%</span>
-                        </div>
-                        <div className={styles.detailItem}>
-                            <span className={styles.detailLabel}>Savings vs Avg</span>
-                            <span className={`${styles.detailVal} ${selected.savingsVsAvg >= 0 ? styles.teal : styles.danger}`}>
-                                {selected.savingsVsAvg >= 0 ? `Save €${selected.savingsVsAvg}` : `+€${Math.abs(selected.savingsVsAvg)} above avg`}
-                            </span>
-                        </div>
-                        <div className={styles.detailItem}>
-                            <span className={styles.detailLabel}>Offer Valid Until</span>
-                            <span className={styles.detailVal}>{selected.validUntil}</span>
-                        </div>
-                    </div>
-
-                    <div className={styles.detailActions}>
-                        <button className={styles.altTimeBtn}>🕐 Request Alternative Time</button>
-                        <Button variant="cta" onClick={handleAccept}>Accept Offer</Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* ANALYTICS SECTION */}
             {showStats && (
                 <div className={styles.analyticsSection}>
                     <h2 className={styles.analyticsTitle}>📊 Offer Analytics</h2>
@@ -642,9 +349,8 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                         </div>
                         <div className={styles.statCard}>
                             <div className={styles.statIcon}>⭐</div>
-                            <div className={styles.statLabel}>Best Value Offer</div>
-                            <div className={`${styles.statVal} ${styles.teal}`}>€{bestOffer.exactQuote}</div>
-                            <div className={styles.statSub}>{bestOffer.doctorLabel}</div>
+                            <div className={styles.statLabel}>Best Value</div>
+                            <div className={`${styles.statVal} ${styles.teal}`}>€{bestOffer?.exactQuote ?? '—'}</div>
                         </div>
                         <div className={styles.statCard}>
                             <div className={styles.statIcon}>📋</div>
@@ -654,16 +360,13 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                     </div>
                     <div className={styles.chartsRow}>
                         <div className={styles.chartCard}>
-                            <h3 className={styles.chartTitle}>Price Range Distribution</h3>
+                            <h3 className={styles.chartTitle}>Price Distribution</h3>
                             <PieChart segments={priceBuckets} />
-                        </div>
-                        <div className={styles.chartCard}>
-                            <h3 className={styles.chartTitle}>Offers per Star Rating</h3>
-                            <BarChart data={starBuckets} />
                         </div>
                     </div>
                 </div>
             )}
+
             <Toast toast={toast} />
         </div>
     );

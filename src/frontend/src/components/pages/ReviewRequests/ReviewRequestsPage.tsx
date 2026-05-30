@@ -1,25 +1,37 @@
-import { useState, useMemo } from 'react';
-import { useOffers } from '../../../hooks/useOffers';
-import { TREATMENT_CATEGORIES, INITIAL_REQUESTS } from '../../../data/constants';
+import { useState, useMemo, useEffect } from 'react';
+import { TREATMENT_CATEGORIES } from '../../../data/constants';
 import { usePagination } from '../../../hooks/usePagination';
 import { useToast } from '../../../hooks/useToast';
 import { Pagination } from '../../shared/Pagination';
 import { EmptyState } from '../../shared/EmptyState';
 import { Toast } from '../../shared/Toast';
 import { SendOfferModal } from './SendOfferModal';
+import { api } from '../../../services/api';
 // @ts-ignore
 import styles from './ReviewRequestsPage.module.css';
-import {AuthUser, DentalRequest, PageName} from "../../../types/types.ts";
+import { AuthUser, DentalRequest, PageName } from '../../../types/types.ts';
 
 const PER_PAGE = 7;
 
+const SPECIALTY_DISPLAY: Record<string, string> = {
+  GENERAL_DENTISTRY:  'General Dentistry',
+  IMPLANTS:           'Implant Dentistry',
+  ORTHODONTICS:       'Orthodontics',
+  COSMETIC_DENTISTRY: 'Cosmetic Dentistry',
+  PEDIATRIC_DENTISTRY:'Pediatric Dentistry',
+  ORAL_SURGERY:       'Emergency Dentistry',
+  PERIODONTICS:       'General Dentistry',
+  ENDODONTICS:        'General Dentistry',
+};
+
 interface ReviewRequestsPageProps {
-  offersHook : ReturnType<typeof useOffers>;
-  setPage: (page:PageName) => void;
+  setPage: (page: PageName) => void;
   user?: AuthUser | null;
 }
 
-export function ReviewRequestsPage({offersHook, setPage, user}: ReviewRequestsPageProps) {
+export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
+  const [requests,   setRequests]   = useState<DentalRequest[]>([]);
+  const [loading,    setLoading]    = useState(true);
   const [hiddenIds,  setHiddenIds]  = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
   const [search,     setSearch]     = useState('');
@@ -28,6 +40,23 @@ export function ReviewRequestsPage({offersHook, setPage, user}: ReviewRequestsPa
   const { toast, show: showToast }  = useToast();
 
   const specialtyMissing = user?.missingFields?.includes('specialty') ?? false;
+
+  async function loadRequests() {
+    try {
+      const res = await api.get('/requests?page=0&size=50');
+      setRequests(res.data.content || []);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadRequests();
+    const interval = setInterval(loadRequests, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   function toggleHide(id: string) {
     setHiddenIds((prev) => {
@@ -39,43 +68,54 @@ export function ReviewRequestsPage({offersHook, setPage, user}: ReviewRequestsPa
   }
 
   const visibleRequests = useMemo(
-    () =>
-      INITIAL_REQUESTS.filter((r) => {
-        const isHidden = hiddenIds.has(r.id);
-        return showHidden ? isHidden : !isHidden;
-      }),
-    [hiddenIds, showHidden]
+    () => requests.filter((r) => {
+      const isHidden = hiddenIds.has(r.id);
+      return showHidden ? isHidden : !isHidden;
+    }),
+    [requests, hiddenIds, showHidden]
   );
 
   const filtered = useMemo(
-    () =>
-      visibleRequests.filter((r) => {
-        const q = search.toLowerCase();
-        const matchQ =
-          !q ||
-          r.id.toLowerCase().includes(q) ||
-          r.category.toLowerCase().includes(q) ||
-          r.symptoms.toLowerCase().includes(q);
-        const matchC = filterCat === 'All' || r.category === filterCat;
-        return matchQ && matchC;
-      }),
+    () => visibleRequests.filter((r) => {
+      const q = search.toLowerCase();
+      const displayCat = SPECIALTY_DISPLAY[r.specialty] || r.specialty;
+      const matchQ =
+        !q ||
+        r.id.toLowerCase().includes(q) ||
+        r.patientPublicId.toLowerCase().includes(q) ||
+        r.specialty.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q) ||
+        r.preferredCity.toLowerCase().includes(q);
+      const matchC = filterCat === 'All' || displayCat === filterCat;
+      return matchQ && matchC;
+    }),
     [visibleRequests, search, filterCat]
   );
 
   const { page: currentPage, setPage: setTablePage, totalPages, slice } = usePagination<DentalRequest>(filtered, PER_PAGE);
 
-  function handleSendOffer(fields: Record<string, any>) {
-    offersHook.addOffer(fields);
-    setSendModal(null);
-    showToast(`Offer sent to patient #${fields.patientId}!`, 'success');
-
+  async function handleSendOffer(fields: Record<string, any>) {
+    try {
+      await api.post('/offers', {
+        requestId:          fields.requestId,
+        dentistPublicId:    user?.id,
+        price:              fields.price,
+        estimatedWaitDays:  Number(fields.estimatedWaitDays) || 7,
+        notes:              fields.notes || '',
+        includesXray:       false,
+        includesAnesthesia: false,
+      });
+      setSendModal(null);
+      showToast('Offer sent successfully!', 'success');
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Failed to send offer.', 'error');
+    }
   }
 
   const hiddenCount = hiddenIds.size;
 
   return (
     <div className={styles.page}>
-      {/* ── Specialty warning ── */}
       {specialtyMissing && (
         <div className={styles.specialtyWarning}>
           Your specialty is not set. You must add it before you can send offers.{' '}
@@ -85,7 +125,6 @@ export function ReviewRequestsPage({offersHook, setPage, user}: ReviewRequestsPa
         </div>
       )}
 
-      {/* ── Page Header ── */}
       <div className={styles.pageHead}>
         <div>
           <h1 className={styles.title}>Review Requests</h1>
@@ -95,22 +134,26 @@ export function ReviewRequestsPage({offersHook, setPage, user}: ReviewRequestsPa
             </p>
           )}
         </div>
-        {hiddenCount > 0 && (
-          <button
-            className={`${styles.toggleHiddenBtn} ${showHidden ? styles.active : ''}`}
-            onClick={() => setShowHidden((s) => !s)}
-          >
-            {showHidden ? '👁 Showing Hidden' : `🙈 View Hidden (${hiddenCount})`}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button className={styles.toggleHiddenBtn} onClick={loadRequests} title="Refresh">
+            ↻ Refresh
           </button>
-        )}
+          {hiddenCount > 0 && (
+            <button
+              className={`${styles.toggleHiddenBtn} ${showHidden ? styles.active : ''}`}
+              onClick={() => setShowHidden((s) => !s)}
+            >
+              {showHidden ? '👁 Showing Hidden' : `🙈 View Hidden (${hiddenCount})`}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ── Table Card ── */}
       <div className={styles.tableCard}>
         <div className={styles.toolbar}>
           <input
             className={styles.searchBox}
-            placeholder="Search by ID, category, symptoms…"
+            placeholder="Search by specialty, description, city…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -130,20 +173,26 @@ export function ReviewRequestsPage({offersHook, setPage, user}: ReviewRequestsPa
           <thead>
             <tr>
               <th>Patient ID</th>
-              <th>Treatment Category</th>
-              <th>Symptoms Summary</th>
-              <th>Time Slot Available</th>
-              <th>Dental CT Scan</th>
+              <th>Specialty</th>
+              <th>Description</th>
+              <th>Preferred City</th>
+              <th>Budget</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {slice.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={6}>
+                  <EmptyState icon="⏳" message="Loading requests…" />
+                </td>
+              </tr>
+            ) : slice.length === 0 ? (
               <tr>
                 <td colSpan={6}>
                   <EmptyState
                     icon={showHidden ? '🙈' : '🔍'}
-                    message={showHidden ? 'No hidden requests' : 'No requests found'}
+                    message={showHidden ? 'No hidden requests' : 'No open requests found'}
                   />
                 </td>
               </tr>
@@ -152,13 +201,13 @@ export function ReviewRequestsPage({offersHook, setPage, user}: ReviewRequestsPa
                 const isHidden = hiddenIds.has(r.id);
                 return (
                   <tr key={r.id} style={{ opacity: isHidden ? 0.55 : 1 }}>
-                    <td><strong>#{r.id}</strong></td>
-                    <td>{r.category}</td>
-                    <td className={styles.symptomsCell}>{r.symptoms}</td>
-                    <td>{r.timeSlot}</td>
+                    <td><strong>#{r.patientPublicId.substring(0, 8)}</strong></td>
+                    <td>{SPECIALTY_DISPLAY[r.specialty] || r.specialty}</td>
+                    <td className={styles.symptomsCell}>{r.description}</td>
+                    <td>{r.preferredCity}</td>
                     <td>
-                      {r.ctScan ? (
-                        <span className={styles.ctLink}>{r.ctScan}</span>
+                      {r.budgetMax ? (
+                        <span>€{r.budgetMax}</span>
                       ) : (
                         <span className={styles.dash}>—</span>
                       )}
@@ -168,17 +217,14 @@ export function ReviewRequestsPage({offersHook, setPage, user}: ReviewRequestsPa
                         <button
                           className={styles.iconBtn}
                           title={isHidden ? 'Unhide request' : 'Hide request'}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleHide(r.id);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); toggleHide(r.id); }}
                         >
                           {isHidden ? '🙈' : '👁'}
                         </button>
                         {!isHidden && (
-                            <button
-                                data-testid="open-send-offer-btn"
-                                className={styles.btnSendOffer}
+                          <button
+                            data-testid="open-send-offer-btn"
+                            className={styles.btnSendOffer}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (specialtyMissing) {

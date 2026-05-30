@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
-import { Offer, ModalState } from '../../../types/types.ts';
+import { useEffect, useState, useMemo } from 'react';
+import { Offer, ModalState, OfferStatus } from '../../../types/types.ts';
 import { OFFER_STATUSES } from '../../../data/constants';
-import { useOffers } from '../../../hooks/useOffers';
 import { usePagination } from '../../../hooks/usePagination';
 import { useToast } from '../../../hooks/useToast';
 import { StatusBadge } from '../../shared/StatusBadge';
@@ -11,7 +10,6 @@ import { EmptyState } from '../../shared/EmptyState';
 import { OfferFormModal } from './OfferFormModal';
 import { DeleteModal } from './DeleteModal';
 import { usePageTracking } from '../../../hooks/useTracking';
-import { useWebSocket, ChatMessage } from '../../../hooks/useWebSocket';
 import { api, AUTH_COOKIE } from '../../../services/api';
 import { getCookie } from '../../../tracking/cookies';
 // @ts-ignore
@@ -21,89 +19,75 @@ import { trackEvent } from '../../../tracking/tracker';
 
 const PER_PAGE = 5;
 
-interface DashboardPageProps {
-  offersHook: ReturnType<typeof useOffers>;
+const STATUS_MAP: Record<string, OfferStatus> = {
+  PENDING:   'Sent',
+  ACCEPTED:  'Accepted',
+  REJECTED:  'Declined',
+  WITHDRAWN: 'Declined',
+};
+
+function mapApiOffer(o: any): Offer {
+  return {
+    id: o.id,
+    patientId: o.requestId,
+    patientName: `Request #${String(o.requestId).substring(0, 8)}`,
+    priceQuote: Number(o.price),
+    date: null,
+    time: null,
+    status: STATUS_MAP[o.status] ?? 'Sent',
+    treatmentCategory: '',
+    treatmentReq: o.notes || '',
+    ctScan: null,
+    symptoms: o.notes || '',
+  };
 }
 
-export function DashboardPage({ offersHook }: DashboardPageProps) {
+export function DashboardPage() {
   usePageTracking('dashboard');
 
-  const { offers, updateOffer, deleteOffer, stats } = offersHook;
   const { toast, show: showToast } = useToast();
 
-  // ── Offers state ──
-  const [search,       setSearch]       = useState('');
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [modal,        setModal]        = useState<ModalState | null>(null);
-
-  // ── Chat state ──
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [activeApptId, setActiveApptId] = useState<string | null>(null);
-  const [messages,     setMessages]     = useState<ChatMessage[]>([]);
-  const [chatInput,    setChatInput]    = useState('');
-  const bottomRef                       = useRef<HTMLDivElement>(null);
+  const [offers,        setOffers]        = useState<Offer[]>([]);
+  const [search,        setSearch]        = useState('');
+  const [filterStatus,  setFilterStatus]  = useState('All');
+  const [modal,         setModal]         = useState<ModalState | null>(null);
+  const [appointments,  setAppointments]  = useState<any[]>([]);
 
   const dentist = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
 
-  // ── WebSocket ──
-  const { connected, sendMessage } = useWebSocket({
-    appointmentId: activeApptId,
-    onMessage: (msg) => setMessages((prev) => [...prev, msg]),
-  });
+  // Load dentist's sent offers
+  useEffect(() => {
+    if (!dentist?.id) return;
+    api.get(`/offers/dentist/${dentist.id}?page=0&size=50`)
+      .then((res) => setOffers((res.data.content || []).map(mapApiOffer)))
+      .catch(() => {});
+  }, []);
 
-  // Load dentist appointments from backend
+  // Load accepted appointments (includes patient identity)
   useEffect(() => {
     if (!dentist?.id) return;
     api.get(`/dashboard/clinic/${dentist.id}`)
-        .then((res) => {
-          const appts = res.data.upcomingAppointments || [];
-          setAppointments(appts);
-          if (appts.length > 0) setActiveApptId(appts[0].id);
-        })
-        .catch(() => {});
+      .then((res) => setAppointments(res.data.upcomingAppointments || []))
+      .catch(() => {});
   }, []);
 
-  // Load chat history when switching appointment rooms
-  useEffect(() => {
-    if (!activeApptId) return;
-    setMessages([]);
-    api.get(`/chat/${activeApptId}/history`)
-        .then((res) => setMessages(res.data))
-        .catch(() => {});
-  }, [activeApptId]);
+  const stats = useMemo(() => ({
+    total:    offers.length,
+    accepted: offers.filter((o) => o.status === 'Accepted').length,
+  }), [offers]);
 
-  // Auto-scroll to latest message
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleChatSend = () => {
-    const text = chatInput.trim();
-    if (!text || !activeApptId) return;
-    sendMessage({
-      appointmentId: activeApptId,
-      senderId:   String(dentist.id),
-      senderName: dentist.username || 'Clinic',
-      senderRole: 'DENTIST',
-      content:    text,
-    });
-    setChatInput('');
-  };
-
-  // ── Offers filtering ──
   const filtered = useMemo(
-      () =>
-          offers.filter((o) => {
-            const q = search.toLowerCase();
-            const matchQ =
-                !q ||
-                o.id.toLowerCase().includes(q) ||
-                o.patientName.toLowerCase().includes(q) ||
-                o.patientId.toLowerCase().includes(q);
-            const matchS = filterStatus === 'All' || o.status === filterStatus;
-            return matchQ && matchS;
-          }),
-      [offers, search, filterStatus]
+    () => offers.filter((o) => {
+      const q = search.toLowerCase();
+      const matchQ =
+        !q ||
+        o.id.toLowerCase().includes(q) ||
+        o.patientName.toLowerCase().includes(q) ||
+        o.patientId.toLowerCase().includes(q);
+      const matchS = filterStatus === 'All' || o.status === filterStatus;
+      return matchQ && matchS;
+    }),
+    [offers, search, filterStatus]
   );
 
   const { page, setPage, totalPages, slice } = usePagination<Offer>(filtered, PER_PAGE);
@@ -111,7 +95,10 @@ export function DashboardPage({ offersHook }: DashboardPageProps) {
   function handleEdit(fields: any) {
     trackEvent('EDIT_OFFER', { offerId: modal?.offer?.id });
     if (!modal?.offer) return;
-    updateOffer(modal.offer.id, fields);
+    setOffers((prev) => prev.map((o) => o.id === modal.offer!.id
+      ? { ...o, ...fields, priceQuote: parseFloat(String(fields.priceQuote)) || o.priceQuote }
+      : o
+    ));
     setModal(null);
     showToast('Offer updated!', 'success');
   }
@@ -119,235 +106,149 @@ export function DashboardPage({ offersHook }: DashboardPageProps) {
   function handleDelete() {
     trackEvent('DELETE_OFFER', { offerId: modal?.offer?.id });
     if (!modal?.offer) return;
-    deleteOffer(modal.offer.id);
+    setOffers((prev) => prev.filter((o) => o.id !== modal.offer!.id));
     setModal(null);
-    showToast('Offer deleted.', 'error');
+    showToast('Offer removed from view.', 'error');
   }
 
-  // ── RENDER ──
   return (
-      <div className={styles.page} data-testid="dashboard-page">
-
-        {/* ── Header + Stats ── */}
-        <div className={styles.header}>
-          <h1 className={styles.title}>Clinic DashBoard</h1>
-          <div className={styles.stats}>
-            <div className={styles.statCard}>
-              <div className={styles.statLabel}>Total Offers Sent</div>
-              <div className={`${styles.statVal} ${styles.purple}`}>{stats.total}</div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statLabel}>Accepted Offers</div>
-              <div className={`${styles.statVal} ${styles.teal}`}>{stats.accepted}</div>
-            </div>
+    <div className={styles.page} data-testid="dashboard-page">
+      <div className={styles.header}>
+        <h1 className={styles.title}>Clinic Dashboard</h1>
+        <div className={styles.stats}>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Total Offers Sent</div>
+            <div className={`${styles.statVal} ${styles.purple}`}>{stats.total}</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Accepted Offers</div>
+            <div className={`${styles.statVal} ${styles.teal}`}>{stats.accepted}</div>
           </div>
         </div>
+      </div>
 
-        {/* ── Offers Table ── */}
-        <div className={styles.tableCard}>
-          <div className={styles.toolbar}>
-            <input
-                className={styles.searchBox}
-                placeholder="Search by offer ID or patient…"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  trackEvent('SEARCH', { value: e.target.value });
-                }}
-            />
-            <select
-                className={styles.filterSel}
-                value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  trackEvent('SEARCH', { value: e.target.value });
-                }}
-            >
-              <option>All</option>
-              {OFFER_STATUSES.map((s) => (
-                  <option key={s}>{s}</option>
-              ))}
-            </select>
-          </div>
+      <div className={styles.tableCard}>
+        <div className={styles.toolbar}>
+          <input
+            className={styles.searchBox}
+            placeholder="Search by offer ID or request…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); trackEvent('SEARCH', { value: e.target.value }); }}
+          />
+          <select
+            className={styles.filterSel}
+            value={filterStatus}
+            onChange={(e) => { setFilterStatus(e.target.value); trackEvent('SEARCH', { value: e.target.value }); }}
+          >
+            <option>All</option>
+            {OFFER_STATUSES.map((s) => <option key={s}>{s}</option>)}
+          </select>
+        </div>
 
-          <table data-testid="offers-table">
-            <thead>
+        <table data-testid="offers-table">
+          <thead>
             <tr>
               <th>Offer ID</th>
-              <th>Patient Name</th>
-              <th>Price Quote</th>
-              <th>Date / Time</th>
-              <th>Offer Status</th>
-              <th>Edit</th>
+              <th>Request</th>
+              <th>Price</th>
+              <th>Notes</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
-            </thead>
-            <tbody>
+          </thead>
+          <tbody>
             {slice.length === 0 ? (
-                <tr>
-                  <td colSpan={6}>
-                    <EmptyState icon="📋" message="No offers found" />
+              <tr>
+                <td colSpan={6}>
+                  <EmptyState icon="📋" message="No offers sent yet" />
+                </td>
+              </tr>
+            ) : (
+              slice.map((o) => (
+                <tr key={o.id} onClick={() => { setModal({ type: 'view', offer: o }); trackEvent('SEARCH', { value: o.id }); }}>
+                  <td><strong>#{String(o.id).substring(0, 8)}</strong></td>
+                  <td>{o.patientName}</td>
+                  <td className={styles.priceTeal}>€{o.priceQuote}</td>
+                  <td className={styles.dateMuted}>{o.treatmentReq || '—'}</td>
+                  <td><StatusBadge status={o.status} /></td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.rowActions}>
+                      <button className={`${styles.iconBtn} ${styles.view}`} title="View"
+                        onClick={() => setModal({ type: 'view', offer: o })}>
+                        <IconView />
+                      </button>
+                      <button className={`${styles.iconBtn} ${styles.edit}`} title="Edit"
+                        onClick={() => setModal({ type: 'edit', offer: o })}>
+                        <IconEdit />
+                      </button>
+                      <button
+                        data-testid="delete-offer-btn"
+                        className={`${styles.iconBtn} ${styles.del}`}
+                        title="Remove"
+                        onClick={(e) => { e.stopPropagation(); setModal({ type: 'delete', offer: o }); }}
+                      >
+                        <IconDelete />
+                      </button>
+                    </div>
                   </td>
                 </tr>
-            ) : (
-                slice.map((o) => (
-                    <tr
-                        key={o.id}
-                        onClick={() => {
-                          setModal({ type: 'view', offer: o });
-                          trackEvent('SEARCH', { value: o.id });
-                        }}
-                    >
-                      <td><strong>#{o.id}</strong></td>
-                      <td>{o.patientName}</td>
-                      <td className={styles.priceTeal}>€{o.priceQuote}</td>
-                      <td className={styles.dateMuted}>
-                        {o.date && o.time ? `${o.date}, ${o.time}` : '—'}
-                      </td>
-                      <td><StatusBadge status={o.status} /></td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <div className={styles.rowActions}>
-                          <button className={`${styles.iconBtn} ${styles.view}`} title="View"
-                                  onClick={() => setModal({ type: 'view', offer: o })}>
-                            <IconView />
-                          </button>
-                          <button className={`${styles.iconBtn} ${styles.edit}`} title="Edit"
-                                  onClick={() => setModal({ type: 'edit', offer: o })}>
-                            <IconEdit />
-                          </button>
-                          <button
-                              data-testid="delete-offer-btn"
-                              className={`${styles.iconBtn} ${styles.del}`}
-                              title="Delete"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setModal({ type: 'delete', offer: o });
-                              }}
-                          >
-                            <IconDelete />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                ))
+              ))
             )}
-            </tbody>
-          </table>
+          </tbody>
+        </table>
 
-          <Pagination page={page} totalPages={totalPages} setPage={setPage} />
-        </div>
-
-        {/* ── Chat ── */}
-        <div className={styles.chatSection}>
-          <h2 className={styles.chatTitle}>
-            Patient Chat
-            <span className={connected ? styles.dotOnline : styles.dotOffline} />
-          </h2>
-
-          {appointments.length === 0 ? (
-              <div className={styles.chatEmpty}>
-                No upcoming appointments to chat with.
-              </div>
-          ) : (
-              <div className={styles.chatLayout}>
-
-                {/* Appointment selector sidebar */}
-                <div className={styles.chatRooms}>
-                  {appointments.map((apt) => (
-                      <button
-                          key={apt.id}
-                          className={`${styles.roomBtn} ${apt.id === activeApptId ? styles.roomBtnActive : ''}`}
-                          onClick={() => setActiveApptId(apt.id)}
-                      >
-                        <div className={styles.roomDate}>
-                          {new Date(apt.scheduledAt).toLocaleDateString([], {
-                            month: 'short', day: 'numeric',
-                          })}
-                        </div>
-                        <div className={styles.roomPrice}>€{apt.confirmedPrice}</div>
-                      </button>
-                  ))}
-                </div>
-
-                {/* Chat window */}
-                <div className={styles.chatCard}>
-                  <div className={styles.chatMessages}>
-                    {messages.length === 0 && (
-                        <div className={styles.chatNoMessages}>No messages yet.</div>
-                    )}
-                    {messages.map((msg) => {
-                      const isMe = msg.senderId === String(dentist.id);
-                      return (
-                          <div key={msg.messageId}
-                               className={isMe ? styles.msgRowMe : styles.msgRowOther}>
-                            {!isMe && (
-                                <div className={styles.msgAvatar}>
-                                  {msg.senderName?.[0] ?? '?'}
-                                </div>
-                            )}
-                            <div className={styles.msgBubbleWrap}>
-                              {!isMe && (
-                                  <div className={styles.msgSender}>{msg.senderName}</div>
-                              )}
-                              <div className={isMe ? styles.bubbleMe : styles.bubbleOther}>
-                                {msg.content}
-                              </div>
-                              <div className={styles.msgTime}>
-                                {new Date(msg.timestamp).toLocaleTimeString([], {
-                                  hour: '2-digit', minute: '2-digit',
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                      );
-                    })}
-                    <div ref={bottomRef} />
-                  </div>
-
-                  <div className={styles.chatInputRow}>
-                    <input
-                        className={styles.chatInput}
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleChatSend();
-                          }
-                        }}
-                        placeholder="Type a message… (Enter to send)"
-                        maxLength={1000}
-                    />
-                    <button
-                        className={styles.chatSendBtn}
-                        onClick={handleChatSend}
-                        disabled={!chatInput.trim() || !connected}
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-          )}
-        </div>
-
-        {/* ── Modals ── */}
-        {(modal?.type === 'edit' || modal?.type === 'view') && modal.offer && (
-            <OfferFormModal
-                offer={modal.offer}
-                onClose={() => setModal(null)}
-                onSubmit={handleEdit}
-            />
-        )}
-        {modal?.type === 'delete' && modal.offer && (
-            <DeleteModal
-                data-testid="delete-modal"
-                offer={modal.offer}
-                onClose={() => setModal(null)}
-                onConfirm={handleDelete}
-            />
-        )}
-
-        <Toast toast={toast} />
+        <Pagination page={page} totalPages={totalPages} setPage={setPage} />
       </div>
+
+      {/* Accepted appointments — patient identity revealed post-acceptance */}
+      <div className={styles.tableCard} style={{ marginTop: 28 }}>
+        <div className={styles.toolbar}>
+          <span style={{ fontWeight: 700, fontSize: 15 }}>Accepted Appointments</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Request</th>
+              <th>Date & Time</th>
+              <th>Patient Name</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Price</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {appointments.length === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <EmptyState icon="📅" message="No accepted appointments yet" />
+                </td>
+              </tr>
+            ) : (
+              appointments.map((apt) => (
+                <tr key={apt.id}>
+                  <td><strong>#{apt.requestId ? String(apt.requestId).substring(0, 8) : '—'}</strong></td>
+                  <td>{apt.scheduledAt ? new Date(apt.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
+                  <td><strong>{apt.patientName || '—'}</strong></td>
+                  <td>{apt.patientPhone || '—'}</td>
+                  <td>{apt.patientEmail || '—'}</td>
+                  <td className={styles.priceTeal}>€{apt.confirmedPrice}</td>
+                  <td>{apt.status}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {(modal?.type === 'edit' || modal?.type === 'view') && modal.offer && (
+        <OfferFormModal offer={modal.offer} onClose={() => setModal(null)} onSubmit={handleEdit} />
+      )}
+      {modal?.type === 'delete' && modal.offer && (
+        <DeleteModal data-testid="delete-modal" offer={modal.offer} onClose={() => setModal(null)} onConfirm={handleDelete} />
+      )}
+
+      <Toast toast={toast} />
+    </div>
   );
 }

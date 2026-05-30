@@ -19,9 +19,11 @@ import java.util.UUID;
 public class UserResponseDTO {
 
     private UUID id;
+    private String email;
     private String username;
     private String phone;
     private Role role;
+    private boolean accountActive;
     private String city;
     private String address;
     private Double rating;
@@ -36,7 +38,9 @@ public class UserResponseDTO {
     public static UserResponseDTO from(User user) {
         UserResponseDTO dto = new UserResponseDTO();
         dto.id = user.getId();
+        dto.email = user.getEmail();
         dto.username = user.getUsername();
+        dto.accountActive = user.isAccountActive();
         dto.phone = user.getPhone();
         dto.role = user.getRole();
         dto.city = user.getCity();
