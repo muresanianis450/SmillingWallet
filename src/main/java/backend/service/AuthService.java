@@ -184,10 +184,10 @@ public class AuthService {
             prt.setUser(user);
             prt.setToken(UUID.randomUUID().toString());
             prt.setCreatedAt(Instant.now());
-            prt.setExpiresAt(Instant.now().plusSeconds(3600));
+            prt.setExpiresAt(Instant.now().plusSeconds(86400));
             passwordResetTokenRepository.save(prt);
             try {
-                emailService.sendPasswordReset(user.getEmail(), prt.getToken());
+                emailService.sendPasswordReset(user.getEmail(), user.getUsername(), prt.getToken());
             } catch (Exception e) {
                 log.warn("Failed to send password reset email to {}: {}", user.getEmail(), e.getMessage());
             }
