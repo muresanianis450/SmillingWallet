@@ -26,13 +26,14 @@ const CLINIC_LINKS = [
 
 // to this:
 const ADMIN_LINKS = [
-    { label: 'Home',         page: 'home' },
-    { label: 'Send Request', page: 'send-request' },
-    { label: 'My Offers',    page: 'my-offers' },
-    { label: 'Appointments', page: 'appointments' },
-    { label: 'Dashboard',    page: 'dashboard' },
-    { label: 'Requests',     page: 'requests' },
-    { label: 'About',        page: 'about' },
+    { label: 'Home',            page: 'home' },
+    { label: 'Send Request',    page: 'send-request' },
+    { label: 'My Offers',       page: 'my-offers' },
+    { label: 'Appointments',    page: 'appointments' },
+    { label: 'Dashboard',       page: 'dashboard' },
+    { label: 'Requests',        page: 'requests' },
+    { label: 'Manage Dentists', page: 'admin-dentists' },
+    { label: 'About',           page: 'about' },
 ];
 
 export function Nav({ page, setPage, user }: NavProps) {

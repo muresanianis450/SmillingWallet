@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../../../services/api';
 import { AuthUser, PageName } from '../../../types/types';
 import { BlobBackground } from '../../shared/BlobBackground';
+import { CityPicker } from '../../shared/CityPicker';
 // @ts-ignore
 import styles from './ProfilePage.module.css';
 
@@ -84,7 +85,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
 
     const usernameRef  = useRef<HTMLInputElement>(null);
     const phoneRef     = useRef<HTMLInputElement>(null);
-    const cityRef      = useRef<HTMLInputElement>(null);
+    const cityRef      = useRef<HTMLInputElement>(null); // forwarded into CityPicker's inner input
     const specialtyRef = useRef<HTMLSelectElement>(null);
 
     const fieldRefs: Record<string, React.RefObject<any>> = {
@@ -446,12 +447,12 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
 
                 <div className={`${styles.field} ${missing.has('city') ? styles.fieldRequired : ''}`}>
                     <label className={styles.label}>City</label>
-                    <input
+                    <CityPicker
                         ref={cityRef}
-                        className={`${styles.input} ${missing.has('city') ? styles.inputMissing : ''}`}
                         value={city}
-                        onChange={e => setCity(e.target.value)}
-                        placeholder="e.g. Cluj-Napoca"
+                        onChange={setCity}
+                        hasError={missing.has('city')}
+                        placeholder="Select a city…"
                     />
                     {missing.has('city') && (
                         <p className={styles.hint}>Required to submit requests</p>

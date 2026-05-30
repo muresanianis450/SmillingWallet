@@ -75,6 +75,10 @@ public class User {
     @Column(name = "backup_codes", columnDefinition = "TEXT")
     private String backupCodes;
 
+    /** FALSE for dentist accounts created by admin invite — until they set their password. */
+    @Column(name = "account_active", nullable = false)
+    private boolean accountActive = true;
+
     public User(String email, String username, String password, String phone, Role role) {
         this.email = email;
         this.username = username;

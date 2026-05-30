@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
 import { DentalRequest, SendOfferFormFields, ValidationErrors } from '../../../types/types.ts';
 import { validateSendOffer } from '../../../utils/validation';
-import { formatDisplayDate, formatDisplayTime } from '../../../utils/formatters';
 import { Modal } from '../../shared/Modal';
 import { FormField } from '../../shared/FormField';
 import { Input, PriceInput } from '../../shared/Input';
 import { Button } from '../../shared/Button';
 // @ts-ignore
 import styles from './SendOfferModal.module.css';
+
+const SPECIALTY_DISPLAY: Record<string, string> = {
+  GENERAL_DENTISTRY:   'General Dentistry',
+  IMPLANTS:            'Implant Dentistry',
+  ORTHODONTICS:        'Orthodontics',
+  COSMETIC_DENTISTRY:  'Cosmetic Dentistry',
+  PEDIATRIC_DENTISTRY: 'Pediatric Dentistry',
+  ORAL_SURGERY:        'Emergency Dentistry',
+};
 
 interface SendOfferModalProps {
   request: DentalRequest;
@@ -18,8 +26,8 @@ interface SendOfferModalProps {
 export function SendOfferModal({ request, onClose, onSend }: SendOfferModalProps) {
   const [fields, setFields] = useState<SendOfferFormFields>({
     priceQuote: '',
-    date: '',
-    time: '',
+    estimatedWaitDays: '',
+    notes: '',
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -34,81 +42,81 @@ export function SendOfferModal({ request, onClose, onSend }: SendOfferModalProps
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
     const errs = validateSendOffer(fields);
     setErrors(errs);
-    setTouched({ priceQuote: true, date: true, time: true });
-
+    setTouched({ priceQuote: true, estimatedWaitDays: true, notes: true });
     if (Object.keys(errs).length) return;
 
     onSend({
-      patientId: request.id,
-      patientName: '#' + request.id,
-      priceQuote: fields.priceQuote,
-      date: formatDisplayDate(fields.date),
-      time: formatDisplayTime(fields.time),
-      status: 'Sent',
-      treatmentCategory: request.category,
-      treatmentReq: request.symptoms,
-      ctScan: request.ctScan ?? null,
-      symptoms: request.symptoms,
+      requestId:         request.id,
+      price:             fields.priceQuote,
+      estimatedWaitDays: fields.estimatedWaitDays || 7,
+      notes:             fields.notes || '',
     });
   }
 
   const hasBlockingErrors =
-      Object.keys(errors).length > 0 && Object.keys(touched).length > 0;
+    Object.keys(errors).length > 0 && Object.keys(touched).length > 0;
+
+  const displayCategory = SPECIALTY_DISPLAY[request.specialty] || request.specialty;
 
   return (
-      <Modal title={`Add New Offer — Patient: #${request.id}`} onClose={onClose}>
-        <div data-testid="send-offer-modal">
-          <form onSubmit={handleSubmit} noValidate>
-            <FormField
-                label="Price Quote"
-                error={touched.priceQuote ? errors.priceQuote : undefined}
+    <Modal title={`Send Offer — ${displayCategory} · #${request.id.substring(0, 8)}`} onClose={onClose}>
+      <div data-testid="send-offer-modal">
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted, #888)', marginBottom: '12px' }}>
+          {request.description}
+        </p>
+        <form onSubmit={handleSubmit} noValidate>
+          <FormField
+            label="Price Quote (€)"
+            error={touched.priceQuote ? errors.priceQuote : undefined}
+          >
+            <PriceInput
+              value={fields.priceQuote}
+              hasError={!!(touched.priceQuote && errors.priceQuote)}
+              onChange={(v) => set('priceQuote', v)}
+            />
+          </FormField>
+
+          <FormField
+            label="Estimated Wait Days"
+            error={touched.estimatedWaitDays ? errors.estimatedWaitDays : undefined}
+          >
+            <Input
+              type="number"
+              placeholder="e.g. 7"
+              value={String(fields.estimatedWaitDays)}
+              hasError={!!(touched.estimatedWaitDays && errors.estimatedWaitDays)}
+              onChange={(e) => set('estimatedWaitDays', e.target.value)}
+            />
+          </FormField>
+
+          <FormField label="Notes (optional)">
+            <textarea
+              placeholder="Any additional info for the patient…"
+              value={String(fields.notes)}
+              onChange={(e) => set('notes', e.target.value as any)}
+              rows={3}
+              maxLength={500}
+              style={{ width: '100%', resize: 'vertical', padding: '8px', borderRadius: '6px', border: '1px solid var(--border, #ddd)' }}
+            />
+          </FormField>
+
+          <div className={styles.actions}>
+            <Button variant="secondary" type="button" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              data-testid="send-offer-submit-btn"
+              variant="primary"
+              type="submit"
+              disabled={hasBlockingErrors}
             >
-              <PriceInput
-                  value={fields.priceQuote}
-                  hasError={!!(touched.priceQuote && errors.priceQuote)}
-                  onChange={(v) => set('priceQuote', v)}
-              />
-            </FormField>
-
-            <div className={styles.formRow}>
-              <FormField label="📅 Date" error={touched.date ? errors.date : undefined}>
-                <Input
-                    type="date"
-                    value={fields.date}
-                    hasError={!!(touched.date && errors.date)}
-                    onChange={(e) => set('date', e.target.value)}
-                />
-              </FormField>
-
-              <FormField label="🕐 Time" error={touched.time ? errors.time : undefined}>
-                <Input
-                    type="time"
-                    value={fields.time}
-                    hasError={!!(touched.time && errors.time)}
-                    onChange={(e) => set('time', e.target.value)}
-                />
-              </FormField>
-            </div>
-
-            <div className={styles.actions}>
-              <Button variant="secondary" type="button" onClick={onClose}>
-                Cancel
-              </Button>
-
-              <Button
-                  data-testid="send-offer-submit-btn"
-                  variant="primary"
-                  type="submit"
-                  disabled={hasBlockingErrors}
-              >
-                Send Offer
-              </Button>
-            </div>
-          </form>
-        </div>
-      </Modal>
+              Send Offer
+            </Button>
+          </div>
+        </form>
+      </div>
+    </Modal>
   );
 }

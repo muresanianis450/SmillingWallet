@@ -1,7 +1,9 @@
 package backend.service;
 
 import backend.dto.*;
+import backend.enums.DentalSpecialty;
 import backend.enums.Role;
+import backend.exception.ConflictException;
 import backend.exception.ResourceNotFoundException;
 import backend.model.PasswordResetToken;
 import backend.model.RefreshToken;
@@ -130,6 +132,10 @@ public class AuthService {
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Invalid password");
+        }
+
+        if (!user.isAccountActive()) {
+            throw new IllegalArgumentException("Account not yet activated. Please check your invitation email.");
         }
 
         if (user.isTotpEnabled()) {
@@ -332,6 +338,73 @@ public class AuthService {
         mfaTempCache.delete(MFA_TEMP_PREFIX + tempToken);
         AuthResponseDTO auth = issueTokenPair(user);
         return LoginResponseDTO.full(auth.getToken(), auth.getRefreshToken(), auth.getUser());
+    }
+
+    // ── DENTIST INVITE ────────────────────────────────────────────────────────
+
+    public UserResponseDTO createDentistInvite(CreateDentistRequestDTO dto) {
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new ConflictException("An account with this email already exists");
+        }
+
+        User user = new User(
+                dto.getEmail(),
+                dto.getClinicName(),
+                passwordEncoder.encode(UUID.randomUUID().toString()),  // locked random password
+                dto.getPhone(),
+                Role.DENTIST
+        );
+        user.setCity(dto.getCity());
+        user.setAddress(dto.getAddress());
+        user.setSpecialty(dto.getSpecialty());
+        user.setAccountActive(false);   // activated only when they set their password
+        userRepository.save(user);
+
+        PasswordResetToken prt = new PasswordResetToken();
+        prt.setUser(user);
+        prt.setToken(UUID.randomUUID().toString());
+        prt.setCreatedAt(Instant.now());
+        prt.setExpiresAt(Instant.now().plusSeconds(72 * 3600)); // 72 hours
+        passwordResetTokenRepository.save(prt);
+
+        emailService.sendDentistInvite(user.getEmail(), user.getUsername(), prt.getToken());
+
+        return UserResponseDTO.from(user);
+    }
+
+    public void verifyInviteToken(String token) {
+        PasswordResetToken prt = passwordResetTokenRepository
+                .findByTokenAndUsedFalse(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or already used invitation link"));
+
+        if (prt.getExpiresAt().isBefore(Instant.now())) {
+            throw new IllegalArgumentException("This invitation link has expired");
+        }
+    }
+
+    public void activateAccount(ResetPasswordRequestDTO dto) {
+        PasswordResetToken prt = passwordResetTokenRepository
+                .findByTokenAndUsedFalse(dto.getToken())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or already used invitation link"));
+
+        if (prt.getExpiresAt().isBefore(Instant.now())) {
+            prt.setUsed(true);
+            throw new IllegalArgumentException("This invitation link has expired");
+        }
+
+        User user = prt.getUser();
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        user.setAccountActive(true);
+        prt.setUsed(true);
+
+        refreshTokenRepository.deleteAllByUserId(user.getId());
+    }
+
+    public List<UserResponseDTO> findAllByRole(Role role) {
+        return userRepository.findByRole(role).stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(UserResponseDTO::from)
+                .toList();
     }
 
     // ── PROFILE ───────────────────────────────────────────────────────────────

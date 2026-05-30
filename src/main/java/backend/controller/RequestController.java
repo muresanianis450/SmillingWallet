@@ -6,6 +6,7 @@ import backend.dto.PagedResponseDTO;
 import backend.enums.DentalSpecialty;
 import backend.service.RequestService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -33,7 +34,9 @@ public class RequestController {
             @RequestParam(required = false) DentalSpecialty specialty,
             @RequestParam(required = false) String city
     ) {
-        return requestService.findAllForDentist(page, size, specialty, city);
+        UUID dentistId = UUID.fromString(
+                SecurityContextHolder.getContext().getAuthentication().getName());
+        return requestService.findAllForDentist(page, size, specialty, city, dentistId);
     }
 
     //Patient's own request

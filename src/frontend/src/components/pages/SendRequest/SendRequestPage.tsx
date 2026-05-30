@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageName, SendRequestFormFields, PaymentMethod, ValidationErrors } from '../../../types/types.ts';
 import { TREATMENT_CATEGORIES, BUDGET_RANGES, INSURANCE_PROVIDERS } from '../../../data/constants';
+import { CityPicker } from '../../shared/CityPicker';
 import { useToast } from '../../../hooks/useToast';
+import { api } from '../../../services/api';
 import { Toast } from '../../shared/Toast';
 import { Button } from '../../shared/Button';
 // @ts-ignore
@@ -43,10 +45,39 @@ function validate(form: SendRequestFormFields): ValidationErrors {
     return errors;
 }
 
+const SPECIALTY_MAP: Record<string, string> = {
+    'Cosmetic Dentistry':  'COSMETIC_DENTISTRY',
+    'Implant Dentistry':   'IMPLANTS',
+    'Pediatric Dentistry': 'PEDIATRIC_DENTISTRY',
+    'General Dentistry':   'GENERAL_DENTISTRY',
+    'Orthodontics':        'ORTHODONTICS',
+    'Emergency Dentistry': 'ORAL_SURGERY',
+};
+
+const BUDGET_MAP: Record<string, number> = {
+    'Under €500':       499,
+    '€500 – €1,000':    1000,
+    '€1,000 – €2,500':  2500,
+    '€2,500 – €5,000':  5000,
+    'Over €5,000':       10000,
+};
+
 export function SendRequestPage({ setPage }: SendRequestPageProps) {
-    const [form,   setForm]   = useState<SendRequestFormFields>(EMPTY_FORM);
-    const [errors, setErrors] = useState<ValidationErrors>({});
-    const { toast, show: showToast } = useToast();
+    const [form,       setForm]       = useState<SendRequestFormFields>(EMPTY_FORM);
+    const [errors,     setErrors]     = useState<ValidationErrors>({});
+    const [submitting, setSubmitting] = useState(false);
+    const { toast, show: showToast }  = useToast();
+
+    useEffect(() => {
+        const stored = localStorage.getItem('user');
+        if (!stored) return;
+        const user = JSON.parse(stored);
+        if (!user?.id) return;
+        api.get(`/auth/user/${user.id}`).then((res) => {
+            const city: string | undefined = res.data?.city;
+            if (city) setForm((prev) => ({ ...prev, location: city }));
+        }).catch(() => {});
+    }, []);
 
     function handleChange(field: keyof SendRequestFormFields, value: string) {
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -55,17 +86,36 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
         }
     }
 
-    function handleSubmit() {
+    async function handleSubmit() {
         const errs = validate(form);
         if (Object.keys(errs).length > 0) {
             setErrors(errs);
             showToast('Please fix the errors below.', 'error');
             return;
         }
-        // TODO: POST /api/requests
-        console.log('Submitting request:', form);
-        showToast('Request submitted! Clinics will respond shortly.', 'success');
-        setTimeout(() => setPage('my-offers'), 1800);
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (!user?.id) {
+            showToast('You must be logged in to submit a request.', 'error');
+            return;
+        }
+        setSubmitting(true);
+        try {
+            const description = `${form.treatmentRequirement}. ${form.symptomSummary}`.trim();
+            await api.post('/requests', {
+                patientPublicId: user.id,
+                specialty:       SPECIALTY_MAP[form.treatmentCategory] || 'GENERAL_DENTISTRY',
+                description,
+                preferredCity:   form.location,
+                budgetMax:       BUDGET_MAP[form.budgetRange] ?? null,
+            });
+            showToast('Request submitted! Clinics will respond shortly.', 'success');
+            setTimeout(() => setPage('my-offers'), 1800);
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || 'Failed to submit. Please try again.';
+            showToast(msg, 'error');
+        } finally {
+            setSubmitting(false);
+        }
     }
 
     return (
@@ -118,12 +168,11 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
 
                         <div className={styles.field}>
                             <label>Location <span className={styles.required}>*</span></label>
-                            <input
-                                type="text"
-                                placeholder="e.g. Cluj-Napoca"
+                            <CityPicker
                                 value={form.location}
-                                onChange={(e) => handleChange('location', e.target.value)}
-                                className={errors.location ? styles.inputError : ''}
+                                onChange={(city) => handleChange('location', city)}
+                                hasError={!!errors.location}
+                                placeholder="Select a city…"
                             />
                             {errors.location && <span className={styles.errorMsg}>{errors.location}</span>}
                         </div>
@@ -306,8 +355,8 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                     <p className={styles.submitNote}>
                         🔒 Your personal details are never shared with clinics until you accept an offer.
                     </p>
-                    <Button variant="cta" onClick={handleSubmit}>
-                        Submit Request →
+                    <Button variant="cta" onClick={handleSubmit} disabled={submitting}>
+                        {submitting ? 'Submitting…' : 'Submit Request →'}
                     </Button>
                 </div>
             </div>

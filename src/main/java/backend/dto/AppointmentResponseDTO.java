@@ -2,6 +2,7 @@ package backend.dto;
 
 import backend.enums.AppointmentStatus;
 import backend.model.Appointment;
+import backend.model.User;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -24,6 +25,12 @@ public class AppointmentResponseDTO {
     private AppointmentStatus status;
     private LocalDateTime createdAt;
 
+    // Patient contact info — only populated on the clinic dashboard (post-acceptance)
+    private String patientName;
+    private String patientEmail;
+    private String patientPhone;
+    private UUID requestId;
+
     public static AppointmentResponseDTO from(Appointment a) {
         AppointmentResponseDTO dto = new AppointmentResponseDTO();
         dto.id               = a.getId();
@@ -34,6 +41,22 @@ public class AppointmentResponseDTO {
         dto.confirmedPrice   = a.getConfirmedPrice();
         dto.status           = a.getStatus();
         dto.createdAt        = a.getCreatedAt();
+        return dto;
+    }
+
+    public static AppointmentResponseDTO fromWithPatient(Appointment a, User patient) {
+        AppointmentResponseDTO dto = from(a);
+        if (patient != null) {
+            dto.patientName  = patient.getUsername();
+            dto.patientEmail = patient.getEmail();
+            dto.patientPhone = patient.getPhone();
+        }
+        return dto;
+    }
+
+    public static AppointmentResponseDTO fromWithPatientAndRequest(Appointment a, User patient, UUID requestId) {
+        AppointmentResponseDTO dto = fromWithPatient(a, patient);
+        dto.requestId = requestId;
         return dto;
     }
 
