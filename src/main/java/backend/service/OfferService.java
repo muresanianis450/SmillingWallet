@@ -20,9 +20,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.EnumSet;
 
 @Service
 public class OfferService {
@@ -32,17 +32,20 @@ public class OfferService {
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final EmailService emailService;
 
     public OfferService(OfferRepository offerRepository,
                         RequestRepository requestRepository,
                         AppointmentRepository appointmentRepository,
                         UserRepository userRepository,
-                        NotificationService notificationService) {
+                        NotificationService notificationService,
+                        EmailService emailService) {
         this.offerRepository = offerRepository;
         this.requestRepository = requestRepository;
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
 
@@ -92,6 +95,13 @@ public class OfferService {
                 request.getPatientPublicId(),
                 NotificationType.NEW_OFFER,
                 "New offer received for request " + request.getId()
+        );
+        userRepository.findById(request.getPatientPublicId()).ifPresent(patient ->
+                emailService.sendNewOfferNotification(
+                        patient.getEmail(),
+                        patient.getUsername(),
+                        request.getId().toString().substring(0, 8)
+                )
         );
 
         return OfferResponseDTO.from(offer);
@@ -149,8 +159,7 @@ public class OfferService {
 
     /**
      * Patient selects one of the proposed time slots.
-     * Creates the appointment at the chosen time; DB triggers handle rejecting other offers
-     * and closing the request.
+     * DB triggers handle rejecting other offers and closing the request.
      */
     @Transactional
     public AppointmentResponseDTO selectSlot(UUID offerId, SelectSlotRequestDTO dto) {
@@ -161,7 +170,6 @@ public class OfferService {
             throw new ConflictException("Offer is not awaiting slot selection (status: " + offer.getStatus() + ")");
         }
 
-        // Validate the chosen slot is one of the proposed ones.
         // Truncate to minutes to avoid nanosecond mismatches between JSON deserialization and DB storage.
         java.time.LocalDateTime chosen = dto.getSelectedSlot().truncatedTo(ChronoUnit.MINUTES);
         boolean validSlot = (offer.getProposedSlot1() != null && chosen.equals(offer.getProposedSlot1().truncatedTo(ChronoUnit.MINUTES)))
@@ -178,9 +186,11 @@ public class OfferService {
             throw new ConflictException("Request is no longer open");
         }
 
+        // trg_after_offer_accepted rejects all other PENDING offers automatically
         offer.setStatus(OfferStatus.ACCEPTED);
         offerRepository.save(offer);
 
+        // trg_after_appointment_created sets dental_request to OFFER_ACCEPTED automatically
         Appointment appointment = new Appointment(
                 offer.getId(),
                 request.getPatientPublicId(),
@@ -195,13 +205,19 @@ public class OfferService {
                 NotificationType.OFFER_ACCEPTED,
                 "Your offer was accepted! Appointment scheduled for " + dto.getSelectedSlot()
         );
+        userRepository.findById(offer.getDentistPublicId()).ifPresent(dentist ->
+                emailService.sendAppointmentConfirmedNotification(
+                        dentist.getEmail(),
+                        dentist.getUsername(),
+                        dto.getSelectedSlot()
+                )
+        );
 
         return AppointmentResponseDTO.from(appointment);
     }
 
     /**
      * Patient requests new time slots from the dentist.
-     * Sets offer status to RESCHEDULE_REQUESTED.
      */
     @Transactional
     public OfferResponseDTO requestReschedule(UUID offerId) {
@@ -221,13 +237,19 @@ public class OfferService {
                 NotificationType.NEW_OFFER,
                 "Patient requested new time slots for offer " + offerId
         );
+        userRepository.findById(offer.getDentistPublicId()).ifPresent(dentist ->
+                emailService.sendRescheduleRequestedNotification(
+                        dentist.getEmail(),
+                        dentist.getUsername(),
+                        offerId.toString().substring(0, 8)
+                )
+        );
 
         return OfferResponseDTO.from(offer);
     }
 
     /**
      * Dentist proposes new time slots (and optionally a new price) after a reschedule request.
-     * Allowed while offer is PENDING or RESCHEDULE_REQUESTED.
      */
     @Transactional
     public OfferResponseDTO reproposeSlots(UUID offerId, ReproposeSlotRequestDTO dto) {
@@ -254,6 +276,13 @@ public class OfferService {
                     request.getPatientPublicId(),
                     NotificationType.NEW_OFFER,
                     "The clinic proposed new time slots for your request"
+            );
+            userRepository.findById(request.getPatientPublicId()).ifPresent(patient ->
+                    emailService.sendNewSlotsProposedNotification(
+                            patient.getEmail(),
+                            patient.getUsername(),
+                            offer.getDentistPublicId().toString().substring(0, 6)
+                    )
             );
         }
 

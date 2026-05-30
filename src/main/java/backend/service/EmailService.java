@@ -71,6 +71,45 @@ public class EmailService {
     }
 
     @Async
+    public void sendNewOfferNotification(String toEmail, String patientName, String shortRequestId) {
+        String html = NEW_OFFER_HTML_TEMPLATE
+                .replace("{{PATIENT_NAME}}", patientName)
+                .replace("{{REQUEST_ID}}", shortRequestId)
+                .replace("{{APP_LINK}}", frontendUrl);
+        sendHtml(toEmail, "Smiling Wallet – You have a new offer!", html);
+    }
+
+    @Async
+    public void sendRescheduleRequestedNotification(String toEmail, String dentistName, String shortOfferId) {
+        String html = RESCHEDULE_REQUESTED_HTML_TEMPLATE
+                .replace("{{DENTIST_NAME}}", dentistName)
+                .replace("{{OFFER_ID}}", shortOfferId)
+                .replace("{{APP_LINK}}", frontendUrl);
+        sendHtml(toEmail, "Smiling Wallet – Patient requested new time slots", html);
+    }
+
+    @Async
+    public void sendNewSlotsProposedNotification(String toEmail, String patientName, String shortDentistId) {
+        String html = NEW_SLOTS_HTML_TEMPLATE
+                .replace("{{PATIENT_NAME}}", patientName)
+                .replace("{{DENTIST_ID}}", shortDentistId)
+                .replace("{{APP_LINK}}", frontendUrl);
+        sendHtml(toEmail, "Smiling Wallet – New time slots proposed for your offer", html);
+    }
+
+    @Async
+    public void sendAppointmentConfirmedNotification(String toEmail, String dentistName, java.time.LocalDateTime scheduledAt) {
+        String date = scheduledAt.format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy"));
+        String time = scheduledAt.format(DateTimeFormatter.ofPattern("h:mm a"));
+        String html = APPOINTMENT_CONFIRMED_HTML_TEMPLATE
+                .replace("{{DENTIST_NAME}}", dentistName)
+                .replace("{{DATE}}", date)
+                .replace("{{TIME}}", time)
+                .replace("{{APP_LINK}}", frontendUrl);
+        sendHtml(toEmail, "Smiling Wallet – Appointment confirmed!", html);
+    }
+
+    @Async
     public void sendDentistInvite(String toEmail, String clinicName, String token) {
         String activationLink = frontendUrl + "/activate?token=" + token;
         String html = INVITE_HTML_TEMPLATE
@@ -278,6 +317,251 @@ public class EmailService {
                         </td></tr>
                     </table>
                 </center>
+            </body>
+            </html>
+            """;
+
+    private static final String NEW_OFFER_HTML_TEMPLATE = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>New Offer - Smiling Wallet</title>
+                <style>
+                    body { margin:0; padding:0; background-color:#f4f5fb; font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; color:#333333; -webkit-font-smoothing:antialiased; }
+                    table { border-spacing:0; border-collapse:collapse; }
+                    td { padding:0; }
+                    .wrapper { width:100%; table-layout:fixed; background-color:#f4f5fb; padding-bottom:40px; }
+                    .main { background-color:#ffffff; margin:0 auto; width:100%; max-width:600px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); overflow:hidden; }
+                    h1 { color:#1a1a2e; font-size:24px; font-weight:700; margin-top:0; margin-bottom:16px; }
+                    p { color:#6b7280; font-size:16px; line-height:1.6; margin-top:0; margin-bottom:24px; }
+                    .header { padding:30px 40px 20px; text-align:center; }
+                    .header-logo { font-size:22px; font-weight:800; color:#7b68ee; text-decoration:none; }
+                    .content { padding:20px 40px 40px; }
+                    .notice-box { background-color:#f5f4ff; border-left:4px solid #7b68ee; border-radius:4px; padding:20px; margin-bottom:24px; }
+                    .notice-box p { font-size:15px; margin:0; color:#1a1a2e; }
+                    .btn-container { text-align:center; margin:32px 0; }
+                    .btn { background-color:#7b68ee; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; display:inline-block; }
+                    .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
+                    .footer a { color:#7b68ee; text-decoration:none; }
+                </style>
+            </head>
+            <body>
+            <center class="wrapper">
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
+                    <tr><td align="center">
+                        <table class="main" border="0" cellpadding="0" cellspacing="0">
+                            <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                            <tr><td class="content">
+                                <h1>A clinic sent you an offer!</h1>
+                                <p>Hello {{PATIENT_NAME}},</p>
+                                <p>Great news — a dental clinic has reviewed your request and sent you a price offer with proposed appointment time slots.</p>
+                                <div class="notice-box">
+                                    <p><strong>Request:</strong> #{{REQUEST_ID}}<br>
+                                       Log in to review the offer, pick a time slot, or request different times.</p>
+                                </div>
+                                <div class="btn-container">
+                                    <a href="{{APP_LINK}}" class="btn">View My Offers</a>
+                                </div>
+                                <p style="font-size:14px; margin-bottom:0;">
+                                    Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                </p>
+                            </td></tr>
+                        </table>
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                            <tr><td class="footer">
+                                <p style="margin-bottom:8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
+                                <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                            </td></tr>
+                        </table>
+                    </td></tr>
+                </table>
+            </center>
+            </body>
+            </html>
+            """;
+
+    private static final String RESCHEDULE_REQUESTED_HTML_TEMPLATE = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Reschedule Requested - Smiling Wallet</title>
+                <style>
+                    body { margin:0; padding:0; background-color:#f4f5fb; font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; color:#333333; -webkit-font-smoothing:antialiased; }
+                    table { border-spacing:0; border-collapse:collapse; }
+                    td { padding:0; }
+                    .wrapper { width:100%; table-layout:fixed; background-color:#f4f5fb; padding-bottom:40px; }
+                    .main { background-color:#ffffff; margin:0 auto; width:100%; max-width:600px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); overflow:hidden; }
+                    h1 { color:#1a1a2e; font-size:24px; font-weight:700; margin-top:0; margin-bottom:16px; }
+                    p { color:#6b7280; font-size:16px; line-height:1.6; margin-top:0; margin-bottom:24px; }
+                    .header { padding:30px 40px 20px; text-align:center; }
+                    .header-logo { font-size:22px; font-weight:800; color:#7b68ee; text-decoration:none; }
+                    .content { padding:20px 40px 40px; }
+                    .notice-box { background-color:#fffbeb; border-left:4px solid #f59e0b; border-radius:4px; padding:20px; margin-bottom:24px; }
+                    .notice-box p { font-size:15px; margin:0; color:#1a1a2e; }
+                    .btn-container { text-align:center; margin:32px 0; }
+                    .btn { background-color:#f59e0b; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; display:inline-block; }
+                    .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
+                    .footer a { color:#7b68ee; text-decoration:none; }
+                </style>
+            </head>
+            <body>
+            <center class="wrapper">
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
+                    <tr><td align="center">
+                        <table class="main" border="0" cellpadding="0" cellspacing="0">
+                            <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                            <tr><td class="content">
+                                <h1>Patient requested new time slots</h1>
+                                <p>Hello {{DENTIST_NAME}},</p>
+                                <p>A patient was not available on your proposed times and has requested you to suggest new appointment slots.</p>
+                                <div class="notice-box">
+                                    <p><strong>Offer:</strong> #{{OFFER_ID}}<br>
+                                       Please log in and propose up to 3 new time slots so the patient can choose.</p>
+                                </div>
+                                <div class="btn-container">
+                                    <a href="{{APP_LINK}}" class="btn">Propose New Slots</a>
+                                </div>
+                                <p style="font-size:14px; margin-bottom:0;">
+                                    Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                </p>
+                            </td></tr>
+                        </table>
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                            <tr><td class="footer">
+                                <p style="margin-bottom:8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
+                                <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                            </td></tr>
+                        </table>
+                    </td></tr>
+                </table>
+            </center>
+            </body>
+            </html>
+            """;
+
+    private static final String NEW_SLOTS_HTML_TEMPLATE = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>New Time Slots - Smiling Wallet</title>
+                <style>
+                    body { margin:0; padding:0; background-color:#f4f5fb; font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; color:#333333; -webkit-font-smoothing:antialiased; }
+                    table { border-spacing:0; border-collapse:collapse; }
+                    td { padding:0; }
+                    .wrapper { width:100%; table-layout:fixed; background-color:#f4f5fb; padding-bottom:40px; }
+                    .main { background-color:#ffffff; margin:0 auto; width:100%; max-width:600px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); overflow:hidden; }
+                    h1 { color:#1a1a2e; font-size:24px; font-weight:700; margin-top:0; margin-bottom:16px; }
+                    p { color:#6b7280; font-size:16px; line-height:1.6; margin-top:0; margin-bottom:24px; }
+                    .header { padding:30px 40px 20px; text-align:center; }
+                    .header-logo { font-size:22px; font-weight:800; color:#7b68ee; text-decoration:none; }
+                    .content { padding:20px 40px 40px; }
+                    .notice-box { background-color:#f5f4ff; border-left:4px solid #7b68ee; border-radius:4px; padding:20px; margin-bottom:24px; }
+                    .notice-box p { font-size:15px; margin:0; color:#1a1a2e; }
+                    .btn-container { text-align:center; margin:32px 0; }
+                    .btn { background-color:#7b68ee; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; display:inline-block; }
+                    .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
+                    .footer a { color:#7b68ee; text-decoration:none; }
+                </style>
+            </head>
+            <body>
+            <center class="wrapper">
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
+                    <tr><td align="center">
+                        <table class="main" border="0" cellpadding="0" cellspacing="0">
+                            <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                            <tr><td class="content">
+                                <h1>The clinic proposed new time slots!</h1>
+                                <p>Hello {{PATIENT_NAME}},</p>
+                                <p>The clinic has reviewed your reschedule request and proposed new appointment time slots for you to choose from.</p>
+                                <div class="notice-box">
+                                    <p><strong>Clinic:</strong> Dr. #{{DENTIST_ID}}<br>
+                                       Log in to view the new slots and confirm your appointment.</p>
+                                </div>
+                                <div class="btn-container">
+                                    <a href="{{APP_LINK}}" class="btn">Choose a Time Slot</a>
+                                </div>
+                                <p style="font-size:14px; margin-bottom:0;">
+                                    Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                </p>
+                            </td></tr>
+                        </table>
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                            <tr><td class="footer">
+                                <p style="margin-bottom:8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
+                                <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                            </td></tr>
+                        </table>
+                    </td></tr>
+                </table>
+            </center>
+            </body>
+            </html>
+            """;
+
+    private static final String APPOINTMENT_CONFIRMED_HTML_TEMPLATE = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Appointment Confirmed - Smiling Wallet</title>
+                <style>
+                    body { margin:0; padding:0; background-color:#f4f5fb; font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; color:#333333; -webkit-font-smoothing:antialiased; }
+                    table { border-spacing:0; border-collapse:collapse; }
+                    td { padding:0; }
+                    .wrapper { width:100%; table-layout:fixed; background-color:#f4f5fb; padding-bottom:40px; }
+                    .main { background-color:#ffffff; margin:0 auto; width:100%; max-width:600px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); overflow:hidden; }
+                    h1 { color:#1a1a2e; font-size:24px; font-weight:700; margin-top:0; margin-bottom:16px; }
+                    p { color:#6b7280; font-size:16px; line-height:1.6; margin-top:0; margin-bottom:24px; }
+                    .header { padding:30px 40px 20px; text-align:center; }
+                    .header-logo { font-size:22px; font-weight:800; color:#7b68ee; text-decoration:none; }
+                    .content { padding:20px 40px 40px; }
+                    .notice-box { background-color:#f0fdf4; border-left:4px solid #22c55e; border-radius:4px; padding:20px; margin-bottom:24px; }
+                    .notice-box p { font-size:15px; margin:0; color:#1a1a2e; }
+                    .btn-container { text-align:center; margin:32px 0; }
+                    .btn { background-color:#22c55e; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; display:inline-block; }
+                    .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
+                    .footer a { color:#7b68ee; text-decoration:none; }
+                </style>
+            </head>
+            <body>
+            <center class="wrapper">
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
+                    <tr><td align="center">
+                        <table class="main" border="0" cellpadding="0" cellspacing="0">
+                            <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                            <tr><td class="content">
+                                <h1>Appointment confirmed!</h1>
+                                <p>Hello {{DENTIST_NAME}},</p>
+                                <p>A patient has selected a time slot and confirmed their appointment with your clinic.</p>
+                                <div class="notice-box">
+                                    <p><strong>Date:</strong> {{DATE}}<br>
+                                       <strong>Time:</strong> {{TIME}}<br>
+                                       Log in to view the appointment details.</p>
+                                </div>
+                                <div class="btn-container">
+                                    <a href="{{APP_LINK}}" class="btn">View Dashboard</a>
+                                </div>
+                                <p style="font-size:14px; margin-bottom:0;">
+                                    Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                </p>
+                            </td></tr>
+                        </table>
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                            <tr><td class="footer">
+                                <p style="margin-bottom:8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
+                                <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                            </td></tr>
+                        </table>
+                    </td></tr>
+                </table>
+            </center>
             </body>
             </html>
             """;
