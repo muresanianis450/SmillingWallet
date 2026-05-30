@@ -3,6 +3,7 @@ package backend.controller;
 import backend.dto.*;
 import backend.service.OfferService;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;

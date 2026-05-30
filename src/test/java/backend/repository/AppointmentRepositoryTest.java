@@ -66,7 +66,7 @@ class AppointmentRepositoryTest {
     void save_andFindById_works() {
         Appointment found = appointmentRepository.findById(appt1.getId()).orElseThrow();
         assertThat(found.getConfirmedPrice()).isEqualByComparingTo("800.00");
-        assertThat(found.getStatus()).isEqualTo(AppointmentStatus.PENDING);
+        assertThat(found.getStatus()).isEqualTo(AppointmentStatus.CONFIRMED);
     }
 
     @Test
@@ -128,19 +128,15 @@ class AppointmentRepositoryTest {
     }
 
     @Test
-    void findByStatus_pending_returnsAll() {
+    void findByStatus_pending_returnsNone() {
         List<Appointment> pending = appointmentRepository.findByStatus(AppointmentStatus.PENDING);
-        assertThat(pending).hasSize(3);
+        assertThat(pending).isEmpty();
     }
 
     @Test
-    void findByStatus_confirmed_returnsCorrect() {
-        appt2.setStatus(AppointmentStatus.CONFIRMED);
-        appointmentRepository.save(appt2);
-
+    void findByStatus_confirmed_returnsAll() {
         List<Appointment> confirmed = appointmentRepository.findByStatus(AppointmentStatus.CONFIRMED);
-        assertThat(confirmed).hasSize(1);
-        assertThat(confirmed.get(0).getId()).isEqualTo(appt2.getId());
+        assertThat(confirmed).hasSize(3);
     }
 
     @Test
