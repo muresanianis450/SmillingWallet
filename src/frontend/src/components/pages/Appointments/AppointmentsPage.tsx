@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PageName } from '../../../types/types.ts';
 import { api, AUTH_COOKIE } from '../../../services/api';
+import { DEFAULT_AVATAR } from '../../../assets/avatars';
 import { getCookie } from '../../../tracking/cookies';
 // @ts-ignore
 import styles from './AppointmentsPage.module.css';
@@ -25,6 +26,7 @@ interface ClinicInfo {
     email: string;
     address: string;
     specialty: string;
+    profilePicture?: string | null;
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -84,6 +86,7 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                             email: d.email || 'N/A',
                             address: d.address || d.city || 'N/A',
                             specialty: d.specialty || '',
+                            profilePicture: d.profilePicture || null,
                         });
                     } catch {
                         setClinic({ name: 'Unknown', doctorName: 'Unknown', rating: 0, phone: 'N/A', email: 'N/A', address: 'N/A', specialty: '' });
@@ -159,12 +162,11 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                         <h2 className={styles.sectionTitle}>Your Dental Team</h2>
                         <div className={styles.card}>
                             <div className={styles.doctorRow}>
-                                <div className={styles.doctorAvatar}>
-                                    {clinic.doctorName
-                                        .split(' ')
-                                        .map((w) => w[0])
-                                        .join('')}
-                                </div>
+                                <img
+                                    src={clinic.profilePicture || DEFAULT_AVATAR}
+                                    alt={clinic.doctorName}
+                                    className={styles.doctorAvatar}
+                                />
                                 <div>
                                     <div className={styles.doctorName}>
                                         {clinic.doctorName}

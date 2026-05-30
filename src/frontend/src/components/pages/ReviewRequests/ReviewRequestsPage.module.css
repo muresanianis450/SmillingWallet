@@ -133,6 +133,22 @@
   color: var(--muted);
 }
 
+/* ── Patient cell ── */
+.patientCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.patientAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+}
+
 /* ── Action cell ── */
 .actionCell {
   display: flex;

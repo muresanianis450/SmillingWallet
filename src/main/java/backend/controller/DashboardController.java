@@ -23,6 +23,11 @@ public class DashboardController {
         return dashboardService.getClinicStats(dentistId);
     }
 
+    @GetMapping("/clinic/{dentistId}/appointments")
+    public java.util.List<backend.dto.AppointmentResponseDTO> getClinicAppointments(@PathVariable UUID dentistId) {
+        return dashboardService.getClinicAppointments(dentistId);
+    }
+
     @GetMapping("/patient/{patientId}")
     public DashboardService.PatientHistoryDTO getPatientHistory(@PathVariable UUID patientId) {
         return dashboardService.getPatientHistory(patientId);

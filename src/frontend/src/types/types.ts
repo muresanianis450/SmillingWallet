@@ -68,6 +68,7 @@ export interface DentalRequest {
   budgetMax: number | null;
   status: string;
   createdAt: string;
+  patientProfilePicture?: string | null;
 }
 
 // ─── Client-side types ───────────────────────────────────────────────────────

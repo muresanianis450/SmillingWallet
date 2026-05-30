@@ -29,6 +29,7 @@ public class AppointmentResponseDTO {
     private String patientName;
     private String patientEmail;
     private String patientPhone;
+    private String patientProfilePicture;
     private UUID requestId;
 
     public static AppointmentResponseDTO from(Appointment a) {
@@ -47,9 +48,10 @@ public class AppointmentResponseDTO {
     public static AppointmentResponseDTO fromWithPatient(Appointment a, User patient) {
         AppointmentResponseDTO dto = from(a);
         if (patient != null) {
-            dto.patientName  = patient.getUsername();
-            dto.patientEmail = patient.getEmail();
-            dto.patientPhone = patient.getPhone();
+            dto.patientName           = patient.getUsername();
+            dto.patientEmail          = patient.getEmail();
+            dto.patientPhone          = patient.getPhone();
+            dto.patientProfilePicture = patient.getProfilePicture();
         }
         return dto;
     }

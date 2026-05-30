@@ -3,7 +3,8 @@ import { PageName, SendRequestFormFields, PaymentMethod, ValidationErrors } from
 import { TREATMENT_CATEGORIES, BUDGET_RANGES, INSURANCE_PROVIDERS } from '../../../data/constants';
 import { CityPicker } from '../../shared/CityPicker';
 import { useToast } from '../../../hooks/useToast';
-import { api } from '../../../services/api';
+import { api, AUTH_COOKIE } from '../../../services/api';
+import { getCookie } from '../../../tracking/cookies';
 import { Toast } from '../../shared/Toast';
 import { Button } from '../../shared/Button';
 // @ts-ignore
@@ -69,7 +70,7 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
     const { toast, show: showToast }  = useToast();
 
     useEffect(() => {
-        const stored = localStorage.getItem('user');
+        const stored = getCookie(AUTH_COOKIE);
         if (!stored) return;
         const user = JSON.parse(stored);
         if (!user?.id) return;
@@ -93,7 +94,7 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
             showToast('Please fix the errors below.', 'error');
             return;
         }
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const user = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
         if (!user?.id) {
             showToast('You must be logged in to submit a request.', 'error');
             return;

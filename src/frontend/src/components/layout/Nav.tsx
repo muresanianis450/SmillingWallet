@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AuthUser, PageName } from '@/types/types.ts';
 // @ts-ignore
 import styles from './Nav.module.css';
+import { DEFAULT_AVATAR } from '../../assets/avatars';
 import { SmilingWallet_LogoIcon } from '../shared/Icons';
 
 interface NavProps {
@@ -100,7 +101,7 @@ export function Nav({ page, setPage, user }: NavProps) {
                                 title="My Profile"
                             >
                                 <img
-                                    src={user.profilePicture || '/avatars/avatar-default.svg'}
+                                    src={user.profilePicture || DEFAULT_AVATAR}
                                     alt={user.username}
                                     className={styles.avatar}
                                 />

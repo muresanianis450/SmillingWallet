@@ -103,7 +103,10 @@ public class OfferService {
 
         List<OfferResponseDTO> all = offerRepository.findByRequestId(requestId).stream()
                 .sorted(Comparator.comparing(Offer::getPrice))
-                .map(OfferResponseDTO::from)
+                .map(o -> {
+                    User dentist = userRepository.findById(o.getDentistPublicId()).orElse(null);
+                    return OfferResponseDTO.fromWithUsers(o, null, dentist);
+                })
                 .toList();
         return new PagedResponseDTO<>(all,page,size);
     }
@@ -119,7 +122,12 @@ public class OfferService {
 
         List<OfferResponseDTO> all = offerRepository.findByDentistPublicId(dentistPublicId).stream()
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .map(OfferResponseDTO::from)
+                .map(o -> {
+                    User patient = requestRepository.findById(o.getRequestId())
+                            .map(r -> userRepository.findById(r.getPatientPublicId()).orElse(null))
+                            .orElse(null);
+                    return OfferResponseDTO.fromWithUsers(o, patient, null);
+                })
                 .toList();
 
         return new PagedResponseDTO<>(all, page, size);

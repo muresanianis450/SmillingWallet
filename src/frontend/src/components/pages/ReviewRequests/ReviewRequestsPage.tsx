@@ -10,6 +10,7 @@ import { api } from '../../../services/api';
 // @ts-ignore
 import styles from './ReviewRequestsPage.module.css';
 import { AuthUser, DentalRequest, PageName } from '../../../types/types.ts';
+import { DEFAULT_AVATAR } from '../../../assets/avatars';
 
 const PER_PAGE = 7;
 
@@ -172,7 +173,7 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
         <table>
           <thead>
             <tr>
-              <th>Patient ID</th>
+              <th>Patient</th>
               <th>Specialty</th>
               <th>Description</th>
               <th>Preferred City</th>
@@ -201,7 +202,16 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
                 const isHidden = hiddenIds.has(r.id);
                 return (
                   <tr key={r.id} style={{ opacity: isHidden ? 0.55 : 1 }}>
-                    <td><strong>#{r.patientPublicId.substring(0, 8)}</strong></td>
+                    <td>
+                      <div className={styles.patientCell}>
+                        <img
+                          src={r.patientProfilePicture || DEFAULT_AVATAR}
+                          alt=""
+                          className={styles.patientAvatar}
+                        />
+                        <strong>#{r.patientPublicId.substring(0, 8)}</strong>
+                      </div>
+                    </td>
                     <td>{SPECIALTY_DISPLAY[r.specialty] || r.specialty}</td>
                     <td className={styles.symptomsCell}>{r.description}</td>
                     <td>{r.preferredCity}</td>
