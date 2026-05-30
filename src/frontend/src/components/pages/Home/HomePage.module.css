@@ -100,11 +100,26 @@
     color: #7F77DD;
 }
 
+.heroCardDoctorRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.heroCardAvatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid #ede9ff;
+    flex-shrink: 0;
+}
+
 .heroCardDoctor {
     font-size: 15px;
     font-weight: 700;
     color: #1A1A2E;
-    margin-bottom: 4px;
 }
 
 .heroCardPrice {

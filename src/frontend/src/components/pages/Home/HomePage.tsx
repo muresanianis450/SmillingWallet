@@ -9,6 +9,8 @@ import {
     CosmeticDentistryIcon,
     PediatricDentistryIcon, EmergencyCareIcon
 } from '../../shared/Icons';
+// @ts-ignore
+import { DENTIST_AVATARS } from '../../../assets/avatars';
 
 
 interface HomePageProps {
@@ -54,7 +56,7 @@ export function HomePage({ setPage }: HomePageProps) {
             {/* ── Hero ── */}
             <section className={styles.hero}>
                 <div className={styles.heroContent}>
-                    <div className={styles.heroBadge}>🦷 The Smart Way to Find Dental Care</div>
+                    <div className={styles.heroBadge}>The Smart Way to Find Dental Care</div>
                     <h1 className={styles.heroTitle}>
                         One Request,<br />
                         <span className={styles.heroAccent}>Multiple Offers,</span><br />
@@ -79,10 +81,13 @@ export function HomePage({ setPage }: HomePageProps) {
                             <span className={styles.heroCardBadge}>🏆 Best Value</span>
                             <span className={styles.heroCardScore}>94% match</span>
                         </div>
-                        <div className={styles.heroCardDoctor}>Dr. #1</div>
+                        <div className={styles.heroCardDoctorRow}>
+                            <img src={DENTIST_AVATARS[0]} alt="Doctor" className={styles.heroCardAvatar} />
+                            <span className={styles.heroCardDoctor}>Dr. #1</span>
+                        </div>
                         <div className={styles.heroCardPrice}>€410</div>
                         <div className={styles.heroCardStars}>★★★★★ <span>4.8</span></div>
-                        <div className={styles.heroCardLock}>🔒 Identity hidden until you accept</div>
+                        <div className={styles.heroCardLock}>Identity hidden until you accept</div>
                     </div>
                     <div className={styles.heroCardSmall}>
                         <div className={styles.heroCardDoctor}>Dr. #2</div>

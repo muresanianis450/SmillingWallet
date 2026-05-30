@@ -1,10 +1,7 @@
-/* ── Layout Wrap ── */
+/* ── Wrap ── */
 .wrap {
-  max-width: 1100px; /* Increased slightly to allow for spreading */
-  margin: 0 auto;
-  padding: 80px 24px;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh;
+  background: #F0EEFF;
 }
 
 /* ── Hero ── */
@@ -12,183 +9,259 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 60px;
-  margin-bottom: 120px;
+  gap: 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 72px 32px 64px;
 }
 
-.heroText h1 {
-  font-family: var(--font-head);
-  font-weight: 900;
-  font-size: 3rem;
+.heroContent {
+  flex: 1;
+  max-width: 560px;
+}
+
+.heroBadge {
+  display: inline-block;
+  background: #ede9ff;
+  color: #7F77DD;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
   margin-bottom: 20px;
-  line-height: 1.1;
-  background: linear-gradient(135deg, #1a1a1a 0%, #4b5563 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.02em;
 }
 
-.heroText p {
-  color: var(--muted);
-  line-height: 1.8;
-  max-width: 400px;
-  font-size: 16px;
+.heroTitle {
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1.12;
+  color: #1A1A2E;
+  margin: 0 0 20px;
 }
 
-.heroImg {
+.heroAccent {
+  color: #7F77DD;
+}
+
+.heroSub {
+  font-size: 17px;
+  color: #6B6B8A;
+  line-height: 1.65;
+  margin: 0 0 32px;
+  max-width: 480px;
+}
+
+.heroCtas {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.heroVisual {
   flex-shrink: 0;
-  width: 240px;
-  height: 240px;
-  background: linear-gradient(135deg, #c4b5fd 0%, #a5f3d4 100%);
+  width: 280px;
+  height: 280px;
+  background: linear-gradient(135deg, #ede9ff 0%, #c4b5fd 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  box-shadow: 0 20px 50px rgba(196, 181, 253, 0.3);
+  box-shadow: 0 20px 50px rgba(127, 119, 221, 0.22);
 }
 
-/* ── How it works ── */
-.howTitle {
-  font-family: var(--font-head);
-  font-weight: 900;
-  font-size: 2.2rem;
-  text-align: center;
-  margin-bottom: 80px;
+.heroVisual img {
+  width: 80%;
+  height: auto;
+  object-fit: contain;
 }
 
-.steps {
-  display: flex;
-  flex-direction: column;
-  gap: 60px;
-  width: 100%;
-}
-
-/* ── Step Card & Hover Logic ── */
-.step {
-  display: flex;
-  align-items: center;
-  gap: 60px;
-  width: 100%;
-  max-width: 850px;
-  padding: 30px;
-  border-radius: 40px;
-  background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  transition: transform 0.3s ease, background 0.3s ease;
-}
-
-/* Alternating Spread Layout */
-.step:nth-child(odd) {
-  align-self: flex-start;
-}
-
-.step:nth-child(even) {
-  align-self: flex-end;
-  flex-direction: row-reverse;
-  text-align: right;
-}
-
-.step:hover {
-  background: rgba(255, 255, 255, 0.7);
-  transform: translateY(-5px);
-}
-
-/* The Icon Container */
-.stepImg {
-  flex-shrink: 0;
-  width: 160px;
-  height: 160px;
-  background: #ffffff;
-  border-radius: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+/* ── Stats Strip ── */
+.statsStrip {
+  background: #7F77DD;
+  padding: 28px 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
 }
 
-/* FIXED HOVER: Transition on base element, Scale on hover */
-.stepImg svg,
-.stepImg img {
-  width: 75%;
-  height: auto;
-  display: block;
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy effect */
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0 48px;
+  border-right: 1px solid rgba(255, 255, 255, 0.22);
 }
 
-/* Target the icon when the card is hovered */
-.step:hover .stepImg svg,
-.step:hover .stepImg img {
-  transform: translateY(-10px) scale(1.15);
+.statItem:last-child {
+  border-right: none;
 }
 
-.stepText h2 {
-  font-family: var(--font-head);
+.statValue {
+  font-size: 28px;
   font-weight: 800;
-  font-size: 1.6rem;
-  margin-bottom: 12px;
-  color: #1a202c;
+  color: #fff;
+  line-height: 1;
 }
 
-.stepText p {
-  color: #4a5568;
-  line-height: 1.8;
-  font-size: 15px;
+.statLabel {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
 }
 
-/* ── CTA ── */
-.cta {
+/* ── How it works ── */
+.howSection {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 72px 32px;
   text-align: center;
-  margin-top: 100px;
-  padding: 80px 40px;
-  background: white;
-  border-radius: 40px;
-  border: 1px solid #edf2f7;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.03);
 }
 
-.cta h2 {
-  font-family: var(--font-head);
-  font-weight: 900;
-  font-size: 2.2rem;
-  margin-bottom: 30px;
+.sectionTitle {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin: 0 0 12px;
+}
+
+.sectionSub {
+  font-size: 16px;
+  color: #6B6B8A;
+  margin: 0 0 48px;
+}
+
+.stepsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* ── Step Card ── */
+.stepCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 28px;
+  text-align: left;
+  border: 1.5px solid #ede9ff;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.stepCard:hover {
+  box-shadow: 0 8px 28px rgba(127, 119, 221, 0.14);
+  transform: translateY(-3px);
+}
+
+.stepIconWrap {
+  width: 56px;
+  height: 56px;
+  background: #f0eeff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.stepIconWrap svg {
+  width: 32px;
+  height: 32px;
+}
+
+.stepBadge {
+  display: inline-block;
+  background: #ede9ff;
+  color: #7F77DD;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.stepTitle {
+  font-size: 19px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin: 0 0 10px;
+}
+
+.stepDesc {
+  font-size: 14px;
+  color: #6B6B8A;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── CTA Banner ── */
+.ctaBanner {
+  background: linear-gradient(135deg, #7F77DD 0%, #5f57c4 100%);
+  text-align: center;
+  padding: 72px 32px;
+  color: #fff;
+}
+
+.ctaBanner h2 {
+  font-size: 36px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.ctaBanner p {
+  font-size: 17px;
+  opacity: 0.85;
+  margin: 0 0 32px;
 }
 
 /* ── Responsive ── */
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .hero {
     flex-direction: column;
+    padding: 48px 20px 40px;
     text-align: center;
-    gap: 40px;
   }
 
-  .step {
-    max-width: 100%;
-    flex-direction: column !important;
-    text-align: center !important;
-    gap: 30px;
-    padding: 40px 20px;
+  .heroTitle {
+    font-size: 36px;
+  }
+
+  .heroSub {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .heroCtas {
+    justify-content: center;
+  }
+
+  .heroVisual {
+    width: 200px;
+    height: 200px;
+  }
+
+  .stepsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statsStrip {
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 24px 20px;
+  }
+
+  .statItem {
+    border-right: none;
+    padding: 0 24px;
   }
 }
-.serviceIcon {
-  width: 100%;
-  height: 60px; /* Fixed height for consistency */
-  display: flex;
-  align-items: flex-end;    /* Vertical center */
-  justify-content: flex-start; /* Horizontal center */
-  margin-bottom: 20px;
-}
 
-.serviceIcon img {
-  /* This ensures the image doesn't overflow and stays centered */
-  max-width: 100%;
-  max-height: 100%;
-}
+@media (max-width: 600px) {
+  .heroTitle {
+    font-size: 28px;
+  }
 
-.serviceCard {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
+  .statValue {
+    font-size: 22px;
+  }
 }

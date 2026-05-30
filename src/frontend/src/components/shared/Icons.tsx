@@ -20,6 +20,8 @@ import PediatricDentistryImg from '../../../assets/PediatricDentistry.png';
 import EmergencyCareImg from '../../../assets/EmergencyCare.png';
 // @ts-ignore
 import SmilingWalletImg from '../../../assets/SmilingWallet_Logo.png';
+// @ts-ignore
+import RequestIconImg from '../../../assets/RequestIcon.png';
 
 
 interface IconProps {
@@ -232,17 +234,31 @@ export function EmergencyCareIcon() {
     );
 }
 
+export function SendRequestIcon() {
+    return (
+        <img
+            src={RequestIconImg}
+            alt="Request Illustration"
+            style={{
+                width: '65%',
+                height: 'auto',
+                display: 'block',
+                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
+            }}
+        />
+    );
+}
+
 export function SmilingWallet_LogoIcon() {
     return (
         <img
             src={SmilingWalletImg}
-            alt="Smiling Wallet Logo Illustration"
+            alt="Smiling Wallet Logo"
             style={{
-                width: '50px',
-                height: 'auto',
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
                 display: 'block',
-                margin: '5 auto',
-                filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.08))'
             }}
         />
     );
