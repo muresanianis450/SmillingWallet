@@ -34,4 +34,5 @@ public class AdminDentistController {
     public ResponseEntity<List<UserResponseDTO>> listDentists() {
         return ResponseEntity.ok(authService.findAllByRole(Role.DENTIST));
     }
+
 }
