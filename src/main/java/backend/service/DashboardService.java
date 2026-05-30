@@ -80,6 +80,24 @@ public class DashboardService {
     }
 
     /**
+     * Clinic appointments only — does not depend on the stored procedure.
+     */
+    @Transactional(readOnly = true)
+    public List<AppointmentResponseDTO> getClinicAppointments(UUID dentistId) {
+        return appointmentRepository.findByDentistPublicId(dentistId).stream()
+                .filter(a -> a.getStatus() == AppointmentStatus.PENDING
+                        || a.getStatus() == AppointmentStatus.CONFIRMED)
+                .sorted((a, b) -> a.getScheduledAt().compareTo(b.getScheduledAt()))
+                .map(a -> {
+                    var patient = userRepository.findById(a.getPatientPublicId()).orElse(null);
+                    UUID requestId = offerRepository.findById(a.getOfferId())
+                            .map(o -> o.getRequestId()).orElse(null);
+                    return AppointmentResponseDTO.fromWithPatientAndRequest(a, patient, requestId);
+                })
+                .toList();
+    }
+
+    /**
      * Patient history — requests and appointments, newest first.
      */
     @Transactional

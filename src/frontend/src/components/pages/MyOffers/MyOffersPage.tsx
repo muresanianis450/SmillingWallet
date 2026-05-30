@@ -6,9 +6,9 @@ import { Pagination } from '../../shared/Pagination';
 import { Toast } from '../../shared/Toast';
 import { Button } from '../../shared/Button';
 import { EmptyState } from '../../shared/EmptyState';
-import { api } from '../../../services/api';
-// @ts-ignore
-import DefaultAvatar from '../../../../assets/default-avatar.png';
+import { api, AUTH_COOKIE } from '../../../services/api';
+import { getCookie } from '../../../tracking/cookies';
+import { DEFAULT_AVATAR } from '../../../assets/avatars';
 // @ts-ignore
 import styles from './MyOffersPage.module.css';
 
@@ -81,6 +81,7 @@ function mapToClientOffer(o: any, avgPrice: number): ClientOffer {
         id: o.id,
         doctorLabel: `Dr. #${String(o.dentistPublicId).substring(0, 6)}`,
         avatarSeed: String(o.dentistPublicId),
+        avatar: o.dentistProfilePicture || '',
         rating: 0,
         reviewCount: 0,
         priceMin: Math.round(price * 0.9),
@@ -110,14 +111,12 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
     const { page, setPage: setTablePage, totalPages, slice } = usePagination<ClientOffer>(offers, PER_PAGE);
 
     async function load() {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const user = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
         if (!user?.id) { setLoading(false); return; }
         try {
             const reqRes = await api.get(`/requests/patient/${user.id}?page=0&size=20`);
             const requests: any[] = reqRes.data.content || [];
-            const activeRequests = requests.filter((r: any) =>
-                r.status === 'OPEN' || r.status === 'OFFER_ACCEPTED'
-            );
+            const activeRequests = requests.filter((r: any) => r.status === 'OPEN');
             const allRaw: any[] = [];
             await Promise.all(
                 activeRequests.map(async (req: any) => {
@@ -229,7 +228,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                         >
                             {offer.isBestValue && <span className={styles.bestBadge}>Best Value</span>}
                             <div className={styles.doctorCardRow}>
-                                <img src={DefaultAvatar} className={styles.doctorAvatarImg} alt="" />
+                                <img src={offer.avatar || DEFAULT_AVATAR} className={styles.doctorAvatarImg} alt="" />
                                 <div className={styles.doctorInfo}>
                                     <div className={styles.doctorName}>{offer.doctorLabel}</div>
                                     <StarRating rating={offer.rating} />
@@ -247,7 +246,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                 <div className={styles.rightPanel}>
                     <div className={styles.detailHeader}>
                         <div className={styles.detailDoctorProfile}>
-                            <img src={DefaultAvatar} className={styles.detailDoctorAvatarImg} alt="Doctor" />
+                            <img src={current.avatar || DEFAULT_AVATAR} className={styles.detailDoctorAvatarImg} alt="Doctor" />
                             <div className={styles.doctorInfoText}>
                                 <h2 className={styles.detailDoctor}>{current.doctorLabel}</h2>
                                 <StarRating rating={current.rating} />

@@ -2,6 +2,7 @@ package backend.dto;
 
 import backend.enums.OfferStatus;
 import backend.model.Offer;
+import backend.model.User;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,6 +27,8 @@ public class OfferResponseDTO {
     private OfferStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String patientProfilePicture;
+    private String dentistProfilePicture;
 
     public static OfferResponseDTO from(Offer o) {
         OfferResponseDTO dto = new OfferResponseDTO();
@@ -40,6 +43,13 @@ public class OfferResponseDTO {
         dto.status = o.getStatus();
         dto.createdAt = o.getCreatedAt();
         dto.updatedAt = o.getUpdatedAt();
+        return dto;
+    }
+
+    public static OfferResponseDTO fromWithUsers(Offer o, User patient, User dentist) {
+        OfferResponseDTO dto = from(o);
+        if (patient != null) dto.patientProfilePicture = patient.getProfilePicture();
+        if (dentist != null) dto.dentistProfilePicture = dentist.getProfilePicture();
         return dto;
     }
 }

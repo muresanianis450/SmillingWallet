@@ -77,7 +77,10 @@ public class RequestService {
                 .filter(r -> specialty == null || r.getSpecialty() == specialty)
                 .filter(r -> city == null || r.getPreferredCity().equalsIgnoreCase(city))
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .map(DentalRequestResponseDTO::from)
+                .map(r -> {
+                    User patient = userRepository.findById(r.getPatientPublicId()).orElse(null);
+                    return DentalRequestResponseDTO.fromWithPatient(r, patient);
+                })
                 .toList();
 
         return new PagedResponseDTO<>(all, page, size);

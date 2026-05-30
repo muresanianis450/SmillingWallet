@@ -3,6 +3,7 @@ package backend.dto;
 import backend.enums.DentalSpecialty;
 import backend.enums.RequestStatus;
 import backend.model.DentalRequest;
+import backend.model.User;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,6 +24,7 @@ public class DentalRequestResponseDTO {
     private RequestStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String patientProfilePicture;
 
     public static DentalRequestResponseDTO from(DentalRequest r) {
         DentalRequestResponseDTO dto = new DentalRequestResponseDTO();
@@ -35,6 +37,14 @@ public class DentalRequestResponseDTO {
         dto.status = r.getStatus();
         dto.createdAt = r.getCreatedAt();
         dto.updatedAt = r.getUpdatedAt();
+        return dto;
+    }
+
+    public static DentalRequestResponseDTO fromWithPatient(DentalRequest r, User patient) {
+        DentalRequestResponseDTO dto = from(r);
+        if (patient != null) {
+            dto.patientProfilePicture = patient.getProfilePicture();
+        }
         return dto;
     }
 

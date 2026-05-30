@@ -11,6 +11,7 @@ import { OfferFormModal } from './OfferFormModal';
 import { DeleteModal } from './DeleteModal';
 import { usePageTracking } from '../../../hooks/useTracking';
 import { api, AUTH_COOKIE } from '../../../services/api';
+import { DEFAULT_AVATAR } from '../../../assets/avatars';
 import { getCookie } from '../../../tracking/cookies';
 // @ts-ignore
 import styles from './DashboardPage.module.css';
@@ -26,7 +27,7 @@ const STATUS_MAP: Record<string, OfferStatus> = {
   WITHDRAWN: 'Declined',
 };
 
-function mapApiOffer(o: any): Offer {
+function mapApiOffer(o: any): Offer & { patientProfilePicture?: string } {
   return {
     id: o.id,
     patientId: o.requestId,
@@ -39,6 +40,7 @@ function mapApiOffer(o: any): Offer {
     treatmentReq: o.notes || '',
     ctScan: null,
     symptoms: o.notes || '',
+    patientProfilePicture: o.patientProfilePicture || null,
   };
 }
 
@@ -63,12 +65,17 @@ export function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  // Load accepted appointments (includes patient identity)
+  // Load accepted appointments (includes patient identity) — polls every 30 s
   useEffect(() => {
     if (!dentist?.id) return;
-    api.get(`/dashboard/clinic/${dentist.id}`)
-      .then((res) => setAppointments(res.data.upcomingAppointments || []))
-      .catch(() => {});
+    function loadAppointments() {
+      api.get(`/dashboard/clinic/${dentist.id}/appointments`)
+        .then((res) => setAppointments(res.data || []))
+        .catch(() => {});
+    }
+    loadAppointments();
+    const interval = setInterval(loadAppointments, 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   const stats = useMemo(() => ({
@@ -78,6 +85,7 @@ export function DashboardPage() {
 
   const filtered = useMemo(
     () => offers.filter((o) => {
+      if (o.status === 'Accepted') return false;
       const q = search.toLowerCase();
       const matchQ =
         !q ||
@@ -149,7 +157,7 @@ export function DashboardPage() {
           <thead>
             <tr>
               <th>Offer ID</th>
-              <th>Request</th>
+              <th>Patient</th>
               <th>Price</th>
               <th>Notes</th>
               <th>Status</th>
@@ -167,7 +175,16 @@ export function DashboardPage() {
               slice.map((o) => (
                 <tr key={o.id} onClick={() => { setModal({ type: 'view', offer: o }); trackEvent('SEARCH', { value: o.id }); }}>
                   <td><strong>#{String(o.id).substring(0, 8)}</strong></td>
-                  <td>{o.patientName}</td>
+                  <td>
+                    <div className={styles.patientCell}>
+                      <img
+                        src={(o as any).patientProfilePicture || DEFAULT_AVATAR}
+                        alt=""
+                        className={styles.patientAvatar}
+                      />
+                      {o.patientName}
+                    </div>
+                  </td>
                   <td className={styles.priceTeal}>€{o.priceQuote}</td>
                   <td className={styles.dateMuted}>{o.treatmentReq || '—'}</td>
                   <td><StatusBadge status={o.status} /></td>
@@ -210,7 +227,7 @@ export function DashboardPage() {
             <tr>
               <th>Request</th>
               <th>Date & Time</th>
-              <th>Patient Name</th>
+              <th>Patient</th>
               <th>Phone</th>
               <th>Email</th>
               <th>Price</th>
@@ -229,7 +246,16 @@ export function DashboardPage() {
                 <tr key={apt.id}>
                   <td><strong>#{apt.requestId ? String(apt.requestId).substring(0, 8) : '—'}</strong></td>
                   <td>{apt.scheduledAt ? new Date(apt.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
-                  <td><strong>{apt.patientName || '—'}</strong></td>
+                  <td>
+                    <div className={styles.patientCell}>
+                      <img
+                        src={apt.patientProfilePicture || DEFAULT_AVATAR}
+                        alt=""
+                        className={styles.patientAvatar}
+                      />
+                      <strong>{apt.patientName || '—'}</strong>
+                    </div>
+                  </td>
                   <td>{apt.patientPhone || '—'}</td>
                   <td>{apt.patientEmail || '—'}</td>
                   <td className={styles.priceTeal}>€{apt.confirmedPrice}</td>

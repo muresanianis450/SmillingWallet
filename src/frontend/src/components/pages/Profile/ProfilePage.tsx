@@ -5,9 +5,7 @@ import { BlobBackground } from '../../shared/BlobBackground';
 import { CityPicker } from '../../shared/CityPicker';
 // @ts-ignore
 import styles from './ProfilePage.module.css';
-
-const PRESET_AVATARS = Array.from({ length: 10 }, (_, i) => `/avatars/avatar-${i + 1}.svg`);
-const DEFAULT_AVATAR = '/avatars/avatar-default.svg';
+import { DENTIST_AVATARS, PATIENT_AVATARS, DEFAULT_AVATAR } from '../../../assets/avatars';
 
 const SPECIALTIES = [
     { value: 'GENERAL_DENTISTRY',   label: 'General Dentistry' },
@@ -378,7 +376,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                     <div className={styles.pickerModal} onClick={e => e.stopPropagation()}>
                         <p className={styles.pickerTitle}>Choose your avatar</p>
                         <div className={styles.pickerGrid}>
-                            {PRESET_AVATARS.map(src => (
+                            {(user.role === 'DENTIST' ? DENTIST_AVATARS : PATIENT_AVATARS).map(src => (
                                 <button
                                     key={src}
                                     type="button"
