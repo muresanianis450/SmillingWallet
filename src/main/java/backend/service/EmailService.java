@@ -25,9 +25,11 @@ public class EmailService {
     // ── Public methods (async — never block the HTTP thread) ─────────────────
 
     @Async
-    public void sendPasswordReset(String toEmail, String token) {
+    public void sendPasswordReset(String toEmail, String username, String token) {
         String resetLink = frontendUrl + "/reset-password?token=" + token;
-        String html = RESET_HTML_TEMPLATE.replace("{{RESET_LINK}}", resetLink);
+        String html = RESET_HTML_TEMPLATE
+                .replace("{{USER_NAME}}", username)
+                .replace("{{RESET_LINK}}", resetLink);
         sendHtml(toEmail, "Smiling Wallet – Reset Your Password", html);
     }
 
@@ -168,37 +170,40 @@ public class EmailService {
                     .header { padding:30px 40px 20px; text-align:center; }
                     .header-logo { font-size:22px; font-weight:800; color:#7b68ee; text-decoration:none; }
                     .content { padding:20px 40px 40px; }
-                    .btn-container { text-align:center; margin:32px 0; }
+                    .btn-container { text-align:left; margin:32px 0; }
                     .btn { background-color:#7b68ee; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; display:inline-block; }
-                    .warning-box { background-color:#fef9ee; border-left:4px solid #f59e0b; border-radius:4px; padding:16px 20px; margin-bottom:24px; }
-                    .warning-box p { color:#92400e; font-size:14px; margin:0; }
+                    .notice-box { background-color:#f9fafb; border-left:4px solid #d1d5db; border-radius:4px; padding:16px; margin-bottom:24px; }
+                    .notice-box p { font-size:14px; margin:0; color:#4b5563; }
                     .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
+                    .footer a { color:#7b68ee; text-decoration:none; }
                     @media screen and (max-width:600px) { .content,.header { padding-left:20px !important; padding-right:20px !important; } }
                 </style>
             </head>
             <body>
-                <center class="wrapper">
-                    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
-                        <tr><td align="center">
+            <center class="wrapper">
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
+                    <tr>
+                        <td align="center">
                             <table class="main" border="0" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td class="header">
-                                        <br>
                                         <a href="#" class="header-logo">Smiling Wallet</a>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td class="content">
-                                        <h1>Reset your password.</h1>
-                                        <p>We received a request to reset the password for your Smiling Wallet account.</p>
-                                        <p>Click the button below to choose a new password. This link is valid for <strong>1 hour</strong>.</p>
+                                        <h1>Reset your password</h1>
+                                        <p>Hello {{USER_NAME}},</p>
+                                        <p>We received a request to reset the password for your Smiling Wallet account. If you made this request, click the button below to choose a new password.</p>
                                         <div class="btn-container">
-                                            <a href="{{RESET_LINK}}" class="btn">Reset My Password</a>
+                                            <a href="{{RESET_LINK}}" class="btn">Reset Password</a>
                                         </div>
-                                        <div class="warning-box">
-                                            <p>If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.</p>
+                                        <div class="notice-box">
+                                            <p><strong>Didn't request this change?</strong><br>
+                                                If you did not request a new password, you can safely ignore this email. Your password will remain the same and your account is secure.</p>
                                         </div>
                                         <p style="font-size:14px; margin-bottom:0;">
+                                            For security reasons, this link will expire in 24 hours.<br><br>
                                             Best regards,<br>
                                             <strong>The Smiling Wallet Team</strong>
                                         </p>
@@ -208,13 +213,15 @@ public class EmailService {
                             <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
                                 <tr>
                                     <td class="footer">
-                                        <p style="margin-bottom:0;">This link expires in 1 hour for your security.</p>
+                                        <p style="margin-bottom:8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
+                                        <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
                                     </td>
                                 </tr>
                             </table>
-                        </td></tr>
-                    </table>
-                </center>
+                        </td>
+                    </tr>
+                </table>
+            </center>
             </body>
             </html>
             """;
