@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -34,4 +35,10 @@ public class OfferRequestDTO {
 
     private boolean includesXray;
     private boolean includesAnesthesia;
+
+    @NotNull(message = "At least one proposed time slot is required")
+    private LocalDateTime proposedSlot1;
+
+    private LocalDateTime proposedSlot2;
+    private LocalDateTime proposedSlot3;
 }

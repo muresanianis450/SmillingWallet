@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -48,13 +49,22 @@ public class DentalRequest {
     @Column(name = "specialty",nullable = false, length = 50)
     private DentalSpecialty specialty;
 
+    @Column(name = "available_from")
+    private LocalDate availableFrom;
+
+    @Column(name = "available_to")
+    private LocalDate availableTo;
+
     public DentalRequest(UUID patientPublicId, DentalSpecialty specialty,
-                         String description, String preferredCity, Double budgetMax) {
+                         String description, String preferredCity, Double budgetMax,
+                         LocalDate availableFrom, LocalDate availableTo) {
         this.patientPublicId = patientPublicId;
         this.specialty = specialty;
         this.description = description;
         this.preferredCity = preferredCity;
         this.budgetMax = budgetMax;
+        this.availableFrom = availableFrom;
+        this.availableTo = availableTo;
         this.status = RequestStatus.OPEN;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();

@@ -18,9 +18,11 @@ import backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.EnumSet;
 
 @Service
 public class OfferService {
@@ -77,7 +79,10 @@ public class OfferService {
                 dto.getEstimatedWaitDays(),
                 dto.getNotes(),
                 dto.isIncludesXray(),
-                dto.isIncludesAnesthesia()
+                dto.isIncludesAnesthesia(),
+                dto.getProposedSlot1(),
+                dto.getProposedSlot2(),
+                dto.getProposedSlot3()
         );
 
         offerRepository.save(offer);
@@ -143,19 +148,27 @@ public class OfferService {
     }
 
     /**
-     * Patient accepts an offer:
-     * 1. Marks accepted offer as ACCEPTED
-     * 2. Rejects all other PENDING offers on the same request
-     * 3. Marks the request as OFFER_ACCEPTED
-     * 4. Creates an Appointment
-     * 5. Notifies the winning dentist
-
-    public AppointmentResponseDTO acceptOffer(UUID offerId, AppointmentRequestDTO dto) {
+     * Patient selects one of the proposed time slots.
+     * Creates the appointment at the chosen time; DB triggers handle rejecting other offers
+     * and closing the request.
+     */
+    @Transactional
+    public AppointmentResponseDTO selectSlot(UUID offerId, SelectSlotRequestDTO dto) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found: " + offerId));
 
-        if (offer.getStatus() != OfferStatus.PENDING) {
-            throw new ConflictException("Offer is already " + offer.getStatus());
+        if (!EnumSet.of(OfferStatus.PENDING, OfferStatus.RESCHEDULE_REQUESTED).contains(offer.getStatus())) {
+            throw new ConflictException("Offer is not awaiting slot selection (status: " + offer.getStatus() + ")");
+        }
+
+        // Validate the chosen slot is one of the proposed ones.
+        // Truncate to minutes to avoid nanosecond mismatches between JSON deserialization and DB storage.
+        java.time.LocalDateTime chosen = dto.getSelectedSlot().truncatedTo(ChronoUnit.MINUTES);
+        boolean validSlot = (offer.getProposedSlot1() != null && chosen.equals(offer.getProposedSlot1().truncatedTo(ChronoUnit.MINUTES)))
+                || (offer.getProposedSlot2() != null && chosen.equals(offer.getProposedSlot2().truncatedTo(ChronoUnit.MINUTES)))
+                || (offer.getProposedSlot3() != null && chosen.equals(offer.getProposedSlot3().truncatedTo(ChronoUnit.MINUTES)));
+        if (!validSlot) {
+            throw new ConflictException("Selected slot is not one of the proposed time slots");
         }
 
         DentalRequest request = requestRepository.findById(offer.getRequestId())
@@ -165,103 +178,85 @@ public class OfferService {
             throw new ConflictException("Request is no longer open");
         }
 
-        // 1. Accept this offer
         offer.setStatus(OfferStatus.ACCEPTED);
         offerRepository.save(offer);
 
-        // 2. Reject all other pending offers on the same request
-        offerRepository.findByRequestId(offer.getRequestId()).stream()
-                .filter(o -> !o.getId().equals(offerId) && o.getStatus() == OfferStatus.PENDING)
-                .forEach(o -> {
-                    o.setStatus(OfferStatus.REJECTED);
-                    offerRepository.save(o);
-                    notificationService.notifyDentist(
-                            o.getDentistPublicId(),
-                            NotificationType.OFFER_REJECTED,
-                            "Your offer for request " + request.getId() + " was not selected"
-                    );
-                });
-
-        // 3. Close the request
-        request.setStatus(RequestStatus.OFFER_ACCEPTED);
-        requestRepository.save(request);
-
-        // 4. Create appointment
         Appointment appointment = new Appointment(
                 offer.getId(),
                 request.getPatientPublicId(),
                 offer.getDentistPublicId(),
-                dto.getScheduledAt(),
+                dto.getSelectedSlot(),
                 offer.getPrice()
         );
         appointmentRepository.save(appointment);
 
-        // 5. Notify the winning dentist
         notificationService.notifyDentist(
                 offer.getDentistPublicId(),
                 NotificationType.OFFER_ACCEPTED,
-                "Your offer was accepted! Appointment scheduled for " + dto.getScheduledAt()
+                "Your offer was accepted! Appointment scheduled for " + dto.getSelectedSlot()
         );
 
         return AppointmentResponseDTO.from(appointment);
-    } */
+    }
 
     /**
-     * Patient accept an offer.
-     *
-     * Java handles:
-     * 1. Validation (offer is PENDING, request is OPEN)
-     * 2. Mark offer as ACCEPTED -> trigger trg_after_offer_accepted:
-     *          -sets all other PENDING offers on same request to REJECTED (DB Trigger)
-     * 3. Create Appointment  -> triggers trg_after_appointment_created:
-     *           - sets dental_request status to OFFER_ACCEPTED (DB Trigger)
-     * 4. Notify the winning dentist
-     *
-     * Removed from java (now handled by the triggers)
-     *
-     *      - forEach loop rejecting other offers
-     *      - request.setStatus(OFFER_ACCEPTED) + requestRepository.save()
+     * Patient requests new time slots from the dentist.
+     * Sets offer status to RESCHEDULE_REQUESTED.
      */
     @Transactional
-    public AppointmentResponseDTO acceptOffer(UUID offerId, AppointmentRequestDTO dto){
+    public OfferResponseDTO requestReschedule(UUID offerId) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found: " + offerId));
 
-        if (offer.getStatus() != OfferStatus.PENDING) {
-            throw new ConflictException("Offer is already " + offer.getStatus());
+        if (!EnumSet.of(OfferStatus.PENDING, OfferStatus.RESCHEDULE_REQUESTED).contains(offer.getStatus())) {
+            throw new ConflictException("Cannot request reschedule — offer status is " + offer.getStatus());
         }
 
-        DentalRequest request = requestRepository.findById(offer.getRequestId())
-                .orElseThrow(() -> new ResourceNotFoundException("Request not found: " + offer.getRequestId()));
-
-        if (request.getStatus() != RequestStatus.OPEN) {
-            throw new ConflictException("Request is no longer open");
-        }
-
-
-        //1. Accept offer - trg_after_offer_accepted rejects all other PENDING automatically
-        offer.setStatus(OfferStatus.ACCEPTED);
+        offer.setStatus(OfferStatus.RESCHEDULE_REQUESTED);
+        offer.setUpdatedAt(java.time.LocalDateTime.now());
         offerRepository.save(offer);
 
-        //2. Create appointment - trg_after_appointment_created sets requests to OFFER_ACCEPTED automatically
-
-        Appointment appointment = new Appointment(
-                offer.getId(),
-                request.getPatientPublicId(),
+        notificationService.notifyDentist(
                 offer.getDentistPublicId(),
-                dto.getScheduledAt(),
-                offer.getPrice()
+                NotificationType.NEW_OFFER,
+                "Patient requested new time slots for offer " + offerId
         );
-        appointmentRepository.save(appointment);
 
-        //3. Notify the winning dentist
+        return OfferResponseDTO.from(offer);
+    }
 
-        notificationService.notifyPatient(
-                offer.getDentistPublicId(),
-                NotificationType.OFFER_ACCEPTED,
-                "Your offer was accepted! Appointment scheduled for " + dto.getScheduledAt());
+    /**
+     * Dentist proposes new time slots (and optionally a new price) after a reschedule request.
+     * Allowed while offer is PENDING or RESCHEDULE_REQUESTED.
+     */
+    @Transactional
+    public OfferResponseDTO reproposeSlots(UUID offerId, ReproposeSlotRequestDTO dto) {
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Offer not found: " + offerId));
 
-        return AppointmentResponseDTO.from(appointment);
+        if (!EnumSet.of(OfferStatus.PENDING, OfferStatus.RESCHEDULE_REQUESTED).contains(offer.getStatus())) {
+            throw new ConflictException("Cannot repropose slots — offer status is " + offer.getStatus());
+        }
 
+        offer.setProposedSlot1(dto.getProposedSlot1());
+        offer.setProposedSlot2(dto.getProposedSlot2());
+        offer.setProposedSlot3(dto.getProposedSlot3());
+        if (dto.getPrice() != null) {
+            offer.setPrice(dto.getPrice());
+        }
+        offer.setStatus(OfferStatus.PENDING);
+        offer.setUpdatedAt(java.time.LocalDateTime.now());
+        offerRepository.save(offer);
+
+        DentalRequest request = requestRepository.findById(offer.getRequestId()).orElse(null);
+        if (request != null) {
+            notificationService.notifyPatient(
+                    request.getPatientPublicId(),
+                    NotificationType.NEW_OFFER,
+                    "The clinic proposed new time slots for your request"
+            );
+        }
+
+        return OfferResponseDTO.from(offer);
     }
 }

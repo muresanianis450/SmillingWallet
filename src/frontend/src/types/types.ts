@@ -58,6 +58,7 @@ export interface Offer {
   treatmentReq: string;
   ctScan: string | null;
   symptoms: string;
+  proposedSlots?: string[];
 }
 export interface DentalRequest {
   id: string;
@@ -69,6 +70,8 @@ export interface DentalRequest {
   status: string;
   createdAt: string;
   patientProfilePicture?: string | null;
+  availableFrom?: string | null;
+  availableTo?: string | null;
 }
 
 // ─── Client-side types ───────────────────────────────────────────────────────
@@ -91,6 +94,8 @@ export interface ClientOffer {
   validUntil: string;        // ISO date string
   treatmentCategory: string;
   isBestValue: boolean;
+  proposedSlots: string[];   // ISO datetime strings from the dentist
+  offerStatus: string;
 }
 
 export interface SendRequestFormFields {
@@ -98,7 +103,8 @@ export interface SendRequestFormFields {
   firstName: string;
   lastName: string;
   location: string;
-  date: string;
+  availableFrom: string;
+  availableTo: string;
   phone: string;
   email: string;
   // Clinical
@@ -150,6 +156,9 @@ export interface SendOfferFormFields {
   priceQuote: string | number;
   estimatedWaitDays: string | number;
   notes: string;
+  proposedSlot1: string;
+  proposedSlot2: string;
+  proposedSlot3: string;
 }
 
 // ─── Validation ──────────────────────────────────────────────────────────────

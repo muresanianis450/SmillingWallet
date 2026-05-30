@@ -101,10 +101,13 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
         requestId:          fields.requestId,
         dentistPublicId:    user?.id,
         price:              fields.price,
-        estimatedWaitDays:  Number(fields.estimatedWaitDays) || 7,
+        estimatedWaitDays:  Number(fields.estimatedWaitDays) || 0,
         notes:              fields.notes || '',
         includesXray:       false,
         includesAnesthesia: false,
+        proposedSlot1:      fields.proposedSlot1 || null,
+        proposedSlot2:      fields.proposedSlot2 || null,
+        proposedSlot3:      fields.proposedSlot3 || null,
       });
       setSendModal(null);
       showToast('Offer sent successfully!', 'success');
@@ -177,6 +180,7 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
               <th>Specialty</th>
               <th>Description</th>
               <th>Preferred City</th>
+              <th>Available</th>
               <th>Budget</th>
               <th>Action</th>
             </tr>
@@ -184,13 +188,13 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <EmptyState icon="⏳" message="Loading requests…" />
                 </td>
               </tr>
             ) : slice.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <EmptyState
                     icon={showHidden ? '🙈' : '🔍'}
                     message={showHidden ? 'No hidden requests' : 'No open requests found'}
@@ -215,6 +219,17 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
                     <td>{SPECIALTY_DISPLAY[r.specialty] || r.specialty}</td>
                     <td className={styles.symptomsCell}>{r.description}</td>
                     <td>{r.preferredCity}</td>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', color: '#4a3fbf' }}>
+                      {r.availableFrom && r.availableTo ? (
+                        <>
+                          {new Date(r.availableFrom).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          {' → '}
+                          {new Date(r.availableTo).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </>
+                      ) : (
+                        <span style={{ color: '#aaa' }}>—</span>
+                      )}
+                    </td>
                     <td>
                       {r.budgetMax ? (
                         <span>€{r.budgetMax}</span>

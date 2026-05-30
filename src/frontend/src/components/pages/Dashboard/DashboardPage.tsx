@@ -21,10 +21,11 @@ import { trackEvent } from '../../../tracking/tracker';
 const PER_PAGE = 5;
 
 const STATUS_MAP: Record<string, OfferStatus> = {
-  PENDING:   'Sent',
-  ACCEPTED:  'Accepted',
-  REJECTED:  'Declined',
-  WITHDRAWN: 'Declined',
+  PENDING:               'Sent',
+  RESCHEDULE_REQUESTED:  'Sent',
+  ACCEPTED:              'Accepted',
+  REJECTED:              'Declined',
+  WITHDRAWN:             'Declined',
 };
 
 function mapApiOffer(o: any): Offer & { patientProfilePicture?: string } {
@@ -41,6 +42,7 @@ function mapApiOffer(o: any): Offer & { patientProfilePicture?: string } {
     ctScan: null,
     symptoms: o.notes || '',
     patientProfilePicture: o.patientProfilePicture || null,
+    proposedSlots: (o.proposedSlots || []).filter(Boolean),
   };
 }
 
@@ -50,10 +52,14 @@ export function DashboardPage() {
   const { toast, show: showToast } = useToast();
 
   const [offers,        setOffers]        = useState<Offer[]>([]);
+  const [rawOffers,     setRawOffers]     = useState<any[]>([]);
   const [search,        setSearch]        = useState('');
   const [filterStatus,  setFilterStatus]  = useState('All');
   const [modal,         setModal]         = useState<ModalState | null>(null);
   const [appointments,  setAppointments]  = useState<any[]>([]);
+  const [reproposeOffer, setReproposeOffer] = useState<any | null>(null);
+  const [reproposeSlots, setReproposeSlots] = useState({ slot1: '', slot2: '', slot3: '', price: '' });
+  const [reproposing,   setReproposing]   = useState(false);
 
   const dentist = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
 
@@ -61,7 +67,11 @@ export function DashboardPage() {
   useEffect(() => {
     if (!dentist?.id) return;
     api.get(`/offers/dentist/${dentist.id}?page=0&size=50`)
-      .then((res) => setOffers((res.data.content || []).map(mapApiOffer)))
+      .then((res) => {
+        const raw = res.data.content || [];
+        setRawOffers(raw);
+        setOffers(raw.map(mapApiOffer));
+      })
       .catch(() => {});
   }, []);
 
@@ -109,6 +119,29 @@ export function DashboardPage() {
     ));
     setModal(null);
     showToast('Offer updated!', 'success');
+  }
+
+  async function handleRepropose() {
+    if (!reproposeOffer || !reproposeSlots.slot1) return;
+    setReproposing(true);
+    try {
+      await api.patch(`/offers/${reproposeOffer.id}/repropose-slots`, {
+        proposedSlot1: reproposeSlots.slot1 || null,
+        proposedSlot2: reproposeSlots.slot2 || null,
+        proposedSlot3: reproposeSlots.slot3 || null,
+        price: reproposeSlots.price ? Number(reproposeSlots.price) : null,
+      });
+      showToast('New time slots sent to patient!', 'success');
+      setReproposeOffer(null);
+      setReproposeSlots({ slot1: '', slot2: '', slot3: '', price: '' });
+      api.get(`/offers/dentist/${dentist.id}?page=0&size=50`)
+        .then((res) => { const raw = res.data.content || []; setRawOffers(raw); setOffers(raw.map(mapApiOffer)); })
+        .catch(() => {});
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Failed to send new slots.', 'error');
+    } finally {
+      setReproposing(false);
+    }
   }
 
   function handleDelete() {
@@ -266,6 +299,156 @@ export function DashboardPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Reschedule requests — patient asked for new times */}
+      {rawOffers.filter((o) => o.status === 'RESCHEDULE_REQUESTED').length > 0 && (
+        <div className={styles.tableCard} style={{ marginTop: 28, border: '2px solid #f59e0b' }}>
+          <div className={styles.toolbar}>
+            <span style={{ fontWeight: 700, fontSize: 15, color: '#b45309' }}>
+              ⚠️ Reschedule Requests — Patient asked for new time slots
+            </span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Offer ID</th>
+                <th>Patient</th>
+                <th>Price</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rawOffers.filter((o) => o.status === 'RESCHEDULE_REQUESTED').map((o) => (
+                <tr key={o.id}>
+                  <td><strong>#{String(o.id).substring(0, 8)}</strong></td>
+                  <td>
+                    <div className={styles.patientCell}>
+                      <img src={o.patientProfilePicture || DEFAULT_AVATAR} alt="" className={styles.patientAvatar} />
+                      Request #{String(o.requestId).substring(0, 8)}
+                    </div>
+                  </td>
+                  <td className={styles.priceTeal}>€{o.price}</td>
+                  <td>
+                    <button
+                      className={styles.btnSendOffer ?? styles.iconBtn}
+                      style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                      onClick={() => {
+                        setReproposeOffer(o);
+                        setReproposeSlots({ slot1: '', slot2: '', slot3: '', price: String(o.price) });
+                      }}
+                    >
+                      Propose New Slots
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Re-propose modal */}
+      {reproposeOffer && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: '16px',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '14px', padding: '36px 40px',
+            maxWidth: '560px', width: '100%', boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
+            boxSizing: 'border-box',
+          }}>
+            <h2 style={{ margin: '0 0 6px', fontSize: '1.3rem', fontWeight: 700, color: '#1a1a2e' }}>
+              Propose New Time Slots
+            </h2>
+            <p style={{ color: '#6b7280', fontSize: '0.95rem', marginBottom: '28px', lineHeight: 1.5 }}>
+              Patient requested new times for offer <strong style={{ color: '#1a1a2e' }}>#{String(reproposeOffer.id).substring(0, 8)}</strong>.
+              Propose up to 3 new slots below.
+            </p>
+
+            {[
+              { key: 'slot1' as const, label: 'Slot 1', required: true },
+              { key: 'slot2' as const, label: 'Slot 2', required: false },
+              { key: 'slot3' as const, label: 'Slot 3', required: false },
+            ].map(({ key, label, required }) => (
+              <div key={key} style={{ marginBottom: '16px' }}>
+                <label style={{
+                  fontSize: '0.875rem', fontWeight: 600, color: '#374151',
+                  display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px',
+                }}>
+                  {label}
+                  {required
+                    ? <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>required</span>
+                    : <span style={{ color: '#9ca3af', fontSize: '0.8rem', fontWeight: 400 }}>optional</span>
+                  }
+                </label>
+                <input
+                  type="datetime-local"
+                  value={reproposeSlots[key]}
+                  min={new Date(Date.now() + 3600_000).toISOString().slice(0, 16)}
+                  onChange={(e) => setReproposeSlots((p) => ({ ...p, [key]: e.target.value }))}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    padding: '10px 14px', borderRadius: '8px',
+                    border: '1.5px solid #e5e7eb', fontSize: '0.95rem',
+                    color: '#1a1a2e', outline: 'none',
+                  }}
+                />
+              </div>
+            ))}
+
+            <div style={{ marginBottom: '28px' }}>
+              <label style={{
+                fontSize: '0.875rem', fontWeight: 600, color: '#374151',
+                display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px',
+              }}>
+                Update Price
+                <span style={{ color: '#9ca3af', fontSize: '0.8rem', fontWeight: 400 }}>
+                  optional — current: €{reproposeOffer.price}
+                </span>
+              </label>
+              <input
+                type="number"
+                placeholder={`€${reproposeOffer.price}`}
+                value={reproposeSlots.price}
+                onChange={(e) => setReproposeSlots((p) => ({ ...p, price: e.target.value }))}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  padding: '10px 14px', borderRadius: '8px',
+                  border: '1.5px solid #e5e7eb', fontSize: '0.95rem', color: '#1a1a2e',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setReproposeOffer(null)}
+                disabled={reproposing}
+                style={{
+                  padding: '11px 24px', borderRadius: '8px',
+                  border: '1.5px solid #e5e7eb', background: '#fff',
+                  fontSize: '0.95rem', fontWeight: 600, color: '#374151', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRepropose}
+                disabled={reproposing || !reproposeSlots.slot1}
+                style={{
+                  padding: '11px 24px', borderRadius: '8px', border: 'none',
+                  background: reproposing || !reproposeSlots.slot1 ? '#c4bdf7' : '#7b68ee',
+                  color: '#fff', fontSize: '0.95rem', fontWeight: 600, cursor: reproposing || !reproposeSlots.slot1 ? 'not-allowed' : 'pointer',
+                  transition: 'background 0.15s',
+                }}
+              >
+                {reproposing ? 'Sending…' : 'Send New Slots'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(modal?.type === 'edit' || modal?.type === 'view') && modal.offer && (
         <OfferFormModal offer={modal.offer} onClose={() => setModal(null)} onSubmit={handleEdit} />

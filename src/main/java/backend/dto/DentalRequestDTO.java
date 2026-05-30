@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -32,4 +33,10 @@ public class DentalRequestDTO {
 
     @DecimalMin(value = "0.0", inclusive = false, message = "Budget must be greater than 0")
     private Double budgetMax; // optional
+
+    @NotNull(message = "Available from date is required")
+    private LocalDate availableFrom;
+
+    @NotNull(message = "Available until date is required")
+    private LocalDate availableTo;
 }

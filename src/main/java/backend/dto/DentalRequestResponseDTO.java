@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -25,6 +26,8 @@ public class DentalRequestResponseDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String patientProfilePicture;
+    private LocalDate availableFrom;
+    private LocalDate availableTo;
 
     public static DentalRequestResponseDTO from(DentalRequest r) {
         DentalRequestResponseDTO dto = new DentalRequestResponseDTO();
@@ -37,6 +40,8 @@ public class DentalRequestResponseDTO {
         dto.status = r.getStatus();
         dto.createdAt = r.getCreatedAt();
         dto.updatedAt = r.getUpdatedAt();
+        dto.availableFrom = r.getAvailableFrom();
+        dto.availableTo = r.getAvailableTo();
         return dto;
     }
 

@@ -77,6 +77,7 @@ function mapToClientOffer(o: any, avgPrice: number): ClientOffer {
     if (o.estimatedWaitDays > 0) specialMentions.push(`Est. ${o.estimatedWaitDays}-day wait`);
     if (specialMentions.length === 0) specialMentions.push('Standard consultation');
     const validUntilDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const proposedSlots: string[] = (o.proposedSlots || []).filter(Boolean);
     return {
         id: o.id,
         doctorLabel: `Dr. #${String(o.dentistPublicId).substring(0, 6)}`,
@@ -95,7 +96,8 @@ function mapToClientOffer(o: any, avgPrice: number): ClientOffer {
         validUntil: validUntilDate.toISOString().split('T')[0],
         treatmentCategory: '',
         isBestValue: false,
-        avatar: '',
+        proposedSlots,
+        offerStatus: o.status || 'PENDING',
     };
 }
 
@@ -103,10 +105,9 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
     const [offers,    setOffers]    = useState<ClientOffer[]>([]);
     const [selected,  setSelected]  = useState<ClientOffer | null>(null);
     const [loading,   setLoading]   = useState(true);
-    const [showStats, setShowStats] = useState(false);
-    const [acceptModal, setAcceptModal] = useState(false);
-    const [scheduledAt, setScheduledAt] = useState('');
-    const [accepting,   setAccepting]   = useState(false);
+    const [showStats,      setShowStats]      = useState(false);
+    const [slotModal,      setSlotModal]      = useState(false);
+    const [actioning,      setActioning]      = useState(false);
     const { toast, show: showToast } = useToast();
     const { page, setPage: setTablePage, totalPages, slice } = usePagination<ClientOffer>(offers, PER_PAGE);
 
@@ -146,24 +147,33 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
         return () => clearInterval(interval);
     }, []);
 
-    async function handleAcceptConfirm() {
-        if (!selected || !scheduledAt) {
-            showToast('Please select a date and time.', 'error');
-            return;
-        }
-        setAccepting(true);
+    async function handleSelectSlot(slot: string) {
+        if (!selected) return;
+        setActioning(true);
         try {
-            await api.patch(`/offers/${selected.id}/accepted`, {
-                offerId:     selected.id,
-                scheduledAt: scheduledAt,
-            });
-            showToast('Offer accepted! Appointment created.', 'success');
-            setAcceptModal(false);
+            await api.patch(`/offers/${selected.id}/select-slot`, { selectedSlot: slot });
+            showToast('Appointment confirmed!', 'success');
+            setSlotModal(false);
             setTimeout(() => setPage('appointments'), 1800);
         } catch (err: any) {
-            showToast(err?.response?.data?.message || 'Failed to accept offer.', 'error');
+            showToast(err?.response?.data?.message || 'Failed to confirm slot.', 'error');
         } finally {
-            setAccepting(false);
+            setActioning(false);
+        }
+    }
+
+    async function handleRequestReschedule() {
+        if (!selected) return;
+        setActioning(true);
+        try {
+            await api.patch(`/offers/${selected.id}/request-reschedule`);
+            showToast('Reschedule requested. The clinic will propose new times.', 'success');
+            setSlotModal(false);
+            load();
+        } catch (err: any) {
+            showToast(err?.response?.data?.message || 'Failed to request reschedule.', 'error');
+        } finally {
+            setActioning(false);
         }
     }
 
@@ -299,38 +309,70 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                     </div>
 
                     <div className={styles.detailActions}>
-                        <Button variant="cta" onClick={() => setAcceptModal(true)}>
-                            Accept Offer
-                        </Button>
+                        {current.offerStatus === 'RESCHEDULE_REQUESTED' ? (
+                            <p style={{ color: '#f59e0b', fontSize: '0.9rem', margin: 0 }}>
+                                ⏳ Waiting for the clinic to propose new times…
+                            </p>
+                        ) : current.proposedSlots.length > 0 ? (
+                            <Button variant="cta" onClick={() => setSlotModal(true)}>
+                                Choose a Time Slot
+                            </Button>
+                        ) : (
+                            <p style={{ color: '#aaa', fontSize: '0.9rem', margin: 0 }}>
+                                No time slots proposed yet
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Accept Offer Modal */}
-            {acceptModal && (
+            {/* Slot Selection Modal */}
+            {slotModal && current && (
                 <div style={{
                     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
                 }}>
                     <div style={{
                         background: '#fff', borderRadius: '12px', padding: '32px',
-                        maxWidth: '400px', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                        maxWidth: '440px', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
                     }}>
-                        <h3 style={{ marginBottom: '16px' }}>Choose Appointment Date &amp; Time</h3>
-                        <p style={{ color: '#666', marginBottom: '16px', fontSize: '0.9rem' }}>
-                            Accepting offer from <strong>{current.doctorLabel}</strong> — €{current.exactQuote}
+                        <h3 style={{ marginBottom: '8px' }}>Choose a Time Slot</h3>
+                        <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.9rem' }}>
+                            From <strong>{current.doctorLabel}</strong> — €{current.exactQuote}
                         </p>
-                        <input
-                            type="datetime-local"
-                            value={scheduledAt}
-                            onChange={(e) => setScheduledAt(e.target.value)}
-                            min={new Date(Date.now() + 3600_000).toISOString().slice(0, 16)}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '20px' }}
-                        />
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                            <Button variant="secondary" onClick={() => setAcceptModal(false)}>Cancel</Button>
-                            <Button variant="cta" onClick={handleAcceptConfirm} disabled={!scheduledAt || accepting}>
-                                {accepting ? 'Confirming…' : 'Confirm Appointment'}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                            {current.proposedSlots.map((slot, i) => {
+                                const d = new Date(slot);
+                                return (
+                                    <button
+                                        key={i}
+                                        disabled={actioning}
+                                        onClick={() => handleSelectSlot(slot)}
+                                        style={{
+                                            padding: '14px 18px', borderRadius: '10px',
+                                            border: '2px solid #7b68ee', background: '#f5f4ff',
+                                            cursor: 'pointer', textAlign: 'left', fontSize: '0.95rem',
+                                            fontWeight: 600, color: '#4a3fbf',
+                                            transition: 'background 0.15s',
+                                        }}
+                                        onMouseEnter={(e) => (e.currentTarget.style.background = '#ece9ff')}
+                                        onMouseLeave={(e) => (e.currentTarget.style.background = '#f5f4ff')}
+                                    >
+                                        📅 {d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                        &nbsp;·&nbsp;
+                                        {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Button variant="secondary" onClick={handleRequestReschedule} disabled={actioning}>
+                                Request Another Time
+                            </Button>
+                            <Button variant="secondary" onClick={() => setSlotModal(false)} disabled={actioning}>
+                                Cancel
                             </Button>
                         </div>
                     </div>

@@ -54,7 +54,7 @@ public class Appointment {
         this.dentistPublicId = dentistPublicId;
         this.scheduledAt = scheduledAt;
         this.confirmedPrice = confirmedPrice;
-        this.status = AppointmentStatus.PENDING;
+        this.status = AppointmentStatus.CONFIRMED;
         this.createdAt = LocalDateTime.now();
     }
 

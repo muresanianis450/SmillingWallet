@@ -9,6 +9,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -29,6 +31,7 @@ public class OfferResponseDTO {
     private LocalDateTime updatedAt;
     private String patientProfilePicture;
     private String dentistProfilePicture;
+    private List<LocalDateTime> proposedSlots;
 
     public static OfferResponseDTO from(Offer o) {
         OfferResponseDTO dto = new OfferResponseDTO();
@@ -43,6 +46,11 @@ public class OfferResponseDTO {
         dto.status = o.getStatus();
         dto.createdAt = o.getCreatedAt();
         dto.updatedAt = o.getUpdatedAt();
+        List<LocalDateTime> slots = new ArrayList<>();
+        if (o.getProposedSlot1() != null) slots.add(o.getProposedSlot1());
+        if (o.getProposedSlot2() != null) slots.add(o.getProposedSlot2());
+        if (o.getProposedSlot3() != null) slots.add(o.getProposedSlot3());
+        dto.proposedSlots = slots;
         return dto;
     }
 
