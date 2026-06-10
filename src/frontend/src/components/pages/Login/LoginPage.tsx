@@ -18,6 +18,7 @@ export function LoginPage({ setPage, onLogin }: LoginPageProps) {
 
     // MFA second step state
     const [mfaStep, setMfaStep]       = useState(false);
+    const [mfaType, setMfaType]       = useState<'totp' | 'email'>('totp');
     const [tempToken, setTempToken]   = useState('');
     const [mfaCode, setMfaCode]       = useState('');
     const [useBackup, setUseBackup]   = useState(false);
@@ -47,6 +48,7 @@ export function LoginPage({ setPage, onLogin }: LoginPageProps) {
 
             if (res.data.requiresMfa) {
                 setTempToken(res.data.tempToken);
+                setMfaType(res.data.mfaType === 'email' ? 'email' : 'totp');
                 setMfaStep(true);
                 setMfaCode('');
                 setMfaError('');
@@ -78,7 +80,8 @@ export function LoginPage({ setPage, onLogin }: LoginPageProps) {
         setMfaLoading(true);
         setMfaError('');
         try {
-            const res = await api.post('/auth/2fa/verify', { tempToken, code });
+            const endpoint = mfaType === 'email' ? '/auth/email2fa/verify-login' : '/auth/2fa/verify';
+            const res = await api.post(endpoint, { tempToken, code });
             onLogin({
                 id: res.data.user.id,
                 username: res.data.user.username,
@@ -121,7 +124,9 @@ export function LoginPage({ setPage, onLogin }: LoginPageProps) {
                     <p style={{ fontSize: 14, color: '#555', marginBottom: 20, textAlign: 'center' }}>
                         {useBackup
                             ? 'Enter one of your backup codes.'
-                            : 'Enter the 6-digit code from your authenticator app.'}
+                            : mfaType === 'email'
+                                ? 'A 6-digit code was sent to your email address.'
+                                : 'Enter the 6-digit code from your authenticator app.'}
                     </p>
 
                     <div className={styles.field}>
@@ -163,14 +168,16 @@ export function LoginPage({ setPage, onLogin }: LoginPageProps) {
                         </button>
                     )}
 
-                    <button
-                        className={styles.link}
-                        type="button"
-                        onClick={() => { setUseBackup(v => !v); setMfaCode(''); setMfaError(''); }}
-                        style={{ display: 'block', textAlign: 'center', width: '100%', marginTop: 8 }}
-                    >
-                        {useBackup ? 'Use authenticator code instead' : 'Use a backup code instead'}
-                    </button>
+                    {mfaType === 'totp' && (
+                        <button
+                            className={styles.link}
+                            type="button"
+                            onClick={() => { setUseBackup(v => !v); setMfaCode(''); setMfaError(''); }}
+                            style={{ display: 'block', textAlign: 'center', width: '100%', marginTop: 8 }}
+                        >
+                            {useBackup ? 'Use authenticator code instead' : 'Use a backup code instead'}
+                        </button>
+                    )}
 
                     <button
                         className={styles.link}

@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 import { Offer, ModalState, OfferStatus } from '../../../types/types.ts';
 import { OFFER_STATUSES } from '../../../data/constants';
 import { usePagination } from '../../../hooks/usePagination';
@@ -64,7 +65,7 @@ export function DashboardPage() {
   const dentist = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
 
   // Load dentist's sent offers
-  useEffect(() => {
+  function loadOffers() {
     if (!dentist?.id) return;
     api.get(`/offers/dentist/${dentist.id}?page=0&size=50`)
       .then((res) => {
@@ -73,20 +74,29 @@ export function DashboardPage() {
         setOffers(raw.map(mapApiOffer));
       })
       .catch(() => {});
+  }
+
+  // Load accepted appointments
+  function loadAppointments() {
+    if (!dentist?.id) return;
+    api.get(`/dashboard/clinic/${dentist.id}/appointments`)
+      .then((res) => setAppointments(res.data || []))
+      .catch(() => {});
+  }
+
+  useEffect(() => {
+    loadOffers();
+    loadAppointments();
   }, []);
 
-  // Load accepted appointments (includes patient identity) — polls every 30 s
-  useEffect(() => {
-    if (!dentist?.id) return;
-    function loadAppointments() {
-      api.get(`/dashboard/clinic/${dentist.id}/appointments`)
-        .then((res) => setAppointments(res.data || []))
-        .catch(() => {});
+  // Real-time: refresh offers and appointments when relevant push arrives
+  const handlePush = useCallback((type: string) => {
+    if (type === 'OFFER_ACCEPTED' || type === 'NEW_OFFER' || type === 'APPOINTMENT_SCHEDULED') {
+      loadOffers();
+      loadAppointments();
     }
-    loadAppointments();
-    const interval = setInterval(loadAppointments, 30_000);
-    return () => clearInterval(interval);
   }, []);
+  useNotificationSocket(handlePush);
 
   const stats = useMemo(() => ({
     total:    offers.length,
@@ -311,10 +321,10 @@ export function DashboardPage() {
           <table>
             <thead>
               <tr>
-                <th>Offer ID</th>
-                <th>Patient</th>
-                <th>Price</th>
-                <th>Action</th>
+                <th style={{ width: '25%' }}>Offer ID</th>
+                <th style={{ width: '35%' }}>Patient</th>
+                <th style={{ width: '15%' }}>Price</th>
+                <th style={{ width: '25%' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -331,7 +341,7 @@ export function DashboardPage() {
                   <td>
                     <button
                       className={styles.btnSendOffer ?? styles.iconBtn}
-                      style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                      style={{ background: '#d97706', color: '#fff', border: 'none', padding: '7px 12px', borderRadius: '7px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', whiteSpace: 'nowrap', textAlign: 'center', width: '100%' }}
                       onClick={() => {
                         setReproposeOffer(o);
                         setReproposeSlots({ slot1: '', slot2: '', slot3: '', price: String(o.price) });

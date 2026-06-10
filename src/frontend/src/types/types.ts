@@ -66,7 +66,7 @@ export interface DentalRequest {
   specialty: string;
   description: string;
   preferredCity: string;
-  budgetMax: number | null;
+
   status: string;
   createdAt: string;
   patientProfilePicture?: string | null;
@@ -114,7 +114,7 @@ export interface SendRequestFormFields {
   symptomSummary: string;
   // Insurance & Payment
   paymentMethod: PaymentMethod;
-  budgetRange: string;
+
   insuranceProvider: string;
 }
 

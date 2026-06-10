@@ -59,8 +59,11 @@ public class SecurityConfig {
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
                                 "/api/auth/activate",
-                                "/api/auth/2fa/verify"
+                                "/api/auth/2fa/verify",
+                                "/api/auth/email2fa/verify-login"
                         ).permitAll()
+                        // WebSocket handshake endpoint
+                        .requestMatchers("/ws-smiling-wallet/**").permitAll()
                         // Actuator health — used by Railway / Docker health probes
                         .requestMatchers("/actuator/health").permitAll()
                         // Swagger UI (dev convenience)

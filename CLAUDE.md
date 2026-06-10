@@ -53,9 +53,16 @@ npm run build      # tsc + Vite build (catches type errors)
 - `exception/` — `ResourceNotFoundException` (404), `ConflictException` (409), `UnprocessableEntityException` (422)
 - `util/` — `ProfileCompletion.calculate(User)` returns `ProfileCompletionResult(pct, missingFields)`
 
-**Auth flow:** JWT access token (15 min) + opaque refresh token (7 days, stored in DB). The JWT carries `userId` as subject and `role` as a claim. `JwtAuthenticationFilter` skips only the five public `/api/auth/*` endpoints; all other paths including `/api/auth/user/**` go through token validation.
+**Auth flow:** JWT access token (15 min) + opaque refresh token (7 days, stored in DB). The JWT carries `userId` as subject and `role` as a claim. `JwtAuthenticationFilter` skips only the public `/api/auth/*` endpoints; all other paths including `/api/auth/user/**` go through token validation.
 
 **Security roles:** Spring Security authority strings are `ROLE_PATIENT`, `ROLE_DENTIST`, `ROLE_ADMIN`. The JWT stores bare role strings (`PATIENT` etc.); the filter prepends `ROLE_`.
+
+**Two-Factor Authentication:** Two independent 2FA methods, either or both can be enabled per user.
+- **TOTP (Authenticator App):** `totp_enabled`, `totp_secret` (AES-256-GCM encrypted), `backup_codes` (BCrypt-hashed JSON). Setup via `/auth/2fa/setup` → `/auth/2fa/confirm`; disable via `/auth/2fa/disable`. Login verify: `POST /auth/2fa/verify` (public).
+- **Email 2FA:** `email2fa_enabled`, `email2fa_address`. A 6-digit OTP is generated, stored in an in-memory TTL cache (10 min), and sent via `EmailService.sendEmail2faCode()`. Setup via `/auth/email2fa/send` → `/auth/email2fa/enable`; disable via `/auth/email2fa/send` → `/auth/email2fa/disable`. Login verify: `POST /auth/email2fa/verify-login` (public).
+- **Login flow:** if email 2FA is enabled it takes priority; then TOTP is checked. `LoginResponseDTO` returns `{ requiresMfa: true, mfaType: "email"|"totp", tempToken }`. The frontend reads `mfaType` to route to the correct verify endpoint and show the right description.
+- **`UserResponseDTO`:** `twoFactorEnabled = totpEnabled || email2faEnabled` (used for the badge). Also exposes `email2faEnabled` and `email2faAddress` separately.
+- TTL caches for MFA state live in `AuthService` as `TtlCache` instances (in-memory, no Redis dependency).
 
 **Database:** PostgreSQL with Flyway migrations in `src/main/resources/db/migration/`. Schema: `users`, `dental_requests`, `offers`, `appointments`, `notifications`, `refresh_tokens`, `password_reset_tokens`. `ddl-auto: validate` — Hibernate never modifies the schema; all changes go through Flyway scripts.
 
@@ -78,7 +85,7 @@ npm run build      # tsc + Vite build (catches type errors)
 - `ReviewRequestsPage` — Dentist marketplace: browse open requests, send offers
 - `SendRequestPage` — Patient: submit a treatment request
 - `MyOffersPage` — Patient: view offers received on their requests
-- `ProfilePage` — All users: view/edit profile, animated progress bar, missing-field highlights
+- `ProfilePage` — All users: view/edit profile, animated progress bar, missing-field highlights. Account settings section has three toggles: **Authenticator App (TOTP)**, **Email Verification Code**, and **Email Reminders**. Each 2FA method has its own enable modal and disable modal; they are independent.
 - `ProfileBanner` (shared component) — Dismissible banner shown globally when `profileCompletionPct < 100`; 24h suppress via localStorage key `profileBannerDismissedAt`
 
 **Mock data vs real API:** `ReviewRequestsPage` and `DashboardPage` still use `INITIAL_OFFERS` / `INITIAL_REQUESTS` from `src/frontend/src/data/constants.ts` for their local display state. The `OfferService.ts` calls the real API when saving. New pages should use `api.ts` directly.

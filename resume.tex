@@ -1,0 +1,198 @@
+%-------------------------
+% Resume in Latex
+% Adapted for: Ianis Muresan
+% Based off of: https://github.com/sb2nov/resume
+% License : MIT
+%------------------------
+
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\input{glyphtounicode}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.5in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+% Ensure that generate pdf is machine readable/ATS parsable
+\pdfgentounicode=1
+
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[label={\raisebox{0.15ex}{\tiny$\bullet$}}]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%-------------------------------------------
+%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape Ianis Muresan} \\ \vspace{1pt}
+    \small +40 770 331 808 $|$ \href{mailto:muresanianis450@gmail.com}{\underline{muresanianis450@gmail.com}} $|$
+    \href{https://www.linkedin.com/in/ianis-muresan-062504354/}{\underline{LinkedIn}} $|$
+    \href{https://github.com/muresanianis450}{\underline{GitHub}} \\
+    \small Cluj-Napoca, RO / Arnhem, NL
+\end{center}
+
+%-----------EDUCATION-----------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Babes-Bolyai University (UBB FMI)}{Cluj-Napoca, RO}
+      {Bachelor of Science in Computer Science}{2024 -- 2027}
+      \resumeItemListStart
+        \resumeItem{Academic Performance: Java (10/10), Python (10/10), Software Engineering (10/10), Systems Design \& Implementation (10/10), OOP (9/10), DSA (9/10).}
+      \resumeItemListEnd
+    \resumeSubheading
+      {Colegiul National Gheorghe Sincai (CNGS BM)}{Baia Mare, RO}
+      {High School Diploma - Mathematics and Informatics Intensive}{2020 -- 2024}
+      \resumeItemListStart
+        \resumeItem{Baccalaureate: Informatics (9.90), Mathematics (9.45).}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------
+\section{Experience}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Application Software Engineer Intern}{Nov. 2025 -- March 2026}
+      {NTT Data Inc.}{Cluj-Napoca, RO}
+      \resumeItemListStart
+        \resumeItem{Contributed to backend development using Java, Spring, and Spring Boot in a collaborative environment.}
+        \resumeItem{Integrated SQL Server through JPA/Hibernate and ensured reliability via manual and automated testing.}
+        \resumeItem{Gained exposure to legacy enterprise systems using the FK5 mainframe emulator and COBOL.}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------
+\section{Projects}
+\resumeSubHeadingListStart
+
+\resumeProjectHeading
+{\textbf{\href{https://github.com/muresanianis450/SmillingWallet}{\underline{SmillingWallet}}} $|$ \emph{Java, Spring Boot, React 18, TypeScript, PostgreSQL, Flyway, JWT $|$ Deployed on Railway}}{}
+
+\resumeItemListStart
+    \resumeItem{Designed and built a full-stack two-sided dental marketplace (Patient / Dentist / Admin) with a React 18 + TypeScript SPA and a Spring Boot REST API, deployed on Railway with HTTPS and environment-based CORS configuration.}
+    \resumeItem{Implemented a layered auth system: BCrypt + stateless JWT (15-min access / 7-day refresh with rotation), TOTP two-factor authentication with AES-256-GCM encrypted secrets, BCrypt-hashed one-time backup codes, and a time-limited dentist account-activation flow triggered by admin invite.}
+    \resumeItem{Automated business rules at the database layer using PostgreSQL stored procedures (clinic acceptance-rate analytics, patient history) and triggers (auto-reject competing offers, auto-close requests on appointment creation), with all schema changes managed via Flyway migrations.}
+    \resumeItem{Built a multi-step offer negotiation flow (propose 3 slots → patient reschedule request → dentist repropose) with async email notifications: 24-hour appointment reminders with Google Calendar and Maps links, password reset, and dentist onboarding invitations.}
+\resumeItemListEnd
+
+\resumeProjectHeading
+{\textbf{\href{https://github.com/The-Real-Bananas/Bananas-PoliHack}{\underline{RealEyes (PoliHack XIX)}}} $|$ \emph{FastAPI, PyTorch, TypeScript}}{}
+\resumeItemListStart
+    \resumeItem{Conceived and led a team project to build a Chrome extension that flags AI-generated media and detects misinformation, propaganda, and emotional manipulation.}
+    \resumeItem{Developed a multi-layer text detection pipeline using pretrained models for harmful content classification.}
+    \resumeItem{Trained a custom AI model for AI-generated image detection, experimenting with multiple Kaggle datasets.}
+\resumeItemListEnd
+
+
+\resumeProjectHeading
+{\textbf{\href{https://github.com/Team-4-Shrooms/UBB-SE-2026-MovieApp}{\underline{MovieApp}}} $|$ \emph{C\#, .NET 10, WinUI 3, SQL Server} $|$ \emph{Group Project}}{}
+\resumeItemListStart
+    \resumeItem{Designed a 4-layer architecture (Core, Logic, Infrastructure, UI) for a WinUI 3 movie-events platform; unified two independent team codebases into a single solution with shared repository abstractions and enforced coding standards across 389 commits.}
+    \resumeItem{Implemented a slot-machine discovery feature: 3 animated reels (genre, actor, director) spin against live event data; jackpot detection grants a 70\% discount; a spin economy tracks daily limits, login-streak bonuses, and event-participation rewards.}
+    \resumeItem{Built a weekly marathon system with prerequisite-gated progression, in-film trivia verification (3-of-3 to log a movie), accuracy averaging, and a leaderboard; added price-drop and seat-availability notifications for favorited events.}
+\resumeItemListEnd
+
+\newpage
+\resumeProjectHeading
+{\textbf{\href{https://github.com/muresanianis450/CustomLanguageInterpretor}{\underline{Custom Language Interpreter}}} $|$ \emph{Java, JavaFX, MVC}}{}
+\resumeItemListStart
+    \resumeItem{Developed a multi-threaded interpreter featuring heap-based memory management and safe garbage collection.}
+    \resumeItem{Implemented synchronization primitives including locks, semaphores, latches, and barriers.}
+    \resumeItem{Designed step-by-step state execution with persistent logging and a layered thread-safe architecture.}
+\resumeItemListEnd
+
+\resumeProjectHeading
+{\textbf{\href{https://github.com/muresanianis450/connect_four}{\underline{Connect Four}}} $|$ \emph{Python, Pygame}}{}
+\resumeItemListStart
+    \resumeItem{Developed a layered game with both console and GUI interfaces.}
+    \resumeItem{Implemented a Human vs Computer gameplay system with three difficulty levels powered by a Minimax-based AI.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+
+%-----------TECHNICAL SKILLS-----------
+\section{Technical Skills}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{Languages (Proficient)}{: Java, C\#, C++, Python, SQL (PostgreSQL, MSSQL), TypeScript} \\
+     \textbf{Languages (Familiar)}{: HTML/CSS, JavaScript, NASM (86x), Bash, Lisp, Prolog, COBOL} \\
+     \textbf{Frameworks}{: Spring Boot, JPA/Hibernate, React 18, Vite, .NET, ASP.NET, JavaFX, Qt} \\
+     \textbf{Infrastructure \& Tools}{: Git, GitHub, Docker, Railway, Flyway, JWT/TOTP, REST APIs} \\
+     \textbf{Developer Tools}{: IntelliJ, VS Code, CLion, PyCharm, Visual Studio, SSMS, draw.io} \\
+     \textbf{Certifications}{: Database Design (Oracle), ECDL START BAC Profile} \\
+     \textbf{Spoken Languages}{: Romanian - Native, English - C1 (Cambridge Certificate), German - A2}
+    }}
+ \end{itemize}
+
+
+%-----------VOLUNTEERING & HOBBIES-----------
+\section{Achievements \& Volunteering}
+  \resumeSubHeadingListStart
+    \resumeProjectHeading
+      {\textbf{Filmmic XVI} $|$ \emph{1st Place Best Short-Movie \& Best Directing}}{2024}
+    \resumeProjectHeading
+      {\textbf{Red Cross Romania} $|$ \emph{Leadership, disaster relief \& first aid}}{2021 -- 2024}
+    \resumeProjectHeading
+      {\textbf{Equilibrium Debate} $|$ \emph{Public Speaking and Argumentation}}{2022 -- 2024}
+  \resumeSubHeadingListEnd
+
+%-------------------------------------------
+\end{document}

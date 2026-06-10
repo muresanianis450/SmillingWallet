@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 import { TREATMENT_CATEGORIES } from '../../../data/constants';
 import { usePagination } from '../../../hooks/usePagination';
 import { useToast } from '../../../hooks/useToast';
@@ -32,7 +33,6 @@ interface ReviewRequestsPageProps {
 
 export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
   const [requests,   setRequests]   = useState<DentalRequest[]>([]);
-  const [loading,    setLoading]    = useState(true);
   const [hiddenIds,  setHiddenIds]  = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
   const [search,     setSearch]     = useState('');
@@ -48,16 +48,17 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
       setRequests(res.data.content || []);
     } catch {
       // silent
-    } finally {
-      setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadRequests();
-    const interval = setInterval(loadRequests, 30_000);
-    return () => clearInterval(interval);
+  // Initial load
+  useEffect(() => { loadRequests(); }, []);
+
+  // Real-time: reload when a new request is posted
+  const handlePush = useCallback((type: string) => {
+    if (type === 'NEW_OFFER' || type === 'GENERAL') loadRequests();
   }, []);
+  useNotificationSocket(handlePush);
 
   function toggleHide(id: string) {
     setHiddenIds((prev) => {
@@ -181,20 +182,14 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
               <th>Description</th>
               <th>Preferred City</th>
               <th>Available</th>
-              <th>Budget</th>
+
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {slice.length === 0 ? (
               <tr>
-                <td colSpan={7}>
-                  <EmptyState icon="⏳" message="Loading requests…" />
-                </td>
-              </tr>
-            ) : slice.length === 0 ? (
-              <tr>
-                <td colSpan={7}>
+                <td colSpan={6}>
                   <EmptyState
                     icon={showHidden ? '🙈' : '🔍'}
                     message={showHidden ? 'No hidden requests' : 'No open requests found'}
@@ -230,13 +225,7 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
                         <span style={{ color: '#aaa' }}>—</span>
                       )}
                     </td>
-                    <td>
-                      {r.budgetMax ? (
-                        <span>€{r.budgetMax}</span>
-                      ) : (
-                        <span className={styles.dash}>—</span>
-                      )}
-                    </td>
+
                     <td>
                       <div className={styles.actionCell}>
                         <button

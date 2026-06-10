@@ -22,6 +22,7 @@ interface ProfileData {
     id: string;
     username: string;
     phone: string;
+    email: string;
     role: string;
     city: string;
     address: string;
@@ -31,6 +32,8 @@ interface ProfileData {
     missingFields: string[];
     profilePicture: string | null;
     twoFactorEnabled: boolean;
+    email2faEnabled: boolean;
+    email2faAddress: string | null;
     emailRemindersEnabled: boolean;
 }
 
@@ -50,7 +53,6 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
     const [address, setAddress]               = useState('');
     const [specialty, setSpecialty]           = useState('');
     const [avatar, setAvatar]                 = useState<string | null>(null);
-    const [twoFactor, setTwoFactor]           = useState(false);
     const [emailReminders, setEmailReminders] = useState(true);
     const [saving, setSaving]                 = useState(false);
     const [saved, setSaved]                   = useState(false);
@@ -58,7 +60,8 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
     const [pickerOpen, setPickerOpen]         = useState(false);
     const [profileError, setProfileError]     = useState(false);
 
-    // ── 2FA wizard state ──────────────────────────────────────────────────────
+    // ── TOTP 2FA state ────────────────────────────────────────────────────────
+    const [twoFactor, setTwoFactor]           = useState(false);
     const [wizardOpen, setWizardOpen]         = useState(false);
     const [wizardStep, setWizardStep]         = useState<1|2|3>(1);
     const [wizardQrCode, setWizardQrCode]     = useState('');
@@ -70,20 +73,36 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
     const [codesConfirmed, setCodesConfirmed] = useState(false);
     const [codesCopied, setCodesCopied]       = useState(false);
 
+    // ── Disable TOTP modal state ──────────────────────────────────────────────
+    const [disableTotpOpen, setDisableTotpOpen]     = useState(false);
+    const [disableTotpCode, setDisableTotpCode]     = useState('');
+    const [disableTotpError, setDisableTotpError]   = useState('');
+    const [disableTotpLoading, setDisableTotpLoading] = useState(false);
+
+    // ── Email 2FA state ───────────────────────────────────────────────────────
+    const [emailTfa, setEmailTfa]                   = useState(false);
+    const [emailTfaOpen, setEmailTfaOpen]           = useState(false);
+    const [emailTfaInput, setEmailTfaInput]         = useState('');
+    const [emailTfaCodeSent, setEmailTfaCodeSent]   = useState(false);
+    const [emailTfaCode, setEmailTfaCode]           = useState('');
+    const [emailTfaError, setEmailTfaError]         = useState('');
+    const [emailTfaLoading, setEmailTfaLoading]     = useState(false);
+
+    // ── Disable email 2FA modal state ─────────────────────────────────────────
+    const [disableEmailTfaOpen, setDisableEmailTfaOpen]         = useState(false);
+    const [disableEmailTfaCodeSent, setDisableEmailTfaCodeSent] = useState(false);
+    const [disableEmailTfaCode, setDisableEmailTfaCode]         = useState('');
+    const [disableEmailTfaError, setDisableEmailTfaError]       = useState('');
+    const [disableEmailTfaLoading, setDisableEmailTfaLoading]   = useState(false);
+
     // ── Danger zone state ─────────────────────────────────────────────────────
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deleting, setDeleting]                   = useState(false);
     const [deleteError, setDeleteError]             = useState('');
 
-    // ── Disable 2FA modal state ───────────────────────────────────────────────
-    const [disableOpen, setDisableOpen]       = useState(false);
-    const [disableCode, setDisableCode]       = useState('');
-    const [disableError, setDisableError]     = useState('');
-    const [disableLoading, setDisableLoading] = useState(false);
-
     const usernameRef  = useRef<HTMLInputElement>(null);
     const phoneRef     = useRef<HTMLInputElement>(null);
-    const cityRef      = useRef<HTMLInputElement>(null); // forwarded into CityPicker's inner input
+    const cityRef      = useRef<HTMLInputElement>(null);
     const specialtyRef = useRef<HTMLSelectElement>(null);
 
     const fieldRefs: Record<string, React.RefObject<any>> = {
@@ -106,6 +125,8 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                 setSpecialty(data.specialty || '');
                 setAvatar(data.profilePicture || null);
                 setTwoFactor(data.twoFactorEnabled ?? false);
+                setEmailTfa(data.email2faEnabled ?? false);
+                setEmailTfaInput(data.email2faAddress || data.email || '');
                 setEmailReminders(data.emailRemindersEnabled ?? true);
             })
             .catch(() => {
@@ -193,15 +214,15 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
         }
     }
 
-    // ── 2FA toggle handler ────────────────────────────────────────────────────
+    // ── TOTP 2FA handlers ─────────────────────────────────────────────────────
 
-    function handleTwoFactorToggle(checked: boolean) {
+    function handleTotpToggle(checked: boolean) {
         if (checked && !twoFactor) {
             startSetupWizard();
         } else if (!checked && twoFactor) {
-            setDisableOpen(true);
-            setDisableCode('');
-            setDisableError('');
+            setDisableTotpOpen(true);
+            setDisableTotpCode('');
+            setDisableTotpError('');
         }
     }
 
@@ -239,7 +260,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
         }
     }
 
-    function completeSetup() {
+    function completeTotpSetup() {
         setTwoFactor(true);
         setProfile(prev => prev ? { ...prev, twoFactorEnabled: true } : prev);
         setWizardOpen(false);
@@ -270,26 +291,97 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
         URL.revokeObjectURL(url);
     }
 
-    async function handleDisable2fa() {
-        if (!disableCode.trim()) return;
-        setDisableLoading(true);
-        setDisableError('');
+    async function handleDisableTotp() {
+        if (!disableTotpCode.trim()) return;
+        setDisableTotpLoading(true);
+        setDisableTotpError('');
         try {
-            await api.post('/auth/2fa/disable', { code: disableCode });
+            await api.post('/auth/2fa/disable', { code: disableTotpCode });
             setTwoFactor(false);
             setProfile(prev => prev ? { ...prev, twoFactorEnabled: false } : prev);
-            setDisableOpen(false);
-            onProfileUpdate?.(
-                profile?.profileCompletionPct ?? 0,
-                profile?.missingFields ?? [],
-                avatar,
-                false,
-                emailReminders,
-            );
+            setDisableTotpOpen(false);
+            onProfileUpdate?.(profile?.profileCompletionPct ?? 0, profile?.missingFields ?? [], avatar, false, emailReminders);
         } catch (err: any) {
-            setDisableError(err.response?.data?.message || 'Invalid code');
+            setDisableTotpError(err.response?.data?.message || 'Invalid code');
         } finally {
-            setDisableLoading(false);
+            setDisableTotpLoading(false);
+        }
+    }
+
+    // ── Email 2FA handlers ────────────────────────────────────────────────────
+
+    function handleEmailTfaToggle(checked: boolean) {
+        if (checked && !emailTfa) {
+            setEmailTfaOpen(true);
+            setEmailTfaCodeSent(false);
+            setEmailTfaCode('');
+            setEmailTfaError('');
+        } else if (!checked && emailTfa) {
+            setDisableEmailTfaOpen(true);
+            setDisableEmailTfaCodeSent(false);
+            setDisableEmailTfaCode('');
+            setDisableEmailTfaError('');
+        }
+    }
+
+    async function handleSendEmailTfaCode() {
+        setEmailTfaLoading(true);
+        setEmailTfaError('');
+        try {
+            await api.post('/auth/email2fa/send');
+            setEmailTfaCodeSent(true);
+        } catch (err: any) {
+            setEmailTfaError(err.response?.data?.message || 'Failed to send code');
+        } finally {
+            setEmailTfaLoading(false);
+        }
+    }
+
+    async function handleEnableEmailTfa() {
+        if (!emailTfaCode.trim()) return;
+        setEmailTfaLoading(true);
+        setEmailTfaError('');
+        try {
+            await api.post('/auth/email2fa/enable', { email: emailTfaInput, code: emailTfaCode });
+            setEmailTfa(true);
+            setProfile(prev => prev ? { ...prev, email2faEnabled: true, email2faAddress: emailTfaInput } : prev);
+            setEmailTfaOpen(false);
+            onProfileUpdate?.(profile?.profileCompletionPct ?? 0, profile?.missingFields ?? [], avatar, twoFactor || true, emailReminders);
+        } catch (err: any) {
+            setEmailTfaError(err.response?.data?.message || 'Invalid code — please try again');
+        } finally {
+            setEmailTfaLoading(false);
+        }
+    }
+
+    async function handleSendDisableEmailTfaCode() {
+        setDisableEmailTfaLoading(true);
+        setDisableEmailTfaError('');
+        try {
+            await api.post('/auth/email2fa/send');
+            setDisableEmailTfaCodeSent(true);
+        } catch (err: any) {
+            setDisableEmailTfaError(err.response?.data?.message || 'Failed to send code');
+        } finally {
+            setDisableEmailTfaLoading(false);
+        }
+    }
+
+    async function handleDisableEmailTfa() {
+        if (!disableEmailTfaCode.trim()) return;
+        setDisableEmailTfaLoading(true);
+        setDisableEmailTfaError('');
+        try {
+            await api.post('/auth/email2fa/disable', { code: disableEmailTfaCode });
+            setEmailTfa(false);
+            setEmailTfaInput(profile?.email || '');
+            setProfile(prev => prev ? { ...prev, email2faEnabled: false, email2faAddress: null } : prev);
+            setDisableEmailTfaOpen(false);
+            onProfileUpdate?.(profile?.profileCompletionPct ?? 0, profile?.missingFields ?? [], avatar, twoFactor, emailReminders);
+        } catch (err: any) {
+            setDisableEmailTfaError(err.response?.data?.message || 'Invalid code');
+        } finally {
+            setDisableEmailTfaLoading(false);
         }
     }
 
@@ -317,7 +409,6 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                     <p className={styles.loading}>
                         {profileError ? 'Failed to load profile. You can log out and try again.' : 'Loading profile…'}
                     </p>
-                    {/* Always show logout so the user is never locked in */}
                     <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
                         <button
                             type="button"
@@ -336,6 +427,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
     const pct       = profile.profileCompletionPct ?? 0;
     const isDentist = user.role === 'DENTIST';
     const avatarSrc = avatar || DEFAULT_AVATAR;
+    const anyTfaEnabled = twoFactor || emailTfa;
 
     return (
         <div className={styles.pageWrap}>
@@ -362,7 +454,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                 <div className={styles.avatarInfo}>
                     <div className={styles.avatarName}>
                         {username || user.username}
-                        {twoFactor && (
+                        {anyTfaEnabled && (
                             <span className={styles.mfaBadge}>2FA enabled</span>
                         )}
                     </div>
@@ -493,33 +585,52 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                 <div className={styles.settingsSection}>
                     <div className={styles.settingsTitle}>Account settings</div>
 
+                    {/* TOTP 2FA row */}
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
-                            <span className={styles.settingLabel}>
-                                Two-Factor Authentication
-                            </span>
+                            <span className={styles.settingLabel}>Authenticator App (TOTP)</span>
                             <span className={styles.settingDesc}>
                                 {twoFactor
-                                    ? 'Enabled — your account is protected with TOTP'
-                                    : 'Add a second verification step at login'}
+                                    ? 'Enabled — use your authenticator app at login'
+                                    : 'Use Google Authenticator or Authy at login'}
                             </span>
                         </div>
                         <label className={styles.toggle}>
                             <input
                                 type="checkbox"
                                 checked={twoFactor}
-                                onChange={e => handleTwoFactorToggle(e.target.checked)}
+                                onChange={e => handleTotpToggle(e.target.checked)}
                                 disabled={wizardLoading}
                             />
                             <span className={styles.toggleSlider} />
                         </label>
                     </div>
 
+                    {/* Email 2FA row */}
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
-                            <span className={styles.settingLabel}>
-                                Email Reminders
+                            <span className={styles.settingLabel}>Email Verification Code</span>
+                            <span className={styles.settingDesc}>
+                                {emailTfa
+                                    ? `Enabled — codes sent to ${profile.email2faAddress || emailTfaInput}`
+                                    : 'Receive a one-time code by email at login'}
                             </span>
+                        </div>
+                        <label className={styles.toggle}>
+                            <input
+                                type="checkbox"
+                                checked={emailTfa}
+                                onChange={e => handleEmailTfaToggle(e.target.checked)}
+                                disabled={emailTfaLoading || disableEmailTfaLoading}
+                            />
+                            <span className={styles.toggleSlider} />
+                        </label>
+                    </div>
+
+                    {/* Email Reminders row */}
+                    <div className={styles.settingRow}>
+                        <div className={styles.settingInfo}>
+                            <span className={styles.settingLabel}>Email Reminders</span>
                             <span className={styles.settingDesc}>Receive reminders for appointments and new offers</span>
                         </div>
                         <label className={styles.toggle}>
@@ -567,12 +678,10 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
             </div>
         </div>
 
-        {/* ── 2FA Setup Wizard ── */}
+        {/* ── TOTP Setup Wizard ── */}
         {wizardOpen && (
             <div className={styles.pickerOverlay} onClick={() => {}}>
                 <div className={styles.wizardModal} onClick={e => e.stopPropagation()}>
-
-                    {/* Step indicator */}
                     <div className={styles.wizardSteps}>
                         {[1, 2, 3].map(n => (
                             <div
@@ -594,18 +703,10 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                             <p className={styles.wizardManualKey}>
                                 Manual key: <code>{wizardSecret}</code>
                             </p>
-                            <button
-                                className={styles.wizardBtn}
-                                type="button"
-                                onClick={() => setWizardStep(2)}
-                            >
+                            <button className={styles.wizardBtn} type="button" onClick={() => setWizardStep(2)}>
                                 Next
                             </button>
-                            <button
-                                className={styles.wizardCancelBtn}
-                                type="button"
-                                onClick={() => setWizardOpen(false)}
-                            >
+                            <button className={styles.wizardCancelBtn} type="button" onClick={() => setWizardOpen(false)}>
                                 Cancel
                             </button>
                         </>
@@ -639,11 +740,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                             >
                                 {wizardLoading ? 'Verifying…' : 'Verify'}
                             </button>
-                            <button
-                                className={styles.wizardCancelBtn}
-                                type="button"
-                                onClick={() => setWizardStep(1)}
-                            >
+                            <button className={styles.wizardCancelBtn} type="button" onClick={() => setWizardStep(1)}>
                                 ← Back
                             </button>
                         </>
@@ -661,18 +758,10 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                                 ))}
                             </ol>
                             <div className={styles.backupActions}>
-                                <button
-                                    className={styles.wizardOutlineBtn}
-                                    type="button"
-                                    onClick={handleCopyCodes}
-                                >
+                                <button className={styles.wizardOutlineBtn} type="button" onClick={handleCopyCodes}>
                                     {codesCopied ? 'Copied!' : 'Copy all'}
                                 </button>
-                                <button
-                                    className={styles.wizardOutlineBtn}
-                                    type="button"
-                                    onClick={handleDownloadCodes}
-                                >
+                                <button className={styles.wizardOutlineBtn} type="button" onClick={handleDownloadCodes}>
                                     Download .txt
                                 </button>
                             </div>
@@ -687,13 +776,173 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                             <button
                                 className={styles.wizardBtn}
                                 type="button"
-                                onClick={completeSetup}
+                                onClick={completeTotpSetup}
                                 disabled={!codesConfirmed}
                             >
                                 Done
                             </button>
                         </>
                     )}
+                </div>
+            </div>
+        )}
+
+        {/* ── Disable TOTP modal ── */}
+        {disableTotpOpen && (
+            <div className={styles.pickerOverlay} onClick={() => setDisableTotpOpen(false)}>
+                <div className={styles.wizardModal} onClick={e => e.stopPropagation()}>
+                    <p className={styles.wizardTitle}>Disable Authenticator App</p>
+                    <p className={styles.wizardDesc}>
+                        Enter your current TOTP code or a backup code to confirm.
+                    </p>
+                    <input
+                        className={styles.wizardOtpInput}
+                        type="text"
+                        placeholder="Code"
+                        value={disableTotpCode}
+                        onChange={e => { setDisableTotpCode(e.target.value); setDisableTotpError(''); }}
+                        autoComplete="one-time-code"
+                    />
+                    {disableTotpError && <p className={styles.wizardError}>{disableTotpError}</p>}
+                    <button
+                        className={`${styles.wizardBtn} ${styles.wizardBtnDanger}`}
+                        type="button"
+                        onClick={handleDisableTotp}
+                        disabled={disableTotpLoading || !disableTotpCode.trim()}
+                    >
+                        {disableTotpLoading ? 'Disabling…' : 'Disable TOTP'}
+                    </button>
+                    <button
+                        className={styles.wizardCancelBtn}
+                        type="button"
+                        onClick={() => setDisableTotpOpen(false)}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        )}
+
+        {/* ── Enable Email 2FA modal ── */}
+        {emailTfaOpen && (
+            <div className={styles.pickerOverlay} onClick={() => setEmailTfaOpen(false)}>
+                <div className={styles.wizardModal} onClick={e => e.stopPropagation()}>
+                    <p className={styles.wizardTitle}>Enable Email Verification</p>
+                    <p className={styles.wizardDesc}>
+                        Enter the email address where you want to receive login codes.
+                    </p>
+                    <input
+                        className={styles.wizardOtpInput}
+                        type="email"
+                        placeholder="your@email.com"
+                        value={emailTfaInput}
+                        onChange={e => { setEmailTfaInput(e.target.value); setEmailTfaError(''); setEmailTfaCodeSent(false); }}
+                        style={{ fontSize: 15, letterSpacing: 'normal', textAlign: 'left' }}
+                    />
+                    {!emailTfaCodeSent ? (
+                        <button
+                            className={styles.wizardBtn}
+                            type="button"
+                            onClick={handleSendEmailTfaCode}
+                            disabled={emailTfaLoading || !emailTfaInput.trim()}
+                        >
+                            {emailTfaLoading ? 'Sending…' : 'Send verification code'}
+                        </button>
+                    ) : (
+                        <>
+                            <p className={styles.wizardDesc} style={{ color: '#10b981', marginTop: 8 }}>
+                                Code sent! Check your inbox.
+                            </p>
+                            <input
+                                className={styles.wizardOtpInput}
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="000000"
+                                value={emailTfaCode}
+                                maxLength={6}
+                                autoComplete="one-time-code"
+                                onChange={e => {
+                                    setEmailTfaCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                                    setEmailTfaError('');
+                                }}
+                            />
+                            <button
+                                className={styles.wizardBtn}
+                                type="button"
+                                onClick={handleEnableEmailTfa}
+                                disabled={emailTfaLoading || emailTfaCode.length !== 6}
+                            >
+                                {emailTfaLoading ? 'Verifying…' : 'Verify & Enable'}
+                            </button>
+                        </>
+                    )}
+                    {emailTfaError && <p className={styles.wizardError}>{emailTfaError}</p>}
+                    <button
+                        className={styles.wizardCancelBtn}
+                        type="button"
+                        onClick={() => setEmailTfaOpen(false)}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        )}
+
+        {/* ── Disable Email 2FA modal ── */}
+        {disableEmailTfaOpen && (
+            <div className={styles.pickerOverlay} onClick={() => setDisableEmailTfaOpen(false)}>
+                <div className={styles.wizardModal} onClick={e => e.stopPropagation()}>
+                    <p className={styles.wizardTitle}>Disable Email Verification</p>
+                    {!disableEmailTfaCodeSent ? (
+                        <>
+                            <p className={styles.wizardDesc}>
+                                We'll send a confirmation code to <strong>{profile.email2faAddress || emailTfaInput}</strong>.
+                            </p>
+                            <button
+                                className={styles.wizardBtn}
+                                type="button"
+                                onClick={handleSendDisableEmailTfaCode}
+                                disabled={disableEmailTfaLoading}
+                            >
+                                {disableEmailTfaLoading ? 'Sending…' : 'Send code'}
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <p className={styles.wizardDesc}>
+                                Enter the code sent to your email to confirm.
+                            </p>
+                            <input
+                                className={styles.wizardOtpInput}
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="000000"
+                                value={disableEmailTfaCode}
+                                maxLength={6}
+                                autoComplete="one-time-code"
+                                onChange={e => {
+                                    setDisableEmailTfaCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                                    setDisableEmailTfaError('');
+                                }}
+                            />
+                            <button
+                                className={`${styles.wizardBtn} ${styles.wizardBtnDanger}`}
+                                type="button"
+                                onClick={handleDisableEmailTfa}
+                                disabled={disableEmailTfaLoading || disableEmailTfaCode.length !== 6}
+                            >
+                                {disableEmailTfaLoading ? 'Disabling…' : 'Disable Email 2FA'}
+                            </button>
+                        </>
+                    )}
+                    {disableEmailTfaError && <p className={styles.wizardError}>{disableEmailTfaError}</p>}
+                    <button
+                        className={styles.wizardCancelBtn}
+                        type="button"
+                        onClick={() => setDisableEmailTfaOpen(false)}
+                    >
+                        Cancel
+                    </button>
                 </div>
             </div>
         )}
@@ -719,42 +968,6 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                         className={styles.wizardCancelBtn}
                         type="button"
                         onClick={() => setDeleteConfirmOpen(false)}
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        )}
-
-        {/* ── Disable 2FA modal ── */}
-        {disableOpen && (
-            <div className={styles.pickerOverlay} onClick={() => setDisableOpen(false)}>
-                <div className={styles.wizardModal} onClick={e => e.stopPropagation()}>
-                    <p className={styles.wizardTitle}>Disable Two-Factor Authentication</p>
-                    <p className={styles.wizardDesc}>
-                        Enter your current TOTP code or a backup code to confirm.
-                    </p>
-                    <input
-                        className={styles.wizardOtpInput}
-                        type="text"
-                        placeholder="Code"
-                        value={disableCode}
-                        onChange={e => { setDisableCode(e.target.value); setDisableError(''); }}
-                        autoComplete="one-time-code"
-                    />
-                    {disableError && <p className={styles.wizardError}>{disableError}</p>}
-                    <button
-                        className={`${styles.wizardBtn} ${styles.wizardBtnDanger}`}
-                        type="button"
-                        onClick={handleDisable2fa}
-                        disabled={disableLoading || !disableCode.trim()}
-                    >
-                        {disableLoading ? 'Disabling…' : 'Disable 2FA'}
-                    </button>
-                    <button
-                        className={styles.wizardCancelBtn}
-                        type="button"
-                        onClick={() => setDisableOpen(false)}
                     >
                         Cancel
                     </button>

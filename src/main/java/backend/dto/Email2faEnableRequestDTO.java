@@ -1,0 +1,13 @@
+package backend.dto;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+public class Email2faEnableRequestDTO {
+    private String email;
+    private String code;
+}
