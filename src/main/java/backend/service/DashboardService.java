@@ -12,6 +12,7 @@ import jakarta.persistence.PersistenceContext;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,7 @@ public class DashboardService {
      * Clinic (dentist) dashboard stats — delegates counts/revenue to get_clinic_stats().
      * Upcoming appointments are still fetched via JPA (they need sorting + DTO mapping).
      */
+    @Cacheable(value = "clinic-stats", key = "#dentistId")
     @Transactional(readOnly = true)
     public ClinicStatsDTO getClinicStats(UUID dentistId) {
         if (!userRepository.existsById(dentistId)) {

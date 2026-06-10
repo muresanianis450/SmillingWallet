@@ -13,6 +13,9 @@ import backend.model.User;
 import backend.repository.OfferRepository;
 import backend.repository.RequestRepository;
 import backend.repository.UserRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -38,6 +41,10 @@ public class RequestService {
     /**
      * Patient creates a new dental treatment request
      */
+    @Caching(evict = {
+            @CacheEvict(value = "requests-by-patient", allEntries = true),
+            @CacheEvict(value = "open-requests",         allEntries = true)
+    })
     public DentalRequestResponseDTO create(DentalRequestDTO dto){
 
         User patient = userRepository.findById(dto.getPatientPublicId())
@@ -60,7 +67,8 @@ public class RequestService {
      * Geta all OPEN requests - visible to dentists browsing the marketplace.
      * Supports optional filtering by specialty and city
      */
-
+    @Cacheable(value = "open-requests",
+               key = "#dentistId + ':' + #page + ':' + #size + ':' + #specialty + ':' + #city")
     public PagedResponseDTO<DentalRequestResponseDTO> findAllForDentist(
             int page, int size,
             DentalSpecialty specialty,
@@ -91,6 +99,7 @@ public class RequestService {
     /**
      * Get all requests submitted by a specific patient
      */
+    @Cacheable(value = "requests-by-patient", key = "#patientPublicId + ':' + #page + ':' + #size")
     public PagedResponseDTO<DentalRequestResponseDTO> findAllForPatient(UUID patientPublicId, int page, int size) {
         if (!userRepository.existsById(patientPublicId)) {
             throw new ResourceNotFoundException("Patient with id " + patientPublicId + " not found");
@@ -119,7 +128,10 @@ public class RequestService {
      * Update a request's description, city, budget or speciality.
      * Only allowed while status is OPEN
      */
-
+    @Caching(evict = {
+            @CacheEvict(value = "requests-by-patient", allEntries = true),
+            @CacheEvict(value = "open-requests",         allEntries = true)
+    })
     public DentalRequestResponseDTO update(UUID id , DentalRequestDTO dto) {
         DentalRequest request = requestRepository.findById(id)
                 .orElseThrow( () -> new ResourceNotFoundException("Request with id " + id + " not found") );
@@ -139,7 +151,10 @@ public class RequestService {
     /**
      * Manually close a request (patient decision - no offer accepted)
      */
-
+    @Caching(evict = {
+            @CacheEvict(value = "requests-by-patient", allEntries = true),
+            @CacheEvict(value = "open-requests",         allEntries = true)
+    })
     public DentalRequestResponseDTO close (UUID id) {
         DentalRequest request = requestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found: " + id));
@@ -155,7 +170,10 @@ public class RequestService {
     /**
      * Delete a request - only allowed while OPEN
      */
-
+    @Caching(evict = {
+            @CacheEvict(value = "requests-by-patient", allEntries = true),
+            @CacheEvict(value = "open-requests",         allEntries = true)
+    })
     public void delete(UUID id) {
         DentalRequest request = requestRepository.findById(id)
                 .orElseThrow( () -> new ResourceNotFoundException("Request with id " + id + " not found") );

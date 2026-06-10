@@ -178,6 +178,7 @@
 table {
   width: 100%;
   min-width: 560px;
+  table-layout: fixed;
 }
 
 /* Tighten padding on small screens */

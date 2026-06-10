@@ -321,10 +321,10 @@ export function DashboardPage() {
           <table>
             <thead>
               <tr>
-                <th>Offer ID</th>
-                <th>Patient</th>
-                <th>Price</th>
-                <th>Action</th>
+                <th style={{ width: '25%' }}>Offer ID</th>
+                <th style={{ width: '35%' }}>Patient</th>
+                <th style={{ width: '15%' }}>Price</th>
+                <th style={{ width: '25%' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -341,7 +341,7 @@ export function DashboardPage() {
                   <td>
                     <button
                       className={styles.btnSendOffer ?? styles.iconBtn}
-                      style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                      style={{ background: '#d97706', color: '#fff', border: 'none', padding: '7px 12px', borderRadius: '7px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', whiteSpace: 'nowrap', textAlign: 'center', width: '100%' }}
                       onClick={() => {
                         setReproposeOffer(o);
                         setReproposeSlots({ slot1: '', slot2: '', slot3: '', price: String(o.price) });

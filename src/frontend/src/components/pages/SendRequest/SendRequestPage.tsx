@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PageName, SendRequestFormFields, PaymentMethod, ValidationErrors } from '../../../types/types.ts';
-import { TREATMENT_CATEGORIES, BUDGET_RANGES, INSURANCE_PROVIDERS } from '../../../data/constants';
+import { TREATMENT_CATEGORIES, INSURANCE_PROVIDERS } from '../../../data/constants';
 import { CityPicker } from '../../shared/CityPicker';
 import { useToast } from '../../../hooks/useToast';
 import { api, AUTH_COOKIE } from '../../../services/api';
@@ -28,7 +28,7 @@ const EMPTY_FORM: SendRequestFormFields = {
     ctScan: null,
     symptomSummary: '',
     paymentMethod: 'Self-Pay',
-    budgetRange: '',
+
     insuranceProvider: 'None',
 };
 
@@ -47,7 +47,7 @@ function validate(form: SendRequestFormFields): ValidationErrors {
     if (!form.treatmentCategory)           errors.treatmentCategory    = 'Please select a category';
     if (!form.treatmentRequirement.trim()) errors.treatmentRequirement = 'Treatment requirement is required';
     if (!form.symptomSummary.trim())       errors.symptomSummary       = 'Symptom summary is required';
-    if (!form.budgetRange)                 errors.budgetRange          = 'Please select a budget range';
+
     return errors;
 }
 
@@ -60,13 +60,6 @@ const SPECIALTY_MAP: Record<string, string> = {
     'Emergency Dentistry': 'ORAL_SURGERY',
 };
 
-const BUDGET_MAP: Record<string, number> = {
-    'Under €500':       499,
-    '€500 – €1,000':    1000,
-    '€1,000 – €2,500':  2500,
-    '€2,500 – €5,000':  5000,
-    'Over €5,000':       10000,
-};
 
 export function SendRequestPage({ setPage }: SendRequestPageProps) {
     const [form,       setForm]       = useState<SendRequestFormFields>(EMPTY_FORM);
@@ -112,7 +105,7 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                 specialty:       SPECIALTY_MAP[form.treatmentCategory] || 'GENERAL_DENTISTRY',
                 description,
                 preferredCity:   form.location,
-                budgetMax:       BUDGET_MAP[form.budgetRange] ?? null,
+
                 availableFrom:   form.availableFrom,
                 availableTo:     form.availableTo,
             });
@@ -343,21 +336,6 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                     </div>
 
                     <div className={styles.grid2}>
-                        <div className={styles.field}>
-                            <label>Budget Range <span className={styles.required}>*</span></label>
-                            <select
-                                value={form.budgetRange}
-                                onChange={(e) => handleChange('budgetRange', e.target.value)}
-                                className={errors.budgetRange ? styles.inputError : ''}
-                            >
-                                <option value="">Select a range…</option>
-                                {BUDGET_RANGES.map((r) => (
-                                    <option key={r} value={r}>{r}</option>
-                                ))}
-                            </select>
-                            {errors.budgetRange && <span className={styles.errorMsg}>{errors.budgetRange}</span>}
-                        </div>
-
                         <div className={styles.field}>
                             <label>Insurance Provider</label>
                             <select

@@ -16,6 +16,9 @@ import backend.repository.OfferRepository;
 import backend.repository.RequestRepository;
 import backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.time.temporal.ChronoUnit;
@@ -62,6 +65,11 @@ public class OfferService {
     /**
      * Dentist sends an offer for an open request.
      */
+    @Caching(evict = {
+            @CacheEvict(value = "offers-by-request", allEntries = true),
+            @CacheEvict(value = "offers-by-dentist",  allEntries = true),
+            @CacheEvict(value = "open-requests",       allEntries = true)
+    })
     public OfferResponseDTO sendOffer(OfferRequestDTO dto){
         DentalRequest request = requestRepository.findById(dto.getRequestId())
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found: " + dto.getRequestId()));
@@ -121,6 +129,7 @@ public class OfferService {
     /**
      * Get all offers for a specific request, sorted by price ascendingly
      */
+    @Cacheable(value = "offers-by-request", key = "#requestId + ':' + #page + ':' + #size")
     public PagedResponseDTO<OfferResponseDTO> findOffers(UUID requestId, int page, int size) {
         if (!requestRepository.existsById(requestId)) {
             throw new ResourceNotFoundException("Request not found: " + requestId);
@@ -139,7 +148,7 @@ public class OfferService {
     /**
      * Get all offers sent by a specific dentist
      */
-
+    @Cacheable(value = "offers-by-dentist", key = "#dentistPublicId + ':' + #page + ':' + #size")
     public PagedResponseDTO<OfferResponseDTO> findByDentist(UUID dentistPublicId, int page, int size) {
         if (!userRepository.existsById(dentistPublicId)){
             throw new ResourceNotFoundException("Dentist not found: " + dentistPublicId);
@@ -171,6 +180,12 @@ public class OfferService {
      * Patient selects one of the proposed time slots.
      * DB triggers handle rejecting other offers and closing the request.
      */
+    @Caching(evict = {
+            @CacheEvict(value = "offers-by-request",   allEntries = true),
+            @CacheEvict(value = "offers-by-dentist",    allEntries = true),
+            @CacheEvict(value = "open-requests",         allEntries = true),
+            @CacheEvict(value = "requests-by-patient",  allEntries = true)
+    })
     @Transactional
     public AppointmentResponseDTO selectSlot(UUID offerId, SelectSlotRequestDTO dto) {
         Offer offer = offerRepository.findById(offerId)
@@ -247,6 +262,10 @@ public class OfferService {
     /**
      * Patient requests new time slots from the dentist.
      */
+    @Caching(evict = {
+            @CacheEvict(value = "offers-by-request", allEntries = true),
+            @CacheEvict(value = "offers-by-dentist",  allEntries = true)
+    })
     @Transactional
     public OfferResponseDTO requestReschedule(UUID offerId) {
         Offer offer = offerRepository.findById(offerId)
@@ -279,6 +298,10 @@ public class OfferService {
     /**
      * Dentist proposes new time slots (and optionally a new price) after a reschedule request.
      */
+    @Caching(evict = {
+            @CacheEvict(value = "offers-by-request", allEntries = true),
+            @CacheEvict(value = "offers-by-dentist",  allEntries = true)
+    })
     @Transactional
     public OfferResponseDTO reproposeSlots(UUID offerId, ReproposeSlotRequestDTO dto) {
         Offer offer = offerRepository.findById(offerId)

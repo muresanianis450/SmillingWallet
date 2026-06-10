@@ -33,7 +33,6 @@ interface ReviewRequestsPageProps {
 
 export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
   const [requests,   setRequests]   = useState<DentalRequest[]>([]);
-  const [loading,    setLoading]    = useState(true);
   const [hiddenIds,  setHiddenIds]  = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
   const [search,     setSearch]     = useState('');
@@ -49,8 +48,6 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
       setRequests(res.data.content || []);
     } catch {
       // silent
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -185,20 +182,14 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
               <th>Description</th>
               <th>Preferred City</th>
               <th>Available</th>
-              <th>Budget</th>
+
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {slice.length === 0 ? (
               <tr>
-                <td colSpan={7}>
-                  <EmptyState icon="⏳" message="Loading requests…" />
-                </td>
-              </tr>
-            ) : slice.length === 0 ? (
-              <tr>
-                <td colSpan={7}>
+                <td colSpan={6}>
                   <EmptyState
                     icon={showHidden ? '🙈' : '🔍'}
                     message={showHidden ? 'No hidden requests' : 'No open requests found'}
@@ -234,13 +225,7 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
                         <span style={{ color: '#aaa' }}>—</span>
                       )}
                     </td>
-                    <td>
-                      {r.budgetMax ? (
-                        <span>€{r.budgetMax}</span>
-                      ) : (
-                        <span className={styles.dash}>—</span>
-                      )}
-                    </td>
+
                     <td>
                       <div className={styles.actionCell}>
                         <button
