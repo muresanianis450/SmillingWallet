@@ -4,6 +4,7 @@ import backend.enums.NotificationType;
 import backend.exception.ResourceNotFoundException;
 import backend.model.Notification;
 import backend.repository.NotificationRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,9 +14,12 @@ import java.util.UUID;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public NotificationService(NotificationRepository notificationRepository) {
+    public NotificationService(NotificationRepository notificationRepository,
+                               SimpMessagingTemplate messagingTemplate) {
         this.notificationRepository = notificationRepository;
+        this.messagingTemplate      = messagingTemplate;
     }
 
     /**
@@ -77,11 +81,22 @@ public class NotificationService {
 
 
     /**
-     * Persists a notification to the in-memory store.
-     * In production this would also call messagingTemplate.convertAndSend() via WebSocket.
+     * Persists a notification to the DB and pushes it to the recipient in real time
+     * via WebSocket on /topic/notifications/{recipientId}.
      */
     Notification persist(UUID recipientId, NotificationType type, String payload) {
         Notification notification = new Notification(recipientId, type, payload);
-        return notificationRepository.save(notification);
+        notificationRepository.save(notification);
+
+        // Push to the recipient's personal topic so the frontend reacts instantly
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + recipientId,
+                new NotificationPushDTO(type.name(), payload)
+        );
+
+        return notification;
     }
+
+    /** Lightweight push payload sent over WebSocket. */
+    public record NotificationPushDTO(String type, String payload) {}
 }

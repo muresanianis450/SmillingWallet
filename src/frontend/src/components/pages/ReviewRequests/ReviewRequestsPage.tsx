@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 import { TREATMENT_CATEGORIES } from '../../../data/constants';
 import { usePagination } from '../../../hooks/usePagination';
 import { useToast } from '../../../hooks/useToast';
@@ -53,11 +54,14 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
     }
   }
 
-  useEffect(() => {
-    loadRequests();
-    const interval = setInterval(loadRequests, 30_000);
-    return () => clearInterval(interval);
+  // Initial load
+  useEffect(() => { loadRequests(); }, []);
+
+  // Real-time: reload when a new request is posted
+  const handlePush = useCallback((type: string) => {
+    if (type === 'NEW_OFFER' || type === 'GENERAL') loadRequests();
   }, []);
+  useNotificationSocket(handlePush);
 
   function toggleHide(id: string) {
     setHiddenIds((prev) => {

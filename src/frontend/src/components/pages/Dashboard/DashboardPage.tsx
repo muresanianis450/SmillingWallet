@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 import { Offer, ModalState, OfferStatus } from '../../../types/types.ts';
 import { OFFER_STATUSES } from '../../../data/constants';
 import { usePagination } from '../../../hooks/usePagination';
@@ -64,7 +65,7 @@ export function DashboardPage() {
   const dentist = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
 
   // Load dentist's sent offers
-  useEffect(() => {
+  function loadOffers() {
     if (!dentist?.id) return;
     api.get(`/offers/dentist/${dentist.id}?page=0&size=50`)
       .then((res) => {
@@ -73,20 +74,29 @@ export function DashboardPage() {
         setOffers(raw.map(mapApiOffer));
       })
       .catch(() => {});
+  }
+
+  // Load accepted appointments
+  function loadAppointments() {
+    if (!dentist?.id) return;
+    api.get(`/dashboard/clinic/${dentist.id}/appointments`)
+      .then((res) => setAppointments(res.data || []))
+      .catch(() => {});
+  }
+
+  useEffect(() => {
+    loadOffers();
+    loadAppointments();
   }, []);
 
-  // Load accepted appointments (includes patient identity) — polls every 30 s
-  useEffect(() => {
-    if (!dentist?.id) return;
-    function loadAppointments() {
-      api.get(`/dashboard/clinic/${dentist.id}/appointments`)
-        .then((res) => setAppointments(res.data || []))
-        .catch(() => {});
+  // Real-time: refresh offers and appointments when relevant push arrives
+  const handlePush = useCallback((type: string) => {
+    if (type === 'OFFER_ACCEPTED' || type === 'NEW_OFFER' || type === 'APPOINTMENT_SCHEDULED') {
+      loadOffers();
+      loadAppointments();
     }
-    loadAppointments();
-    const interval = setInterval(loadAppointments, 30_000);
-    return () => clearInterval(interval);
   }, []);
+  useNotificationSocket(handlePush);
 
   const stats = useMemo(() => ({
     total:    offers.length,

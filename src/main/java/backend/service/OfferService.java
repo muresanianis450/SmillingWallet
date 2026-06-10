@@ -49,6 +49,16 @@ public class OfferService {
     }
 
 
+    private String buildAddress(User dentist) {
+        StringBuilder sb = new StringBuilder();
+        if (dentist.getAddress() != null && !dentist.getAddress().isBlank()) sb.append(dentist.getAddress());
+        if (dentist.getCity() != null && !dentist.getCity().isBlank()) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append(dentist.getCity());
+        }
+        return sb.isEmpty() ? "Address not provided" : sb.toString();
+    }
+
     /**
      * Dentist sends an offer for an open request.
      */
@@ -205,13 +215,31 @@ public class OfferService {
                 NotificationType.OFFER_ACCEPTED,
                 "Your offer was accepted! Appointment scheduled for " + dto.getSelectedSlot()
         );
-        userRepository.findById(offer.getDentistPublicId()).ifPresent(dentist ->
-                emailService.sendAppointmentConfirmedNotification(
-                        dentist.getEmail(),
-                        dentist.getUsername(),
-                        dto.getSelectedSlot()
-                )
-        );
+
+        // Send appointment confirmation email to patient with clinic details + payment receipt
+        User dentist = userRepository.findById(offer.getDentistPublicId()).orElse(null);
+        User patient = userRepository.findById(request.getPatientPublicId()).orElse(null);
+        if (patient != null && dentist != null) {
+            String clinicAddress = buildAddress(dentist);
+            String transactionId = appointment.getId().toString().substring(0, 8).toUpperCase();
+            emailService.sendAppointmentConfirmedNotification(
+                    patient.getEmail(),
+                    patient.getUsername(),
+                    dentist.getUsername(),
+                    clinicAddress,
+                    dto.getSelectedSlot(),
+                    transactionId
+            );
+            // Payment confirmation — 1% platform fee
+            String feeAmount = String.format("%.2f", offer.getPrice().doubleValue() * 0.01);
+            emailService.sendPaymentConfirmation(
+                    patient.getEmail(),
+                    patient.getUsername(),
+                    dentist.getUsername(),
+                    feeAmount,
+                    transactionId
+            );
+        }
 
         return AppointmentResponseDTO.from(appointment);
     }

@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 import { PageName, ClientOffer } from '../../../types/types.ts';
 import { useToast } from '../../../hooks/useToast';
 import { usePagination } from '../../../hooks/usePagination';
@@ -141,11 +142,14 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
         setLoading(false);
     }
 
-    useEffect(() => {
-        load();
-        const interval = setInterval(load, 30_000);
-        return () => clearInterval(interval);
+    // Initial load
+    useEffect(() => { load(); }, []);
+
+    // Real-time: reload immediately when a NEW_OFFER push arrives
+    const handlePush = useCallback((type: string) => {
+        if (type === 'NEW_OFFER') load();
     }, []);
+    useNotificationSocket(handlePush);
 
     async function handleSelectSlot(slot: string) {
         if (!selected) return;
