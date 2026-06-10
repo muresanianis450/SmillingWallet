@@ -75,6 +75,14 @@ public class User {
     @Column(name = "backup_codes", columnDefinition = "TEXT")
     private String backupCodes;
 
+    // ── Email 2FA ─────────────────────────────────────────────────────────────
+
+    @Column(name = "email2fa_enabled", nullable = false)
+    private boolean email2faEnabled = false;
+
+    @Column(name = "email2fa_address", length = 255)
+    private String email2faAddress;
+
     /** FALSE for dentist accounts created by admin invite — until they set their password. */
     @Column(name = "account_active", nullable = false)
     private boolean accountActive = true;

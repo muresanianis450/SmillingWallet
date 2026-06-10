@@ -13,12 +13,13 @@ public class LoginResponseDTO {
     private String refreshToken;
     private UserResponseDTO user;
     private String tempToken;
+    private String mfaType;
 
     public static LoginResponseDTO full(String token, String refreshToken, UserResponseDTO user) {
-        return new LoginResponseDTO(false, token, refreshToken, user, null);
+        return new LoginResponseDTO(false, token, refreshToken, user, null, null);
     }
 
-    public static LoginResponseDTO mfa(String tempToken) {
-        return new LoginResponseDTO(true, null, null, null, tempToken);
+    public static LoginResponseDTO mfa(String tempToken, String mfaType) {
+        return new LoginResponseDTO(true, null, null, null, tempToken, mfaType);
     }
 }

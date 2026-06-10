@@ -138,11 +138,20 @@ public class AuthService {
             throw new IllegalArgumentException("Account not yet activated. Please check your invitation email.");
         }
 
+        if (user.isEmail2faEnabled()) {
+            String code = String.format("%06d", new java.util.Random().nextInt(1_000_000));
+            String tempToken = UUID.randomUUID().toString().replace("-", "")
+                    + UUID.randomUUID().toString().replace("-", "");
+            mfaTempCache.set("email2fa:login:" + tempToken, user.getId() + ":" + code, 10 * 60 * 1000L);
+            emailService.sendEmail2faCode(user.getEmail2faAddress(), user.getUsername(), code);
+            return LoginResponseDTO.mfa(tempToken, "email");
+        }
+
         if (user.isTotpEnabled()) {
             String tempToken = UUID.randomUUID().toString().replace("-", "")
                     + UUID.randomUUID().toString().replace("-", "");
             mfaTempCache.set(MFA_TEMP_PREFIX + tempToken, user.getId().toString(), 5 * 60 * 1000L);
-            return LoginResponseDTO.mfa(tempToken);
+            return LoginResponseDTO.mfa(tempToken, "totp");
         }
 
         AuthResponseDTO auth = issueTokenPair(user);
@@ -336,6 +345,65 @@ public class AuthService {
         }
 
         mfaTempCache.delete(MFA_TEMP_PREFIX + tempToken);
+        AuthResponseDTO auth = issueTokenPair(user);
+        return LoginResponseDTO.full(auth.getToken(), auth.getRefreshToken(), auth.getUser());
+    }
+
+    // ── EMAIL 2FA ─────────────────────────────────────────────────────────────
+
+    private static final String EMAIL2FA_PENDING_PREFIX = "email2fa:pending:";
+
+    public void sendEmail2faSetupCode(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        String code = String.format("%06d", new java.util.Random().nextInt(1_000_000));
+        mfaPendingCache.set(EMAIL2FA_PENDING_PREFIX + userId, code, 10 * 60 * 1000L);
+        String target = user.isEmail2faEnabled() && user.getEmail2faAddress() != null
+                ? user.getEmail2faAddress()
+                : user.getEmail();
+        emailService.sendEmail2faCode(target, user.getUsername(), code);
+    }
+
+    public void enableEmail2fa(UUID userId, String email, String code) {
+        String stored = mfaPendingCache.get(EMAIL2FA_PENDING_PREFIX + userId);
+        if (stored == null || !stored.equals(code)) {
+            throw new IllegalArgumentException("Invalid or expired code");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        user.setEmail2faEnabled(true);
+        user.setEmail2faAddress(email);
+        userRepository.save(user);
+        mfaPendingCache.delete(EMAIL2FA_PENDING_PREFIX + userId);
+        log.info("Email 2FA enabled for user {}", userId);
+    }
+
+    public void disableEmail2fa(UUID userId, String code) {
+        String stored = mfaPendingCache.get(EMAIL2FA_PENDING_PREFIX + userId);
+        if (stored == null || !stored.equals(code)) {
+            throw new IllegalArgumentException("Invalid or expired code");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        user.setEmail2faEnabled(false);
+        user.setEmail2faAddress(null);
+        userRepository.save(user);
+        mfaPendingCache.delete(EMAIL2FA_PENDING_PREFIX + userId);
+        log.info("Email 2FA disabled for user {}", userId);
+    }
+
+    public LoginResponseDTO verifyEmail2faLogin(String tempToken, String code) {
+        String cached = mfaTempCache.get("email2fa:login:" + tempToken);
+        if (cached == null) {
+            throw new IllegalArgumentException("Invalid or expired session — please log in again");
+        }
+        String[] parts = cached.split(":", 2);
+        if (parts.length != 2 || !parts[1].equals(code)) {
+            throw new IllegalArgumentException("Invalid 2FA code");
+        }
+        User user = userRepository.findById(UUID.fromString(parts[0]))
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        mfaTempCache.delete("email2fa:login:" + tempToken);
         AuthResponseDTO auth = issueTokenPair(user);
         return LoginResponseDTO.full(auth.getToken(), auth.getRefreshToken(), auth.getUser());
     }

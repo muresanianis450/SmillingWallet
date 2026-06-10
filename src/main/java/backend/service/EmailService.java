@@ -132,6 +132,14 @@ public class EmailService {
     }
 
     @Async
+    public void sendEmail2faCode(String toEmail, String username, String code) {
+        String html = EMAIL_2FA_HTML_TEMPLATE
+                .replace("{{USER_NAME}}", username)
+                .replace("{{CODE}}", code);
+        sendHtml(toEmail, "Smiling Wallet – Your verification code", html);
+    }
+
+    @Async
     public void sendDentistInvite(String toEmail, String clinicName, String token) {
         String activationLink = frontendUrl + "/activate?token=" + token;
         String html = INVITE_HTML_TEMPLATE
@@ -696,6 +704,61 @@ public class EmailService {
                             </table>
                         </td>
                     </tr>
+                </table>
+            </center>
+            </body>
+            </html>
+            """;
+
+    private static final String EMAIL_2FA_HTML_TEMPLATE = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Verification Code - Smiling Wallet</title>
+                <style>
+                    body { margin:0; padding:0; background-color:#f4f5fb; font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; color:#333333; }
+                    table { border-spacing:0; border-collapse:collapse; }
+                    td { padding:0; }
+                    .wrapper { width:100%; table-layout:fixed; background-color:#f4f5fb; padding-bottom:40px; }
+                    .main { background-color:#ffffff; margin:0 auto; width:100%; max-width:600px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); overflow:hidden; }
+                    h1 { color:#1a1a2e; font-size:24px; font-weight:700; margin-top:0; margin-bottom:16px; }
+                    p { color:#6b7280; font-size:16px; line-height:1.6; margin-top:0; margin-bottom:24px; }
+                    .header { padding:30px 40px 20px; text-align:center; }
+                    .header-logo { font-size:22px; font-weight:800; color:#7b68ee; text-decoration:none; }
+                    .content { padding:20px 40px 40px; }
+                    .code-box { background-color:#f5f4ff; border:2px solid #7b68ee; border-radius:12px; padding:24px; margin:24px 0; text-align:center; }
+                    .code { font-size:40px; font-weight:800; letter-spacing:0.3em; color:#1a1a2e; font-family:monospace; }
+                    .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
+                    .footer a { color:#7b68ee; text-decoration:none; }
+                </style>
+            </head>
+            <body>
+            <center class="wrapper">
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
+                    <tr><td align="center">
+                        <table class="main" border="0" cellpadding="0" cellspacing="0">
+                            <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                            <tr><td class="content">
+                                <h1>Your verification code</h1>
+                                <p>Hello {{USER_NAME}},</p>
+                                <p>Use the code below to verify your identity. It expires in 10 minutes.</p>
+                                <div class="code-box">
+                                    <div class="code">{{CODE}}</div>
+                                </div>
+                                <p style="font-size:14px; margin-bottom:0;">
+                                    If you did not request this code, you can safely ignore this email.<br><br>
+                                    Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                </p>
+                            </td></tr>
+                        </table>
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                            <tr><td class="footer">
+                                <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                            </td></tr>
+                        </table>
+                    </td></tr>
                 </table>
             </center>
             </body>

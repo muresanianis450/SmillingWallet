@@ -148,6 +148,35 @@ public class AuthController {
         return ResponseEntity.ok(authService.verifyMfaLogin(dto.getTempToken(), dto.getCode()));
     }
 
+    // ── Email 2FA endpoints ───────────────────────────────────────────────────
+
+    @PostMapping("/email2fa/send")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> sendEmail2faCode() {
+        authService.sendEmail2faSetupCode(currentUserId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/email2fa/enable")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> enableEmail2fa(@RequestBody Email2faEnableRequestDTO dto) {
+        authService.enableEmail2fa(currentUserId(), dto.getEmail(), dto.getCode());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/email2fa/disable")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> disableEmail2fa(@RequestBody Confirm2faRequestDTO dto) {
+        authService.disableEmail2fa(currentUserId(), dto.getCode());
+        return ResponseEntity.ok().build();
+    }
+
+    /** Public endpoint — called after password step when email 2FA is required. */
+    @PostMapping("/email2fa/verify-login")
+    public ResponseEntity<?> verifyEmail2fa(@RequestBody MfaVerifyRequestDTO dto) {
+        return ResponseEntity.ok(authService.verifyEmail2faLogin(dto.getTempToken(), dto.getCode()));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private UUID currentUserId() {

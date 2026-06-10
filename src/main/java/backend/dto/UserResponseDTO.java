@@ -32,6 +32,8 @@ public class UserResponseDTO {
     private String profilePicture;
     private boolean twoFactorEnabled;
     private boolean emailRemindersEnabled;
+    private boolean email2faEnabled;
+    private String  email2faAddress;
     private int profileCompletionPct;
     private List<String> missingFields;
 
@@ -49,8 +51,10 @@ public class UserResponseDTO {
         dto.specialty = user.getSpecialty();
         dto.createdAt = user.getCreatedAt();
         dto.profilePicture = user.getProfilePicture();
-        dto.twoFactorEnabled = user.isTotpEnabled();
+        dto.twoFactorEnabled = user.isTotpEnabled() || user.isEmail2faEnabled();
         dto.emailRemindersEnabled = user.isEmailRemindersEnabled();
+        dto.email2faEnabled  = user.isEmail2faEnabled();
+        dto.email2faAddress  = user.getEmail2faAddress();
 
         ProfileCompletionResult completion = ProfileCompletion.compute(user);
         dto.profileCompletionPct = completion.completionPct();
