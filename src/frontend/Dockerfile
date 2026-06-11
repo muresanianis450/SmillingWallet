@@ -16,10 +16,7 @@ FROM nginx:1.27-alpine
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Put the template in /tmp — NOT in /etc/nginx/templates/ because the nginx
-# Docker entrypoint auto-processes that directory with a full envsubst (which
-# would wipe out nginx's own $host / $remote_addr / $scheme variables).
-COPY nginx.conf.template /tmp/nginx.conf.template
+COPY nginx.conf.template /etc/nginx/nginx.conf.template
 
 # Copy built React files
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -33,4 +30,4 @@ EXPOSE 80
 #   that one variable, leaving nginx's $host / $remote_addr etc. untouched.
 ENTRYPOINT []
 CMD ["/bin/sh", "-c", \
-  "envsubst '$BACKEND_URL' < /tmp/nginx.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+  "envsubst '$BACKEND_URL' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
