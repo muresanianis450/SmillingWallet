@@ -194,16 +194,13 @@ public class AuthService {
             user.setAccountActive(true);
             user.setAuthProvider(AuthProvider.GOOGLE);
             user.setProviderId(profile.sub());
-            user.setProfilePicture(safePicture(profile.picture()));
+            // Deliberately NOT syncing the Google avatar — users pick a predefined picture.
             userRepository.save(user);
             log.info("Created new Google account for {}", profile.email());
         } else if (user.getProviderId() == null) {
             // Existing local account with the same (Google-verified) email — link it.
             user.setAuthProvider(AuthProvider.GOOGLE);
             user.setProviderId(profile.sub());
-            if (user.getProfilePicture() == null) {
-                user.setProfilePicture(safePicture(profile.picture()));
-            }
             userRepository.save(user);
             log.info("Linked existing account {} to Google", profile.email());
         }
@@ -213,11 +210,6 @@ public class AuthService {
         }
 
         return issueLoginResponse(user);
-    }
-
-    /** profile_picture is VARCHAR(255); drop over-length avatar URLs rather than failing the insert. */
-    private String safePicture(String picture) {
-        return (picture != null && picture.length() <= 255) ? picture : null;
     }
 
     /** Builds a 3–50 char username from the Google display name, falling back to the email prefix. */
