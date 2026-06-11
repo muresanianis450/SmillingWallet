@@ -45,20 +45,6 @@ spring:
       url: ${REDIS_URL:redis://localhost:6379}
       timeout: 2000ms
 
-  mail:
-    host: smtp-relay.brevo.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
-      mail.smtp.starttls.required: true
-      mail.smtp.ssl.enable: false
-      mail.smtp.connectiontimeout: 5000
-      mail.smtp.timeout: 5000
-      mail.smtp.writetimeout: 5000
-
 jwt:
   secret: ${JWT_SECRET}
   access-token-expiry-ms: 900000
@@ -68,8 +54,13 @@ jwt:
 totp:
   encryption-key: ${APP_TOTP_ENCRYPTION_KEY}
 
+brevo:
+  api-key: ${BREVO_API_KEY}
+
 app:
   frontend-url: ${APP_FRONTEND_URL}
+  mail:
+    from-email: ${MAIL_FROM_EMAIL:muresanianis450@gmail.com}
 
 cors:
   # Comma-separated list — add your Railway frontend URL here via env var.

@@ -2,30 +2,38 @@ package backend.service;
 
 import backend.model.Appointment;
 import backend.model.User;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final RestClient restClient;
+    private final String apiKey;
+    private final String fromEmail;
     private final String frontendUrl;
 
-    public EmailService(JavaMailSender mailSender,
-                        @Value("${app.frontend-url}") String frontendUrl) {
-        this.mailSender  = mailSender;
+    public EmailService(
+            @Value("${brevo.api-key}") String apiKey,
+            @Value("${app.mail.from-email}") String fromEmail,
+            @Value("${app.frontend-url}") String frontendUrl) {
+        this.apiKey      = apiKey;
+        this.fromEmail   = fromEmail;
         this.frontendUrl = frontendUrl;
+        this.restClient  = RestClient.builder()
+                .baseUrl("https://api.brevo.com/v3")
+                .build();
     }
 
     // ── Public methods (async — never block the HTTP thread) ─────────────────
@@ -51,16 +59,13 @@ public class EmailService {
                 ? "Through " + end.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + " · " + days + " days (exact times arranged with the clinic)"
                 : "Single-day visit (exact time arranged with the clinic)";
 
-        // Google Calendar all-day event tokens (end date is exclusive)
         String calStart = start.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String calEnd   = end.plusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String calTitle = URLEncoder.encode("Dental Appointment at " + clinicName, StandardCharsets.UTF_8);
         String calAddr  = URLEncoder.encode(clinicAddress, StandardCharsets.UTF_8);
         String calUrl   = "https://calendar.google.com/calendar/render?action=TEMPLATE"
-                        + "&text=" + calTitle
-                        + "&dates=" + calStart + "/" + calEnd
-                        + "&details=Booked+via+Smiling+Wallet"
-                        + "&location=" + calAddr;
+                        + "&text=" + calTitle + "&dates=" + calStart + "/" + calEnd
+                        + "&details=Booked+via+Smiling+Wallet&location=" + calAddr;
         String mapsUrl  = "https://www.google.com/maps/dir/?api=1&destination=" + calAddr;
 
         String html = REMINDER_HTML_TEMPLATE
@@ -170,15 +175,20 @@ public class EmailService {
 
     private void sendHtml(String to, String subject, String html) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(html, true);
-            mailSender.send(message);
+            var body = Map.of(
+                    "sender",      Map.of("name", "Smiling Wallet", "email", fromEmail),
+                    "to",          List.of(Map.of("email", to)),
+                    "subject",     subject,
+                    "htmlContent", html
+            );
+            restClient.post()
+                    .uri("/smtp/email")
+                    .header("api-key", apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .toBodilessEntity();
             log.info("Email sent to {}: {}", to, subject);
-        } catch (MessagingException e) {
-            log.error("Failed to build email for {}: {}", to, e.getMessage());
         } catch (Exception e) {
             log.error("Failed to send email to {}: {}", to, e.getMessage());
         }
@@ -212,58 +222,42 @@ public class EmailService {
                     .notice-box p { font-size: 15px; margin: 0; color: #1a1a2e; }
                     .footer { text-align: center; padding: 30px 40px; color: #9ca3af; font-size: 13px; }
                     .footer a { color: #7b68ee; text-decoration: none; }
-                    @media screen and (max-width: 600px) {
-                        .content, .header { padding-left: 20px !important; padding-right: 20px !important; }
-                        .btn, .btn-secondary { display: block; text-align: center; width: 100%; box-sizing: border-box; }
-                    }
                 </style>
             </head>
             <body>
             <center class="wrapper">
                 <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top: 40px;">
-                    <tr>
-                        <td align="center">
-                            <table class="main" border="0" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td class="header">
-                                        <a href="#" class="header-logo">Smiling Wallet</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="content">
-                                        <h1>Your appointment is tomorrow!</h1>
-                                        <p>Hello {{PATIENT_NAME}},</p>
-                                        <p>This is a quick reminder that you have an upcoming dental appointment scheduled for tomorrow. We're excited to see your new smile.</p>
-                                        <div class="notice-box">
-                                            <p><strong>Clinic:</strong> {{CLINIC_NAME}}<br>
-                                               <strong>Date:</strong> Tomorrow, {{DATE}}<br>
-                                               <strong>Time:</strong> {{TIME}}<br>
-                                               <strong>Location:</strong> {{ADDRESS}}</p>
-                                        </div>
-                                        <p>Need directions or want to add this to your schedule? Use the links below:</p>
-                                        <div class="btn-container">
-                                            <a href="{{CALENDAR_URL}}" target="_blank" class="btn">Add to Google Calendar</a>
-                                            <br><br>
-                                            <a href="{{MAPS_URL}}" target="_blank" class="btn-secondary">Get Directions (Google Maps)</a>
-                                        </div>
-                                        <p style="font-size: 14px; margin-bottom: 0;">
-                                            Please arrive 5 minutes early. If you need to reschedule, please contact the clinic directly.<br><br>
-                                            Best regards,<br>
-                                            <strong>The Smiling Wallet Team</strong>
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-                            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px;">
-                                <tr>
-                                    <td class="footer">
-                                        <p style="margin-bottom: 8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
-                                        <p style="margin-bottom: 0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
+                    <tr><td align="center">
+                        <table class="main" border="0" cellpadding="0" cellspacing="0">
+                            <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                            <tr><td class="content">
+                                <h1>Your appointment is tomorrow!</h1>
+                                <p>Hello {{PATIENT_NAME}},</p>
+                                <p>This is a quick reminder that you have an upcoming dental appointment scheduled for tomorrow.</p>
+                                <div class="notice-box">
+                                    <p><strong>Clinic:</strong> {{CLINIC_NAME}}<br>
+                                       <strong>Date:</strong> Tomorrow, {{DATE}}<br>
+                                       <strong>Time:</strong> {{TIME}}<br>
+                                       <strong>Location:</strong> {{ADDRESS}}</p>
+                                </div>
+                                <div class="btn-container">
+                                    <a href="{{CALENDAR_URL}}" target="_blank" class="btn">Add to Google Calendar</a>
+                                    <br><br>
+                                    <a href="{{MAPS_URL}}" target="_blank" class="btn-secondary">Get Directions</a>
+                                </div>
+                                <p style="font-size: 14px; margin-bottom: 0;">
+                                    Please arrive 5 minutes early.<br><br>
+                                    Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                </p>
+                            </td></tr>
+                        </table>
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px;">
+                            <tr><td class="footer">
+                                <p style="margin-bottom: 8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
+                                <p style="margin-bottom: 0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                            </td></tr>
+                        </table>
+                    </td></tr>
                 </table>
             </center>
             </body>
@@ -281,7 +275,6 @@ public class EmailService {
                     body { margin:0; padding:0; background-color:#f4f5fb; font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; color:#333333; -webkit-font-smoothing:antialiased; }
                     table { border-spacing:0; border-collapse:collapse; }
                     td { padding:0; }
-                    img { border:0; }
                     .wrapper { width:100%; table-layout:fixed; background-color:#f4f5fb; padding-bottom:40px; }
                     .main { background-color:#ffffff; margin:0 auto; width:100%; max-width:600px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); overflow:hidden; }
                     h1 { color:#1a1a2e; font-size:24px; font-weight:700; margin-top:0; margin-bottom:16px; }
@@ -289,7 +282,6 @@ public class EmailService {
                     .header { padding:30px 40px 20px; text-align:center; }
                     .header-logo { font-size:22px; font-weight:800; color:#7b68ee; text-decoration:none; }
                     .content { padding:20px 40px 40px; }
-                    .highlight-text { color:#7b68ee; }
                     .btn-container { text-align:center; margin:32px 0; }
                     .btn { background-color:#7b68ee; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; display:inline-block; }
                     .steps { background-color:#f9fafb; border-radius:8px; padding:24px; margin-bottom:24px; }
@@ -299,7 +291,6 @@ public class EmailService {
                     .step-desc { font-size:14px; color:#6b7280; margin:0; }
                     .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
                     .footer a { color:#7b68ee; text-decoration:none; }
-                    @media screen and (max-width:600px) { .content,.header { padding-left:20px !important; padding-right:20px !important; } }
                 </style>
             </head>
             <body>
@@ -307,50 +298,38 @@ public class EmailService {
                     <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
                         <tr><td align="center">
                             <table class="main" border="0" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td class="header">
-                                        <br>
-                                        <a href="#" class="header-logo">Smiling Wallet</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="content">
-                                        <h1>Grow your clinic with new patients.</h1>
-                                        <p>Hello {{CLINIC_NAME}},</p>
-                                        <p>We are excited to invite you to join <strong>Smiling Wallet</strong>, the smart new way patients are finding their perfect dental care providers.</p>
-                                        <p>Patients use our platform to submit their dental needs. As a verified clinic, you can review these requests and provide competitive quotes, completely seamlessly.</p>
-                                        <div class="steps">
-                                            <div class="step-item">
-                                                <span class="step-title"><span style="color:#7b68ee;">01</span> Review Requests</span>
-                                                <p class="step-desc">Get instant access to anonymous patient requests in your area.</p>
-                                            </div>
-                                            <div class="step-item">
-                                                <span class="step-title"><span style="color:#7b68ee;">02</span> Send Your Offer</span>
-                                                <p class="step-desc">Submit your personalized quote based on the patient's specific dental needs.</p>
-                                            </div>
-                                            <div class="step-item">
-                                                <span class="step-title"><span style="color:#7b68ee;">03</span> Get Booked</span>
-                                                <p class="step-desc">When a patient matches with your offer, they book directly with your clinic.</p>
-                                            </div>
+                                <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                                <tr><td class="content">
+                                    <h1>Grow your clinic with new patients.</h1>
+                                    <p>Hello {{CLINIC_NAME}},</p>
+                                    <p>We are excited to invite you to join <strong>Smiling Wallet</strong>, the smart new way patients are finding their perfect dental care providers.</p>
+                                    <div class="steps">
+                                        <div class="step-item">
+                                            <span class="step-title"><span style="color:#7b68ee;">01</span> Review Requests</span>
+                                            <p class="step-desc">Get instant access to anonymous patient requests in your area.</p>
                                         </div>
-                                        <p>Join our network of top-rated specialists and start filling your appointment book with patients who are actively looking for the services you offer.</p>
-                                        <div class="btn-container">
-                                            <a href="{{ACTIVATION_LINK}}" class="btn">Create Your Clinic Account</a>
+                                        <div class="step-item">
+                                            <span class="step-title"><span style="color:#7b68ee;">02</span> Send Your Offer</span>
+                                            <p class="step-desc">Submit your personalized quote based on the patient's specific dental needs.</p>
                                         </div>
-                                        <p style="font-size:14px; margin-bottom:0;">
-                                            Best regards,<br>
-                                            <strong>The Smiling Wallet Team</strong>
-                                        </p>
-                                    </td>
-                                </tr>
+                                        <div class="step-item">
+                                            <span class="step-title"><span style="color:#7b68ee;">03</span> Get Booked</span>
+                                            <p class="step-desc">When a patient matches with your offer, they book directly with your clinic.</p>
+                                        </div>
+                                    </div>
+                                    <div class="btn-container">
+                                        <a href="{{ACTIVATION_LINK}}" class="btn">Create Your Clinic Account</a>
+                                    </div>
+                                    <p style="font-size:14px; margin-bottom:0;">
+                                        Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                    </p>
+                                </td></tr>
                             </table>
                             <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
-                                <tr>
-                                    <td class="footer">
-                                        <p style="margin-bottom:8px;">You are receiving this email because we believe Smiling Wallet would be a great fit for your practice.</p>
-                                        <p style="margin-bottom:0;">This invitation link expires in 72 hours.</p>
-                                    </td>
-                                </tr>
+                                <tr><td class="footer">
+                                    <p style="margin-bottom:8px;">This invitation link expires in 72 hours.</p>
+                                    <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                                </td></tr>
                             </table>
                         </td></tr>
                     </table>
@@ -394,10 +373,10 @@ public class EmailService {
                             <tr><td class="content">
                                 <h1>A clinic sent you an offer!</h1>
                                 <p>Hello {{PATIENT_NAME}},</p>
-                                <p>Great news — a dental clinic has reviewed your request and sent you a price offer with proposed appointment time slots.</p>
+                                <p>Great news — a dental clinic has reviewed your request and sent you a price offer.</p>
                                 <div class="notice-box">
                                     <p><strong>Request:</strong> #{{REQUEST_ID}}<br>
-                                       Log in to review the offer, pick a time slot, or request different times.</p>
+                                       Log in to review the offer and confirm your appointment.</p>
                                 </div>
                                 <div class="btn-container">
                                     <a href="{{APP_LINK}}" class="btn">View My Offers</a>
@@ -409,7 +388,6 @@ public class EmailService {
                         </table>
                         <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
                             <tr><td class="footer">
-                                <p style="margin-bottom:8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
                                 <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
                             </td></tr>
                         </table>
@@ -455,10 +433,10 @@ public class EmailService {
                             <tr><td class="content">
                                 <h1>Patient requested new time slots</h1>
                                 <p>Hello {{DENTIST_NAME}},</p>
-                                <p>A patient was not available on your proposed times and has requested you to suggest new appointment slots.</p>
+                                <p>A patient was not available on your proposed times and has requested new appointment slots.</p>
                                 <div class="notice-box">
                                     <p><strong>Offer:</strong> #{{OFFER_ID}}<br>
-                                       Please log in and propose up to 3 new time slots so the patient can choose.</p>
+                                       Please log in and propose new time slots.</p>
                                 </div>
                                 <div class="btn-container">
                                     <a href="{{APP_LINK}}" class="btn">Propose New Slots</a>
@@ -470,7 +448,6 @@ public class EmailService {
                         </table>
                         <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
                             <tr><td class="footer">
-                                <p style="margin-bottom:8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
                                 <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
                             </td></tr>
                         </table>
@@ -516,7 +493,7 @@ public class EmailService {
                             <tr><td class="content">
                                 <h1>The clinic proposed new time slots!</h1>
                                 <p>Hello {{PATIENT_NAME}},</p>
-                                <p>The clinic has reviewed your reschedule request and proposed new appointment time slots for you to choose from.</p>
+                                <p>The clinic has proposed new appointment time slots for you to choose from.</p>
                                 <div class="notice-box">
                                     <p><strong>Clinic:</strong> Dr. #{{DENTIST_ID}}<br>
                                        Log in to view the new slots and confirm your appointment.</p>
@@ -531,7 +508,6 @@ public class EmailService {
                         </table>
                         <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
                             <tr><td class="footer">
-                                <p style="margin-bottom:8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
                                 <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
                             </td></tr>
                         </table>
@@ -548,89 +524,74 @@ public class EmailService {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Appointment & Payment Confirmed - Smiling Wallet</title>
+                <title>Appointment Confirmed - Smiling Wallet</title>
                 <style>
-                    body { margin: 0; padding: 0; background-color: #f4f5fb; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333; -webkit-font-smoothing: antialiased; }
-                    table { border-spacing: 0; border-collapse: collapse; }
-                    td { padding: 0; }
-                    img { border: 0; }
-                    .wrapper { width: 100%; table-layout: fixed; background-color: #f4f5fb; padding-bottom: 40px; }
-                    .main { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden; }
-                    h1 { color: #1a1a2e; font-size: 24px; font-weight: 700; margin-top: 0; margin-bottom: 16px; }
-                    p { color: #6b7280; font-size: 16px; line-height: 1.6; margin-top: 0; margin-bottom: 24px; }
-                    .header { padding: 30px 40px 20px; text-align: center; }
-                    .header-logo { font-size: 22px; font-weight: 800; color: #7b68ee; text-decoration: none; }
-                    .content { padding: 20px 40px 40px; }
-                    .btn-container { text-align: center; margin: 32px 0; }
-                    .btn { background-color: #7b68ee; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: 600; display: inline-block; }
-                    .steps { background-color: #f9fafb; border-radius: 8px; padding: 24px; margin-bottom: 24px; }
-                    .step-item { margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; }
-                    .step-item:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
-                    .step-title { font-weight: 600; color: #1a1a2e; font-size: 15px; margin-bottom: 4px; display: block; }
-                    .step-desc { font-size: 14px; color: #4b5563; margin: 0; }
-                    .receipt-amount { float: right; font-weight: bold; color: #1a1a2e; font-size: 16px; }
-                    .footer { text-align: center; padding: 30px 40px; color: #9ca3af; font-size: 13px; }
-                    .footer a { color: #7b68ee; text-decoration: none; }
-                    @media screen and (max-width: 600px) { .content, .header { padding-left: 20px !important; padding-right: 20px !important; } }
+                    body { margin:0; padding:0; background-color:#f4f5fb; font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; color:#333333; -webkit-font-smoothing:antialiased; }
+                    table { border-spacing:0; border-collapse:collapse; }
+                    td { padding:0; }
+                    .wrapper { width:100%; table-layout:fixed; background-color:#f4f5fb; padding-bottom:40px; }
+                    .main { background-color:#ffffff; margin:0 auto; width:100%; max-width:600px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); overflow:hidden; }
+                    h1 { color:#1a1a2e; font-size:24px; font-weight:700; margin-top:0; margin-bottom:16px; }
+                    p { color:#6b7280; font-size:16px; line-height:1.6; margin-top:0; margin-bottom:24px; }
+                    .header { padding:30px 40px 20px; text-align:center; }
+                    .header-logo { font-size:22px; font-weight:800; color:#7b68ee; text-decoration:none; }
+                    .content { padding:20px 40px 40px; }
+                    .btn-container { text-align:center; margin:32px 0; }
+                    .btn { background-color:#7b68ee; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; display:inline-block; }
+                    .steps { background-color:#f9fafb; border-radius:8px; padding:24px; margin-bottom:24px; }
+                    .step-item { margin-bottom:16px; border-bottom:1px solid #e5e7eb; padding-bottom:16px; }
+                    .step-item:last-child { margin-bottom:0; border-bottom:none; padding-bottom:0; }
+                    .step-title { font-weight:600; color:#1a1a2e; font-size:15px; margin-bottom:4px; display:block; }
+                    .step-desc { font-size:14px; color:#4b5563; margin:0; }
+                    .receipt-amount { float:right; font-weight:bold; color:#1a1a2e; font-size:16px; }
+                    .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
+                    .footer a { color:#7b68ee; text-decoration:none; }
                 </style>
             </head>
             <body>
             <center class="wrapper">
-                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top: 40px;">
-                    <tr>
-                        <td align="center">
-                            <table class="main" border="0" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td class="header">
-                                        <a href="#" class="header-logo">Smiling Wallet</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="content">
-                                        <h1>Appointment Confirmed!</h1>
-                                        <p>Hello {{PATIENT_NAME}},</p>
-                                        <p>Great news! Your request has been accepted. Your upcoming appointment at <strong>{{CLINIC_NAME}}</strong> is officially confirmed.</p>
-                                        <p>We are also writing to confirm that your submission fee has been successfully processed.</p>
-                                        <div class="steps">
-                                            <div class="step-item">
-                                                <span class="step-title">Appointment Details</span>
-                                                <p class="step-desc">
-                                                    <strong>Date:</strong> {{DATE}}<br>
-                                                    <strong>Time:</strong> {{TIME}}<br>
-                                                    <strong>Location:</strong> {{CLINIC_NAME}}, {{CLINIC_ADDRESS}}
-                                                </p>
-                                            </div>
-                                            <div class="step-item">
-                                                <span class="step-title">Payment Receipt</span>
-                                                <p class="step-desc">
-                                                    Platform Submission Fee
-                                                    <span class="receipt-amount">&euro;1.00</span>
-                                                    <br><br>
-                                                    <span style="color: #9ca3af; font-size: 12px;">Transaction ID: #{{TRANSACTION_ID}}<br>Date: {{PAYMENT_DATE}}</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div class="btn-container">
-                                            <a href="{{DASHBOARD_LINK}}" class="btn">View Appointment Details</a>
-                                        </div>
-                                        <p style="font-size: 14px; margin-bottom: 0;">
-                                            Thank you for using Smiling Wallet!<br><br>
-                                            Best regards,<br>
-                                            <strong>The Smiling Wallet Team</strong>
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
+                    <tr><td align="center">
+                        <table class="main" border="0" cellpadding="0" cellspacing="0">
+                            <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                            <tr><td class="content">
+                                <h1>Appointment Confirmed!</h1>
+                                <p>Hello {{PATIENT_NAME}},</p>
+                                <p>Your appointment at <strong>{{CLINIC_NAME}}</strong> is officially confirmed.</p>
+                                <div class="steps">
+                                    <div class="step-item">
+                                        <span class="step-title">Appointment Details</span>
+                                        <p class="step-desc">
+                                            <strong>Date:</strong> {{DATE}}<br>
+                                            <strong>Time:</strong> {{TIME}}<br>
+                                            <strong>Location:</strong> {{CLINIC_NAME}}, {{CLINIC_ADDRESS}}
                                         </p>
-                                    </td>
-                                </tr>
-                            </table>
-                            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px;">
-                                <tr>
-                                    <td class="footer">
-                                        <p style="margin-bottom: 8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
-                                        <p style="margin-bottom: 0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
+                                    </div>
+                                    <div class="step-item">
+                                        <span class="step-title">Payment Receipt</span>
+                                        <p class="step-desc">
+                                            Platform Submission Fee
+                                            <span class="receipt-amount">&euro;1.00</span>
+                                            <br><br>
+                                            <span style="color:#9ca3af; font-size:12px;">Transaction ID: #{{TRANSACTION_ID}}<br>Date: {{PAYMENT_DATE}}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="btn-container">
+                                    <a href="{{DASHBOARD_LINK}}" class="btn">View Appointment Details</a>
+                                </div>
+                                <p style="font-size:14px; margin-bottom:0;">
+                                    Thank you for using Smiling Wallet!<br><br>
+                                    Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                </p>
+                            </td></tr>
+                        </table>
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                            <tr><td class="footer">
+                                <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                            </td></tr>
+                        </table>
+                    </td></tr>
                 </table>
             </center>
             </body>
@@ -645,73 +606,58 @@ public class EmailService {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Payment Successful - Smiling Wallet</title>
                 <style>
-                    body { margin: 0; padding: 0; background-color: #f4f5fb; font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333; -webkit-font-smoothing: antialiased; }
-                    table { border-spacing: 0; border-collapse: collapse; }
-                    td { padding: 0; }
-                    img { border: 0; }
-                    .wrapper { width: 100%; table-layout: fixed; background-color: #f4f5fb; padding-bottom: 40px; }
-                    .main { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden; }
-                    h1 { color: #1a1a2e; font-size: 24px; font-weight: 700; margin-top: 0; margin-bottom: 16px; }
-                    p { color: #6b7280; font-size: 16px; line-height: 1.6; margin-top: 0; margin-bottom: 24px; }
-                    .header { padding: 30px 40px 20px; text-align: center; }
-                    .header-logo { font-size: 22px; font-weight: 800; color: #7b68ee; text-decoration: none; }
-                    .content { padding: 20px 40px 40px; }
-                    .btn-container { text-align: left; margin: 32px 0; }
-                    .btn { background-color: #7b68ee; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: 600; display: inline-block; }
-                    .notice-box { background-color: #f9fafb; border-left: 4px solid #10b981; border-radius: 4px; padding: 20px; margin-bottom: 24px; }
-                    .notice-box p { font-size: 15px; margin: 0; color: #4b5563; line-height: 1.8; }
-                    .success-text { color: #10b981; font-weight: 600; }
-                    .footer { text-align: center; padding: 30px 40px; color: #9ca3af; font-size: 13px; }
-                    .footer a { color: #7b68ee; text-decoration: none; }
-                    @media screen and (max-width: 600px) { .content, .header { padding-left: 20px !important; padding-right: 20px !important; } }
+                    body { margin:0; padding:0; background-color:#f4f5fb; font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; color:#333333; -webkit-font-smoothing:antialiased; }
+                    table { border-spacing:0; border-collapse:collapse; }
+                    td { padding:0; }
+                    .wrapper { width:100%; table-layout:fixed; background-color:#f4f5fb; padding-bottom:40px; }
+                    .main { background-color:#ffffff; margin:0 auto; width:100%; max-width:600px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); overflow:hidden; }
+                    h1 { color:#1a1a2e; font-size:24px; font-weight:700; margin-top:0; margin-bottom:16px; }
+                    p { color:#6b7280; font-size:16px; line-height:1.6; margin-top:0; margin-bottom:24px; }
+                    .header { padding:30px 40px 20px; text-align:center; }
+                    .header-logo { font-size:22px; font-weight:800; color:#7b68ee; text-decoration:none; }
+                    .content { padding:20px 40px 40px; }
+                    .btn-container { text-align:left; margin:32px 0; }
+                    .btn { background-color:#7b68ee; color:#ffffff !important; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; display:inline-block; }
+                    .notice-box { background-color:#f9fafb; border-left:4px solid #10b981; border-radius:4px; padding:20px; margin-bottom:24px; }
+                    .notice-box p { font-size:15px; margin:0; color:#4b5563; line-height:1.8; }
+                    .success-text { color:#10b981; font-weight:600; }
+                    .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
+                    .footer a { color:#7b68ee; text-decoration:none; }
                 </style>
             </head>
             <body>
             <center class="wrapper">
-                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top: 40px;">
-                    <tr>
-                        <td align="center">
-                            <table class="main" border="0" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td class="header">
-                                        <a href="#" class="header-logo">Smiling Wallet</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="content">
-                                        <h1>Payment Successful</h1>
-                                        <p>Hello {{USER_NAME}},</p>
-                                        <p>Thank you! We have successfully processed your <strong>1% platform service fee</strong> following your confirmed treatment at <strong>{{CLINIC_NAME}}</strong>.</p>
-                                        <div class="notice-box">
-                                            <p style="margin-bottom: 12px;"><span class="success-text">&#10003; Payment Approved</span></p>
-                                            <p>
-                                                <strong>Amount Paid:</strong> &euro;{{AMOUNT}}<br>
-                                                <strong>Description:</strong> 1% Smiling Wallet Service Fee<br>
-                                                <strong>Transaction ID:</strong> #{{TRANSACTION_ID}}<br>
-                                                <strong>Date:</strong> {{DATE}}
-                                            </p>
-                                        </div>
-                                        <p>Your Smiling Wallet process is now complete for this treatment. We wish you a fast recovery and an amazing new smile!</p>
-                                        <div class="btn-container">
-                                            <a href="{{DASHBOARD_LINK}}" class="btn">View My Appointments</a>
-                                        </div>
-                                        <p style="font-size: 14px; margin-bottom: 0;">
-                                            Best regards,<br>
-                                            <strong>The Smiling Wallet Team</strong>
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-                            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px;">
-                                <tr>
-                                    <td class="footer">
-                                        <p style="margin-bottom: 8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
-                                        <p style="margin-bottom: 0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
+                    <tr><td align="center">
+                        <table class="main" border="0" cellpadding="0" cellspacing="0">
+                            <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                            <tr><td class="content">
+                                <h1>Payment Successful</h1>
+                                <p>Hello {{USER_NAME}},</p>
+                                <p>We have successfully processed your <strong>1% platform service fee</strong> for your treatment at <strong>{{CLINIC_NAME}}</strong>.</p>
+                                <div class="notice-box">
+                                    <p style="margin-bottom:12px;"><span class="success-text">&#10003; Payment Approved</span></p>
+                                    <p>
+                                        <strong>Amount Paid:</strong> &euro;{{AMOUNT}}<br>
+                                        <strong>Description:</strong> 1% Smiling Wallet Service Fee<br>
+                                        <strong>Transaction ID:</strong> #{{TRANSACTION_ID}}<br>
+                                        <strong>Date:</strong> {{DATE}}
+                                    </p>
+                                </div>
+                                <div class="btn-container">
+                                    <a href="{{DASHBOARD_LINK}}" class="btn">View My Appointments</a>
+                                </div>
+                                <p style="font-size:14px; margin-bottom:0;">
+                                    Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                </p>
+                            </td></tr>
+                        </table>
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                            <tr><td class="footer">
+                                <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                            </td></tr>
+                        </table>
+                    </td></tr>
                 </table>
             </center>
             </body>
@@ -784,7 +730,6 @@ public class EmailService {
                     body { margin:0; padding:0; background-color:#f4f5fb; font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; color:#333333; -webkit-font-smoothing:antialiased; }
                     table { border-spacing:0; border-collapse:collapse; }
                     td { padding:0; }
-                    img { border:0; }
                     .wrapper { width:100%; table-layout:fixed; background-color:#f4f5fb; padding-bottom:40px; }
                     .main { background-color:#ffffff; margin:0 auto; width:100%; max-width:600px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); overflow:hidden; }
                     h1 { color:#1a1a2e; font-size:24px; font-weight:700; margin-top:0; margin-bottom:16px; }
@@ -798,50 +743,36 @@ public class EmailService {
                     .notice-box p { font-size:14px; margin:0; color:#4b5563; }
                     .footer { text-align:center; padding:30px 40px; color:#9ca3af; font-size:13px; }
                     .footer a { color:#7b68ee; text-decoration:none; }
-                    @media screen and (max-width:600px) { .content,.header { padding-left:20px !important; padding-right:20px !important; } }
                 </style>
             </head>
             <body>
             <center class="wrapper">
                 <table width="100%" border="0" cellpadding="0" cellspacing="0" style="padding-top:40px;">
-                    <tr>
-                        <td align="center">
-                            <table class="main" border="0" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td class="header">
-                                        <a href="#" class="header-logo">Smiling Wallet</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="content">
-                                        <h1>Reset your password</h1>
-                                        <p>Hello {{USER_NAME}},</p>
-                                        <p>We received a request to reset the password for your Smiling Wallet account. If you made this request, click the button below to choose a new password.</p>
-                                        <div class="btn-container">
-                                            <a href="{{RESET_LINK}}" class="btn">Reset Password</a>
-                                        </div>
-                                        <div class="notice-box">
-                                            <p><strong>Didn't request this change?</strong><br>
-                                                If you did not request a new password, you can safely ignore this email. Your password will remain the same and your account is secure.</p>
-                                        </div>
-                                        <p style="font-size:14px; margin-bottom:0;">
-                                            For security reasons, this link will expire in 24 hours.<br><br>
-                                            Best regards,<br>
-                                            <strong>The Smiling Wallet Team</strong>
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-                            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
-                                <tr>
-                                    <td class="footer">
-                                        <p style="margin-bottom:8px;">Need help? <a href="mailto:support@smilingwallet.com">Contact our support team</a>.</p>
-                                        <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
+                    <tr><td align="center">
+                        <table class="main" border="0" cellpadding="0" cellspacing="0">
+                            <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
+                            <tr><td class="content">
+                                <h1>Reset your password</h1>
+                                <p>Hello {{USER_NAME}},</p>
+                                <p>We received a request to reset the password for your Smiling Wallet account. Click the button below to choose a new password.</p>
+                                <div class="btn-container">
+                                    <a href="{{RESET_LINK}}" class="btn">Reset Password</a>
+                                </div>
+                                <div class="notice-box">
+                                    <p><strong>Didn't request this?</strong> You can safely ignore this email. Your password will remain the same.</p>
+                                </div>
+                                <p style="font-size:14px; margin-bottom:0;">
+                                    This link expires in 24 hours.<br><br>
+                                    Best regards,<br><strong>The Smiling Wallet Team</strong>
+                                </p>
+                            </td></tr>
+                        </table>
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                            <tr><td class="footer">
+                                <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
+                            </td></tr>
+                        </table>
+                    </td></tr>
                 </table>
             </center>
             </body>
