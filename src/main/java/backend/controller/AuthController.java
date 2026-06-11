@@ -2,6 +2,7 @@ package backend.controller;
 
 import backend.dto.*;
 import backend.service.AuthService;
+import backend.service.GoogleOAuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AuthController {
 
     private final AuthService authService;
+    private final GoogleOAuthService googleOAuthService;
 
     // ── Simple in-memory rate limiter for /2fa/verify ─────────────────────────
     // Key: IP address, Value: [attemptCount, windowStartMs]
@@ -25,8 +27,9 @@ public class AuthController {
     private static final int    MFA_MAX_ATTEMPTS  = 5;
     private static final long   MFA_WINDOW_MS     = 60_000;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, GoogleOAuthService googleOAuthService) {
         this.authService = authService;
+        this.googleOAuthService = googleOAuthService;
     }
 
     @PostMapping("/register")
@@ -39,6 +42,14 @@ public class AuthController {
     public ResponseEntity<LoginResponseDTO> login(
             @Valid @RequestBody LoginRequestDTO dto) {
         return ResponseEntity.ok(authService.login(dto));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<LoginResponseDTO> google(
+            @Valid @RequestBody GoogleAuthRequestDTO dto) {
+        // Exchange the code with Google outside the service's DB transaction.
+        GoogleOAuthService.GoogleProfile profile = googleOAuthService.exchangeCodeForProfile(dto.getCode());
+        return ResponseEntity.ok(authService.loginWithGoogle(profile));
     }
 
     @PostMapping("/refresh")

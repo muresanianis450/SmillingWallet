@@ -1,5 +1,6 @@
 package backend.model;
 
+import backend.enums.AuthProvider;
 import backend.enums.DentalSpecialty;
 import backend.enums.Role;
 import jakarta.persistence.*;
@@ -28,7 +29,8 @@ public class User {
     @Column(name = "username", nullable = false, length = 100)
     private String username;
 
-    @Column(name = "password", nullable = false)
+    /** Null for social-login accounts (Google/Apple) that never set a local password. */
+    @Column(name = "password")
     private String password;
 
     @Column(name = "phone", length = 20)
@@ -86,6 +88,16 @@ public class User {
     /** FALSE for dentist accounts created by admin invite — until they set their password. */
     @Column(name = "account_active", nullable = false)
     private boolean accountActive = true;
+
+    // ── Social login ──────────────────────────────────────────────────────────
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false, length = 20)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    /** The provider's stable user id (e.g. Google's `sub`). Null for LOCAL accounts. */
+    @Column(name = "provider_id", length = 255)
+    private String providerId;
 
     public User(String email, String username, String password, String phone, Role role) {
         this.email = email;

@@ -5,6 +5,7 @@ import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from './RegisterPage.module.css';
 import { api } from '../../../services/api';
+import { useGoogleAuth } from '../../../hooks/useGoogleAuth';
 
 interface RegisterPageProps {
     setPage: (page: PageName) => void;
@@ -12,6 +13,7 @@ interface RegisterPageProps {
 }
 
 export function RegisterPage({ setPage, onLogin }: RegisterPageProps) {
+    const { signInWithGoogle, googleError, googleLoading } = useGoogleAuth(onLogin);
     const [firstName, setFirstName]         = useState('');
     const [lastName, setLastName]           = useState('');
     const [email, setEmail]                 = useState('');
@@ -82,9 +84,12 @@ export function RegisterPage({ setPage, onLogin }: RegisterPageProps) {
                 <h2 className={styles.title}>Sign up</h2>
 
                 <div className={styles.socialButtons}>
-                    <button className={styles.socialBtn}><FacebookIcon /> Continue with Facebook</button>
-                    <button className={styles.socialBtn}><GoogleIcon /> Continue with Google</button>
+                    <button className={styles.socialBtn} type="button" onClick={signInWithGoogle} disabled={googleLoading}>
+                        <GoogleIcon /> {googleLoading ? 'Signing in…' : 'Continue with Google'}
+                    </button>
+                    <button className={styles.socialBtn} type="button"><AppleIcon /> Continue with Apple</button>
                 </div>
+                {googleError && <p className={styles.errorMsg} style={{ textAlign: 'center' }}>{googleError}</p>}
 
                 <div className={styles.divider}><span>OR</span></div>
 
@@ -168,10 +173,10 @@ function GoogleIcon() {
     );
 }
 
-function FacebookIcon() {
+function AppleIcon() {
     return (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
-            <path d="M24 12.073C24 5.404 18.627 0 12 0S0 5.404 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.791-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701z"/>
         </svg>
     );
 }
