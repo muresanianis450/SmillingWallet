@@ -17,6 +17,7 @@ import { getCookie } from '../../../tracking/cookies';
 // @ts-ignore
 import styles from './DashboardPage.module.css';
 import { IconView, IconEdit, IconDelete } from '../../shared/Icons';
+import { Icon } from '../../shared/Icon';
 import { trackEvent } from '../../../tracking/tracker';
 
 const PER_PAGE = 5;
@@ -43,7 +44,8 @@ function mapApiOffer(o: any): Offer & { patientProfilePicture?: string } {
     ctScan: null,
     symptoms: o.notes || '',
     patientProfilePicture: o.patientProfilePicture || null,
-    proposedSlots: (o.proposedSlots || []).filter(Boolean),
+    procedureDays: o.procedureDays || 0,
+    variations: (o.variations || []).filter((v: any) => v && v.startDate && v.endDate),
   };
 }
 
@@ -59,7 +61,7 @@ export function DashboardPage() {
   const [modal,         setModal]         = useState<ModalState | null>(null);
   const [appointments,  setAppointments]  = useState<any[]>([]);
   const [reproposeOffer, setReproposeOffer] = useState<any | null>(null);
-  const [reproposeSlots, setReproposeSlots] = useState({ slot1: '', slot2: '', slot3: '', price: '' });
+  const [reproposeSlots, setReproposeSlots] = useState({ procedureDays: '', variant1Start: '', variant2Start: '', price: '' });
   const [reproposing,   setReproposing]   = useState(false);
 
   const dentist = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
@@ -131,24 +133,39 @@ export function DashboardPage() {
     showToast('Offer updated!', 'success');
   }
 
+  function endDateFor(startISO: string, days: number): string {
+    if (!startISO || !days || days < 1) return '';
+    const d = new Date(startISO + 'T00:00:00');
+    d.setDate(d.getDate() + days - 1);
+    // Format from local components (not toISOString) to avoid a UTC day-shift.
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   async function handleRepropose() {
-    if (!reproposeOffer || !reproposeSlots.slot1) return;
+    const days = parseInt(String(reproposeSlots.procedureDays), 10);
+    if (!reproposeOffer || !reproposeSlots.variant1Start || !days || days < 1) return;
     setReproposing(true);
     try {
+      const v2Start = reproposeSlots.variant2Start || null;
       await api.patch(`/offers/${reproposeOffer.id}/repropose-slots`, {
-        proposedSlot1: reproposeSlots.slot1 || null,
-        proposedSlot2: reproposeSlots.slot2 || null,
-        proposedSlot3: reproposeSlots.slot3 || null,
+        procedureDays: days,
+        variant1Start: reproposeSlots.variant1Start,
+        variant1End:   endDateFor(reproposeSlots.variant1Start, days),
+        variant2Start: v2Start,
+        variant2End:   v2Start ? endDateFor(reproposeSlots.variant2Start, days) : null,
         price: reproposeSlots.price ? Number(reproposeSlots.price) : null,
       });
-      showToast('New time slots sent to patient!', 'success');
+      showToast('New date options sent to patient!', 'success');
       setReproposeOffer(null);
-      setReproposeSlots({ slot1: '', slot2: '', slot3: '', price: '' });
+      setReproposeSlots({ procedureDays: '', variant1Start: '', variant2Start: '', price: '' });
       api.get(`/offers/dentist/${dentist.id}?page=0&size=50`)
         .then((res) => { const raw = res.data.content || []; setRawOffers(raw); setOffers(raw.map(mapApiOffer)); })
         .catch(() => {});
     } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Failed to send new slots.', 'error');
+      showToast(err?.response?.data?.message || 'Failed to send new dates.', 'error');
     } finally {
       setReproposing(false);
     }
@@ -211,7 +228,7 @@ export function DashboardPage() {
             {slice.length === 0 ? (
               <tr>
                 <td colSpan={6}>
-                  <EmptyState icon="📋" message="No offers sent yet" />
+                  <EmptyState icon="clipboard" message="No offers sent yet" />
                 </td>
               </tr>
             ) : (
@@ -269,7 +286,7 @@ export function DashboardPage() {
           <thead>
             <tr>
               <th>Request</th>
-              <th>Date & Time</th>
+              <th>Treatment Dates</th>
               <th>Patient</th>
               <th>Phone</th>
               <th>Email</th>
@@ -281,14 +298,14 @@ export function DashboardPage() {
             {appointments.length === 0 ? (
               <tr>
                 <td colSpan={7}>
-                  <EmptyState icon="📅" message="No accepted appointments yet" />
+                  <EmptyState icon="calendar" message="No accepted appointments yet" />
                 </td>
               </tr>
             ) : (
               appointments.map((apt) => (
                 <tr key={apt.id}>
                   <td><strong>#{apt.requestId ? String(apt.requestId).substring(0, 8) : '—'}</strong></td>
-                  <td>{apt.scheduledAt ? new Date(apt.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
+                  <td>{apt.startDate ? `${new Date(apt.startDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} → ${new Date((apt.endDate || apt.startDate) + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : '—'}</td>
                   <td>
                     <div className={styles.patientCell}>
                       <img
@@ -314,8 +331,8 @@ export function DashboardPage() {
       {rawOffers.filter((o) => o.status === 'RESCHEDULE_REQUESTED').length > 0 && (
         <div className={styles.tableCard} style={{ marginTop: 28, border: '2px solid #f59e0b' }}>
           <div className={styles.toolbar}>
-            <span style={{ fontWeight: 700, fontSize: 15, color: '#b45309' }}>
-              ⚠️ Reschedule Requests — Patient asked for new time slots
+            <span style={{ fontWeight: 700, fontSize: 15, color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="warning" size={16} /> Reschedule Requests — Patient asked for new time slots
             </span>
           </div>
           <table>
@@ -344,10 +361,10 @@ export function DashboardPage() {
                       style={{ background: '#d97706', color: '#fff', border: 'none', padding: '7px 12px', borderRadius: '7px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', whiteSpace: 'nowrap', textAlign: 'center', width: '100%' }}
                       onClick={() => {
                         setReproposeOffer(o);
-                        setReproposeSlots({ slot1: '', slot2: '', slot3: '', price: String(o.price) });
+                        setReproposeSlots({ procedureDays: String(o.procedureDays || ''), variant1Start: '', variant2Start: '', price: String(o.price) });
                       }}
                     >
-                      Propose New Slots
+                      Propose New Dates
                     </button>
                   </td>
                 </tr>
@@ -370,43 +387,72 @@ export function DashboardPage() {
             boxSizing: 'border-box',
           }}>
             <h2 style={{ margin: '0 0 6px', fontSize: '1.3rem', fontWeight: 700, color: '#1a1a2e' }}>
-              Propose New Time Slots
+              Propose New Treatment Dates
             </h2>
             <p style={{ color: '#6b7280', fontSize: '0.95rem', marginBottom: '28px', lineHeight: 1.5 }}>
-              Patient requested new times for offer <strong style={{ color: '#1a1a2e' }}>#{String(reproposeOffer.id).substring(0, 8)}</strong>.
-              Propose up to 3 new slots below.
+              Patient requested new dates for offer <strong style={{ color: '#1a1a2e' }}>#{String(reproposeOffer.id).substring(0, 8)}</strong>.
+              Set the procedure length and propose 1–2 start dates. Exact times are arranged by phone.
             </p>
 
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{
+                fontSize: '0.875rem', fontWeight: 600, color: '#374151',
+                display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px',
+              }}>
+                Procedure Length (days)
+                <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>required</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={reproposeSlots.procedureDays}
+                onChange={(e) => setReproposeSlots((p) => ({ ...p, procedureDays: e.target.value }))}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  padding: '10px 14px', borderRadius: '8px',
+                  border: '1.5px solid #e5e7eb', fontSize: '0.95rem', color: '#1a1a2e', outline: 'none',
+                }}
+              />
+            </div>
+
             {[
-              { key: 'slot1' as const, label: 'Slot 1', required: true },
-              { key: 'slot2' as const, label: 'Slot 2', required: false },
-              { key: 'slot3' as const, label: 'Slot 3', required: false },
-            ].map(({ key, label, required }) => (
-              <div key={key} style={{ marginBottom: '16px' }}>
-                <label style={{
-                  fontSize: '0.875rem', fontWeight: 600, color: '#374151',
-                  display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px',
-                }}>
-                  {label}
-                  {required
-                    ? <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>required</span>
-                    : <span style={{ color: '#9ca3af', fontSize: '0.8rem', fontWeight: 400 }}>optional</span>
-                  }
-                </label>
-                <input
-                  type="datetime-local"
-                  value={reproposeSlots[key]}
-                  min={new Date(Date.now() + 3600_000).toISOString().slice(0, 16)}
-                  onChange={(e) => setReproposeSlots((p) => ({ ...p, [key]: e.target.value }))}
-                  style={{
-                    width: '100%', boxSizing: 'border-box',
-                    padding: '10px 14px', borderRadius: '8px',
-                    border: '1.5px solid #e5e7eb', fontSize: '0.95rem',
-                    color: '#1a1a2e', outline: 'none',
-                  }}
-                />
-              </div>
-            ))}
+              { key: 'variant1Start' as const, label: 'Option A — start date', required: true },
+              { key: 'variant2Start' as const, label: 'Option B — start date', required: false },
+            ].map(({ key, label, required }) => {
+              const days = parseInt(String(reproposeSlots.procedureDays), 10);
+              const start = reproposeSlots[key];
+              const end = start && days >= 1 ? endDateFor(start, days) : '';
+              return (
+                <div key={key} style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '0.875rem', fontWeight: 600, color: '#374151',
+                    display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px',
+                  }}>
+                    {label}
+                    {required
+                      ? <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>required</span>
+                      : <span style={{ color: '#9ca3af', fontSize: '0.8rem', fontWeight: 400 }}>optional</span>
+                    }
+                  </label>
+                  <input
+                    type="date"
+                    value={reproposeSlots[key]}
+                    onChange={(e) => setReproposeSlots((p) => ({ ...p, [key]: e.target.value }))}
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      padding: '10px 14px', borderRadius: '8px',
+                      border: '1.5px solid #e5e7eb', fontSize: '0.95rem',
+                      color: '#1a1a2e', outline: 'none',
+                    }}
+                  />
+                  {end && (
+                    <span style={{ fontSize: '0.8rem', color: '#4a3fbf', display: 'block', marginTop: '4px' }}>
+                      → ends {new Date(end + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
 
             <div style={{ marginBottom: '28px' }}>
               <label style={{
@@ -443,18 +489,23 @@ export function DashboardPage() {
               >
                 Cancel
               </button>
+              {(() => {
+                const incomplete = !reproposeSlots.variant1Start || !reproposeSlots.procedureDays;
+                return (
               <button
                 onClick={handleRepropose}
-                disabled={reproposing || !reproposeSlots.slot1}
+                disabled={reproposing || incomplete}
                 style={{
                   padding: '11px 24px', borderRadius: '8px', border: 'none',
-                  background: reproposing || !reproposeSlots.slot1 ? '#c4bdf7' : '#7b68ee',
-                  color: '#fff', fontSize: '0.95rem', fontWeight: 600, cursor: reproposing || !reproposeSlots.slot1 ? 'not-allowed' : 'pointer',
+                  background: reproposing || incomplete ? '#c4bdf7' : '#7b68ee',
+                  color: '#fff', fontSize: '0.95rem', fontWeight: 600, cursor: reproposing || incomplete ? 'not-allowed' : 'pointer',
                   transition: 'background 0.15s',
                 }}
               >
-                {reproposing ? 'Sending…' : 'Send New Slots'}
+                {reproposing ? 'Sending…' : 'Send New Dates'}
               </button>
+                );
+              })()}
             </div>
           </div>
         </div>

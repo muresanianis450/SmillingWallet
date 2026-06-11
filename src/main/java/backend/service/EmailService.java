@@ -43,12 +43,17 @@ public class EmailService {
     public void sendAppointmentReminder(User patient, User dentist, Appointment appointment) {
         String clinicName    = dentist.getUsername();
         String clinicAddress = buildAddress(dentist);
-        String date          = appointment.getScheduledAt().format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy"));
-        String time          = appointment.getScheduledAt().format(DateTimeFormatter.ofPattern("h:mm a"));
+        java.time.LocalDate start = appointment.getStartDate();
+        java.time.LocalDate end   = appointment.getEndDate();
+        long days            = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
+        String date          = start.format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy"));
+        String time          = days > 1
+                ? "Through " + end.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + " · " + days + " days (exact times arranged with the clinic)"
+                : "Single-day visit (exact time arranged with the clinic)";
 
-        // Google Calendar URL tokens
-        String calStart = appointment.getScheduledAt().format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss"));
-        String calEnd   = appointment.getScheduledAt().plusHours(1).format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss"));
+        // Google Calendar all-day event tokens (end date is exclusive)
+        String calStart = start.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String calEnd   = end.plusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String calTitle = URLEncoder.encode("Dental Appointment at " + clinicName, StandardCharsets.UTF_8);
         String calAddr  = URLEncoder.encode(clinicAddress, StandardCharsets.UTF_8);
         String calUrl   = "https://calendar.google.com/calendar/render?action=TEMPLATE"
@@ -100,10 +105,13 @@ public class EmailService {
     @Async
     public void sendAppointmentConfirmedNotification(String toEmail, String patientName,
                                                      String clinicName, String clinicAddress,
-                                                     java.time.LocalDateTime scheduledAt,
+                                                     java.time.LocalDate startDate, java.time.LocalDate endDate,
                                                      String transactionId) {
-        String date        = scheduledAt.format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy"));
-        String time        = scheduledAt.format(DateTimeFormatter.ofPattern("h:mm a"));
+        long days          = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        String date        = startDate.format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy"));
+        String time        = days > 1
+                ? "Through " + endDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")) + " · " + days + " days (exact times arranged with the clinic)"
+                : "Single-day visit (exact time arranged with the clinic)";
         String paymentDate = java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"));
         String html = APPOINTMENT_CONFIRMED_HTML_TEMPLATE
                 .replace("{{PATIENT_NAME}}", patientName)

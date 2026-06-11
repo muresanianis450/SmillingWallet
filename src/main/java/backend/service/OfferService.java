@@ -21,6 +21,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -63,6 +64,52 @@ public class OfferService {
     }
 
     /**
+     * Validates a dentist's proposed date-range variations against the request:
+     * each variation must span exactly `procedureDays` days and sit within the
+     * patient's availability window. Variation A is required; Variation B optional.
+     */
+    private void validateVariations(DentalRequest request, int procedureDays,
+                                    LocalDate v1Start, LocalDate v1End,
+                                    LocalDate v2Start, LocalDate v2End) {
+        if (procedureDays < 1) {
+            throw new UnprocessableEntityException("Procedure must take at least 1 day");
+        }
+        validateVariant("Option A", v1Start, v1End, procedureDays, request);
+        if (v2Start != null || v2End != null) {
+            validateVariant("Option B", v2Start, v2End, procedureDays, request);
+        }
+    }
+
+    private void validateVariant(String label, LocalDate start, LocalDate end,
+                                 int procedureDays, DentalRequest request) {
+        if (start == null || end == null) {
+            throw new UnprocessableEntityException(label + " must have a start and end date");
+        }
+        if (end.isBefore(start)) {
+            throw new UnprocessableEntityException(label + " end date cannot be before its start date");
+        }
+        long span = ChronoUnit.DAYS.between(start, end) + 1;
+        if (span != procedureDays) {
+            throw new UnprocessableEntityException(
+                    label + " must span exactly " + procedureDays + " day(s) to match the procedure length");
+        }
+        if (request.getAvailableFrom() != null && start.isBefore(request.getAvailableFrom())) {
+            throw new UnprocessableEntityException(label + " starts before the patient's availability window");
+        }
+        if (request.getAvailableTo() != null && end.isAfter(request.getAvailableTo())) {
+            throw new UnprocessableEntityException(label + " ends after the patient's availability window");
+        }
+    }
+
+    private boolean matchesVariant(Offer offer, LocalDate start, LocalDate end) {
+        boolean matchesA = offer.getVariant1Start() != null
+                && start.equals(offer.getVariant1Start()) && end.equals(offer.getVariant1End());
+        boolean matchesB = offer.getVariant2Start() != null
+                && start.equals(offer.getVariant2Start()) && end.equals(offer.getVariant2End());
+        return matchesA || matchesB;
+    }
+
+    /**
      * Dentist sends an offer for an open request.
      */
     @Caching(evict = {
@@ -93,17 +140,22 @@ public class OfferService {
             throw new ConflictException("You already have an active offer for this request");
         }
 
+        validateVariations(request, dto.getProcedureDays(),
+                dto.getVariant1Start(), dto.getVariant1End(),
+                dto.getVariant2Start(), dto.getVariant2End());
+
         Offer offer = new Offer(
                 dto.getRequestId(),
                 dto.getDentistPublicId(),
                 dto.getPrice(),
-                dto.getEstimatedWaitDays(),
+                dto.getProcedureDays(),
                 dto.getNotes(),
                 dto.isIncludesXray(),
                 dto.isIncludesAnesthesia(),
-                dto.getProposedSlot1(),
-                dto.getProposedSlot2(),
-                dto.getProposedSlot3()
+                dto.getVariant1Start(),
+                dto.getVariant1End(),
+                dto.getVariant2Start(),
+                dto.getVariant2End()
         );
 
         offerRepository.save(offer);
@@ -195,13 +247,10 @@ public class OfferService {
             throw new ConflictException("Offer is not awaiting slot selection (status: " + offer.getStatus() + ")");
         }
 
-        // Truncate to minutes to avoid nanosecond mismatches between JSON deserialization and DB storage.
-        java.time.LocalDateTime chosen = dto.getSelectedSlot().truncatedTo(ChronoUnit.MINUTES);
-        boolean validSlot = (offer.getProposedSlot1() != null && chosen.equals(offer.getProposedSlot1().truncatedTo(ChronoUnit.MINUTES)))
-                || (offer.getProposedSlot2() != null && chosen.equals(offer.getProposedSlot2().truncatedTo(ChronoUnit.MINUTES)))
-                || (offer.getProposedSlot3() != null && chosen.equals(offer.getProposedSlot3().truncatedTo(ChronoUnit.MINUTES)));
-        if (!validSlot) {
-            throw new ConflictException("Selected slot is not one of the proposed time slots");
+        LocalDate chosenStart = dto.getSelectedStartDate();
+        LocalDate chosenEnd = dto.getSelectedEndDate();
+        if (!matchesVariant(offer, chosenStart, chosenEnd)) {
+            throw new ConflictException("Selected dates are not one of the proposed options");
         }
 
         DentalRequest request = requestRepository.findById(offer.getRequestId())
@@ -220,7 +269,8 @@ public class OfferService {
                 offer.getId(),
                 request.getPatientPublicId(),
                 offer.getDentistPublicId(),
-                dto.getSelectedSlot(),
+                chosenStart,
+                chosenEnd,
                 offer.getPrice()
         );
         appointmentRepository.save(appointment);
@@ -228,7 +278,7 @@ public class OfferService {
         notificationService.notifyDentist(
                 offer.getDentistPublicId(),
                 NotificationType.OFFER_ACCEPTED,
-                "Your offer was accepted! Appointment scheduled for " + dto.getSelectedSlot()
+                "Your offer was accepted! Treatment scheduled for " + chosenStart + " → " + chosenEnd
         );
 
         // Send appointment confirmation email to patient with clinic details + payment receipt
@@ -242,7 +292,8 @@ public class OfferService {
                     patient.getUsername(),
                     dentist.getUsername(),
                     clinicAddress,
-                    dto.getSelectedSlot(),
+                    chosenStart,
+                    chosenEnd,
                     transactionId
             );
             // Payment confirmation — 1% platform fee
@@ -311,9 +362,18 @@ public class OfferService {
             throw new ConflictException("Cannot repropose slots — offer status is " + offer.getStatus());
         }
 
-        offer.setProposedSlot1(dto.getProposedSlot1());
-        offer.setProposedSlot2(dto.getProposedSlot2());
-        offer.setProposedSlot3(dto.getProposedSlot3());
+        DentalRequest request = requestRepository.findById(offer.getRequestId())
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found: " + offer.getRequestId()));
+
+        validateVariations(request, dto.getProcedureDays(),
+                dto.getVariant1Start(), dto.getVariant1End(),
+                dto.getVariant2Start(), dto.getVariant2End());
+
+        offer.setProcedureDays(dto.getProcedureDays());
+        offer.setVariant1Start(dto.getVariant1Start());
+        offer.setVariant1End(dto.getVariant1End());
+        offer.setVariant2Start(dto.getVariant2Start());
+        offer.setVariant2End(dto.getVariant2End());
         if (dto.getPrice() != null) {
             offer.setPrice(dto.getPrice());
         }
@@ -321,21 +381,18 @@ public class OfferService {
         offer.setUpdatedAt(java.time.LocalDateTime.now());
         offerRepository.save(offer);
 
-        DentalRequest request = requestRepository.findById(offer.getRequestId()).orElse(null);
-        if (request != null) {
-            notificationService.notifyPatient(
-                    request.getPatientPublicId(),
-                    NotificationType.NEW_OFFER,
-                    "The clinic proposed new time slots for your request"
-            );
-            userRepository.findById(request.getPatientPublicId()).ifPresent(patient ->
-                    emailService.sendNewSlotsProposedNotification(
-                            patient.getEmail(),
-                            patient.getUsername(),
-                            offer.getDentistPublicId().toString().substring(0, 6)
-                    )
-            );
-        }
+        notificationService.notifyPatient(
+                request.getPatientPublicId(),
+                NotificationType.NEW_OFFER,
+                "The clinic proposed new treatment dates for your request"
+        );
+        userRepository.findById(request.getPatientPublicId()).ifPresent(patient ->
+                emailService.sendNewSlotsProposedNotification(
+                        patient.getEmail(),
+                        patient.getUsername(),
+                        offer.getDentistPublicId().toString().substring(0, 6)
+                )
+        );
 
         return OfferResponseDTO.from(offer);
     }

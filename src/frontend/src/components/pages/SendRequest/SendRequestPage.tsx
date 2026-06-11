@@ -7,6 +7,7 @@ import { api, AUTH_COOKIE } from '../../../services/api';
 import { getCookie } from '../../../tracking/cookies';
 import { Toast } from '../../shared/Toast';
 import { Button } from '../../shared/Button';
+import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from './SendRequestPage.module.css';
 import { BlobBackground } from '../../shared/BlobBackground';
@@ -15,10 +16,12 @@ interface SendRequestPageProps {
     setPage: (page: PageName) => void;
 }
 
+const MAX_CITIES = 3;
+
 const EMPTY_FORM: SendRequestFormFields = {
     firstName: '',
     lastName: '',
-    location: '',
+    cities: [],
     availableFrom: '',
     availableTo: '',
     phone: '',
@@ -36,7 +39,7 @@ function validate(form: SendRequestFormFields): ValidationErrors {
     const errors: ValidationErrors = {};
     if (!form.firstName.trim())            errors.firstName            = 'First name is required';
     if (!form.lastName.trim())             errors.lastName             = 'Last name is required';
-    if (!form.location.trim())             errors.location             = 'Location is required';
+    if (form.cities.length === 0)          errors.cities               = 'Select at least one city';
     if (!form.availableFrom)               errors.availableFrom        = 'Arrival date is required';
     if (!form.availableTo)                 errors.availableTo          = 'Departure date is required';
     else if (form.availableFrom && form.availableTo && form.availableTo < form.availableFrom)
@@ -74,7 +77,7 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
         if (!user?.id) return;
         api.get(`/auth/user/${user.id}`).then((res) => {
             const city: string | undefined = res.data?.city;
-            if (city) setForm((prev) => ({ ...prev, location: city }));
+            if (city) setForm((prev) => (prev.cities.length === 0 ? { ...prev, cities: [city] } : prev));
         }).catch(() => {});
     }, []);
 
@@ -83,6 +86,20 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
         if (errors[field as keyof ValidationErrors]) {
             setErrors((prev) => ({ ...prev, [field]: undefined }));
         }
+    }
+
+    function addCity(city: string) {
+        const trimmed = city.trim();
+        if (!trimmed) return;
+        setForm((prev) => {
+            if (prev.cities.length >= MAX_CITIES || prev.cities.includes(trimmed)) return prev;
+            return { ...prev, cities: [...prev.cities, trimmed] };
+        });
+        setErrors((prev) => ({ ...prev, cities: undefined }));
+    }
+
+    function removeCity(city: string) {
+        setForm((prev) => ({ ...prev, cities: prev.cities.filter((c) => c !== city) }));
     }
 
     async function handleSubmit() {
@@ -104,7 +121,7 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                 patientPublicId: user.id,
                 specialty:       SPECIALTY_MAP[form.treatmentCategory] || 'GENERAL_DENTISTRY',
                 description,
-                preferredCity:   form.location,
+                preferredCities: form.cities,
 
                 availableFrom:   form.availableFrom,
                 availableTo:     form.availableTo,
@@ -168,14 +185,47 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                         </div>
 
                         <div className={styles.field}>
-                            <label>Location <span className={styles.required}>*</span></label>
-                            <CityPicker
-                                value={form.location}
-                                onChange={(city) => handleChange('location', city)}
-                                hasError={!!errors.location}
-                                placeholder="Select a city…"
-                            />
-                            {errors.location && <span className={styles.errorMsg}>{errors.location}</span>}
+                            <label>
+                                Cities you can travel to <span className={styles.required}>*</span>
+                                <span style={{ color: '#9ca3af', fontWeight: 400, fontSize: '0.8rem', marginLeft: 6 }}>
+                                    (up to {MAX_CITIES})
+                                </span>
+                            </label>
+                            {form.cities.length < MAX_CITIES ? (
+                                <CityPicker
+                                    key={form.cities.length}
+                                    value=""
+                                    onChange={addCity}
+                                    hasError={!!errors.cities}
+                                    placeholder="Add a city…"
+                                />
+                            ) : (
+                                <p style={{ fontSize: '0.8rem', color: '#9ca3af', margin: '4px 0' }}>
+                                    Maximum of {MAX_CITIES} cities selected.
+                                </p>
+                            )}
+                            {form.cities.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                                    {form.cities.map((city) => (
+                                        <span key={city} style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                            background: '#f0f0ff', border: '1px solid #c7c4f7', color: '#4a3fbf',
+                                            borderRadius: '999px', padding: '4px 10px', fontSize: '0.85rem', fontWeight: 600,
+                                        }}>
+                                            {city}
+                                            <button
+                                                type="button"
+                                                onClick={() => removeCity(city)}
+                                                aria-label={`Remove ${city}`}
+                                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#7b68ee', fontSize: '1rem', lineHeight: 1, padding: 0 }}
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                            {errors.cities && <span className={styles.errorMsg}>{errors.cities}</span>}
                         </div>
 
                         <div className={styles.field}>
@@ -270,7 +320,7 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                     <div className={styles.field}>
                         <label>Dental CT Scan / X-Ray</label>
                         <div className={styles.uploadBox}>
-                            <span className={styles.uploadIcon}>📁</span>
+                            <span className={styles.uploadIcon}><Icon name="folder" size={28} /></span>
                             <span className={styles.uploadText}>
                 {form.ctScan ? form.ctScan : 'Click to upload or drag and drop'}
               </span>
@@ -326,9 +376,9 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                                         onChange={() => handleChange('paymentMethod', method)}
                                     />
                                     <span className={styles.radioLabel}>
-                    {method === 'Insurance' && '🏥 Insurance'}
-                                        {method === 'Self-Pay'  && '💳 Self-Pay / Out-of-Pocket'}
-                                        {method === 'Financing' && '📅 Financing / Payment Plan'}
+                    {method === 'Insurance' && <><Icon name="hospital" size={16} /> Insurance</>}
+                                        {method === 'Self-Pay'  && <><Icon name="card" size={16} /> Self-Pay / Out-of-Pocket</>}
+                                        {method === 'Financing' && <><Icon name="calendar" size={16} /> Financing / Payment Plan</>}
                   </span>
                                 </label>
                             ))}
@@ -354,7 +404,7 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                 {/* ── Submit ── */}
                 <div className={styles.submitRow}>
                     <p className={styles.submitNote}>
-                        🔒 Your personal details are never shared with clinics until you accept an offer.
+                        <Icon name="lock" size={14} /> Your personal details are never shared with clinics until you accept an offer.
                     </p>
                     <Button variant="cta" onClick={handleSubmit} disabled={submitting}>
                         {submitting ? 'Submitting…' : 'Submit Request →'}

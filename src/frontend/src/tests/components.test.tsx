@@ -37,12 +37,12 @@ describe('StatusBadge', () => {
 // ─── EmptyState ──────────────────────────────────────────────────────────────
 describe('EmptyState', () => {
   it('renders the icon', () => {
-    render(<EmptyState icon="🔍" message="Nothing found" />);
-    expect(screen.getByText('🔍')).toBeInTheDocument();
+    const { container } = render(<EmptyState icon="search" message="Nothing found" />);
+    expect(container.querySelector('svg')).toBeInTheDocument();
   });
 
   it('renders the message', () => {
-    render(<EmptyState icon="📋" message="No offers yet" />);
+    render(<EmptyState icon="clipboard" message="No offers yet" />);
     expect(screen.getByText('No offers yet')).toBeInTheDocument();
   });
 });

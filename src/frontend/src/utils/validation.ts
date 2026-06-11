@@ -62,10 +62,10 @@ export function validateSendOffer(fields: Partial<SendOfferFormFields>): Validat
   } else if (price > 99999) {
     errors.priceQuote = 'Price cannot exceed €99,999';
   }
-  if (fields.estimatedWaitDays !== undefined && fields.estimatedWaitDays !== '') {
-    const days = parseInt(String(fields.estimatedWaitDays), 10);
-    if (isNaN(days) || days < 0 || days > 365) {
-      errors.estimatedWaitDays = 'Wait days must be between 0 and 365';
+  if (fields.procedureDays !== undefined && fields.procedureDays !== '') {
+    const days = parseInt(String(fields.procedureDays), 10);
+    if (isNaN(days) || days < 1 || days > 365) {
+      errors.procedureDays = 'Procedure days must be between 1 and 365';
     }
   }
   return errors;

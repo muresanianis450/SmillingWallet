@@ -132,6 +132,42 @@
     margin-bottom: 3px;
 }
 
+.doctorCity {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--purple, #7c6af7);
+    margin-bottom: 4px;
+}
+
+.doctorSpecialty {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B6B8A;
+    margin-bottom: 3px;
+}
+
+.specialtyChip {
+    align-self: flex-start;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--purple-dk, #6355e0);
+    background: var(--purple-lt, #ede9ff);
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.detailCity {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--purple, #7c6af7);
+}
+
 .stars {
     display: flex;
     align-items: center;
@@ -154,7 +190,7 @@
     flex-shrink: 0;
 }
 
-.priceRange {
+.priceCaption {
     font-size: 11px;
     opacity: 0.6;
     color: #6B6B8A;
@@ -335,7 +371,7 @@
     text-align: center;
 }
 
-.statIcon { font-size: 24px; margin-bottom: 6px; }
+.statIcon { display: flex; justify-content: center; margin-bottom: 6px; color: var(--purple); }
 
 .statLabel {
     font-size: 12px;

@@ -7,6 +7,7 @@ import { Pagination } from '../../shared/Pagination';
 import { EmptyState } from '../../shared/EmptyState';
 import { Toast } from '../../shared/Toast';
 import { SendOfferModal } from './SendOfferModal';
+import { Icon } from '../../shared/Icon';
 import { api } from '../../../services/api';
 // @ts-ignore
 import styles from './ReviewRequestsPage.module.css';
@@ -87,7 +88,7 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
         r.patientPublicId.toLowerCase().includes(q) ||
         r.specialty.toLowerCase().includes(q) ||
         r.description.toLowerCase().includes(q) ||
-        r.preferredCity.toLowerCase().includes(q);
+        (r.preferredCities || []).some((c) => c.toLowerCase().includes(q));
       const matchC = filterCat === 'All' || displayCat === filterCat;
       return matchQ && matchC;
     }),
@@ -102,13 +103,14 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
         requestId:          fields.requestId,
         dentistPublicId:    user?.id,
         price:              fields.price,
-        estimatedWaitDays:  Number(fields.estimatedWaitDays) || 0,
+        procedureDays:      Number(fields.procedureDays) || 0,
         notes:              fields.notes || '',
         includesXray:       false,
         includesAnesthesia: false,
-        proposedSlot1:      fields.proposedSlot1 || null,
-        proposedSlot2:      fields.proposedSlot2 || null,
-        proposedSlot3:      fields.proposedSlot3 || null,
+        variant1Start:      fields.variant1Start || null,
+        variant1End:        fields.variant1End || null,
+        variant2Start:      fields.variant2Start || null,
+        variant2End:        fields.variant2End || null,
       });
       setSendModal(null);
       showToast('Offer sent successfully!', 'success');
@@ -141,14 +143,18 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button className={styles.toggleHiddenBtn} onClick={loadRequests} title="Refresh">
-            ↻ Refresh
+            <Icon name="refresh" size={15} /> Refresh
           </button>
           {hiddenCount > 0 && (
             <button
               className={`${styles.toggleHiddenBtn} ${showHidden ? styles.active : ''}`}
               onClick={() => setShowHidden((s) => !s)}
             >
-              {showHidden ? '👁 Showing Hidden' : `🙈 View Hidden (${hiddenCount})`}
+              {showHidden ? (
+                <><Icon name="eye" size={15} /> Showing Hidden</>
+              ) : (
+                <><Icon name="eye-off" size={15} /> View Hidden ({hiddenCount})</>
+              )}
             </button>
           )}
         </div>
@@ -180,7 +186,7 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
               <th>Patient</th>
               <th>Specialty</th>
               <th>Description</th>
-              <th>Preferred City</th>
+              <th>Preferred Cities</th>
               <th>Available</th>
 
               <th>Action</th>
@@ -191,7 +197,7 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
               <tr>
                 <td colSpan={6}>
                   <EmptyState
-                    icon={showHidden ? '🙈' : '🔍'}
+                    icon={showHidden ? 'eye-off' : 'search'}
                     message={showHidden ? 'No hidden requests' : 'No open requests found'}
                   />
                 </td>
@@ -213,7 +219,7 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
                     </td>
                     <td>{SPECIALTY_DISPLAY[r.specialty] || r.specialty}</td>
                     <td className={styles.symptomsCell}>{r.description}</td>
-                    <td>{r.preferredCity}</td>
+                    <td>{(r.preferredCities || []).join(', ') || '—'}</td>
                     <td style={{ whiteSpace: 'nowrap', fontSize: '0.8rem', color: '#4a3fbf' }}>
                       {r.availableFrom && r.availableTo ? (
                         <>
@@ -233,7 +239,7 @@ export function ReviewRequestsPage({ setPage, user }: ReviewRequestsPageProps) {
                           title={isHidden ? 'Unhide request' : 'Hide request'}
                           onClick={(e) => { e.stopPropagation(); toggleHide(r.id); }}
                         >
-                          {isHidden ? '🙈' : '👁'}
+                          {isHidden ? <Icon name="eye-off" size={16} /> : <Icon name="eye" size={16} />}
                         </button>
                         {!isHidden && (
                           <button

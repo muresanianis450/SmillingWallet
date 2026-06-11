@@ -6,6 +6,7 @@ import { Modal } from '../../shared/Modal';
 import { FormField } from '../../shared/FormField';
 import { Input, PriceInput } from '../../shared/Input';
 import { Button } from '../../shared/Button';
+import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from './OfferFormModal.module.css';
 
@@ -102,7 +103,7 @@ export function OfferFormModal({
             </span>
                 {isAccepted && (
                     <span className={styles.lockedNote}>
-                🔒 Price is locked for accepted offers
+                <Icon name="lock" size={14} /> Price is locked for accepted offers
               </span>
                 )}
               </div>
@@ -161,36 +162,34 @@ export function OfferFormModal({
                   onChange={(v) => { if (!isAccepted) set('priceQuote', v); }}
                   placeholder={isAccepted ? String(offer?.priceQuote ?? '') : '€—'}
               />
-              {isAccepted && <span className={styles.lockIcon}>🔒</span>}
+              {isAccepted && <span className={styles.lockIcon}><Icon name="lock" size={16} /></span>}
             </div>
           </FormField>
 
-          {/* Proposed time slots — read-only */}
-          {offer?.proposedSlots && offer.proposedSlots.length > 0 && (
+          {/* Proposed date options — read-only */}
+          {offer?.variations && offer.variations.length > 0 && (
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ fontWeight: 600, fontSize: '0.875rem', display: 'block', marginBottom: '8px' }}>
-                📅 Proposed Time Slots
+              <label style={{ fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: '8px' }}>
+                <Icon name="calendar" size={15} /> Proposed Date Options{offer.procedureDays ? ` · ${offer.procedureDays}-day treatment` : ''}
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {offer.proposedSlots.map((slot, i) => {
-                  const d = new Date(slot);
+                {offer.variations.map((v, i) => {
+                  const fmt = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
                   return (
                     <div key={i} style={{
                       padding: '8px 12px', borderRadius: '6px',
                       background: '#f5f4ff', border: '1px solid #c7c4f7',
                       fontSize: '0.875rem', color: '#4a3fbf',
                     }}>
-                      {d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                      {' · '}
-                      {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      {fmt(v.startDate)} → {fmt(v.endDate)}
                     </div>
                   );
                 })}
               </div>
             </div>
           )}
-          {offer?.proposedSlots?.length === 0 && (
-            <p style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '16px' }}>No time slots proposed yet.</p>
+          {offer?.variations?.length === 0 && (
+            <p style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '16px' }}>No date options proposed yet.</p>
           )}
 
           <div className={styles.actions}>

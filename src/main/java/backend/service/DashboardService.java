@@ -3,6 +3,7 @@ package backend.service;
 import backend.dto.AppointmentResponseDTO;
 import backend.dto.DentalRequestResponseDTO;
 import backend.enums.AppointmentStatus;
+import backend.model.Appointment;
 import backend.exception.ResourceNotFoundException;
 import backend.repository.AppointmentRepository;
 import backend.repository.OfferRepository;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -66,7 +68,8 @@ public class DashboardService {
                 .findByDentistPublicId(dentistId).stream()
                 .filter(a -> a.getStatus() == AppointmentStatus.PENDING
                         || a.getStatus() == AppointmentStatus.CONFIRMED)
-                .sorted((a, b) -> a.getScheduledAt().compareTo(b.getScheduledAt()))
+                .sorted(Comparator.comparing(Appointment::getStartDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(a -> {
                     var patient = userRepository.findById(a.getPatientPublicId()).orElse(null);
                     UUID requestId = offerRepository.findById(a.getOfferId())
@@ -89,7 +92,8 @@ public class DashboardService {
         return appointmentRepository.findByDentistPublicId(dentistId).stream()
                 .filter(a -> a.getStatus() == AppointmentStatus.PENDING
                         || a.getStatus() == AppointmentStatus.CONFIRMED)
-                .sorted((a, b) -> a.getScheduledAt().compareTo(b.getScheduledAt()))
+                .sorted(Comparator.comparing(Appointment::getStartDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(a -> {
                     var patient = userRepository.findById(a.getPatientPublicId()).orElse(null);
                     UUID requestId = offerRepository.findById(a.getOfferId())

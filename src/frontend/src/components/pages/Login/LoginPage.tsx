@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {AuthUser, PageName} from '../../../types/types';
 import { BlobBackground } from '../../shared/BlobBackground';
+import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from './LoginPage.module.css';
 import { api } from '../../../services/api';
@@ -252,7 +253,7 @@ export function LoginPage({ setPage, onLogin }: LoginPageProps) {
                             type="button"
                             aria-label={showPassword ? 'Hide password' : 'Show password'}
                         >
-                            {showPassword ? 'Hide' : '👁 Show'}
+                            {showPassword ? <><Icon name="eye-off" size={14} /> Hide</> : <><Icon name="eye" size={14} /> Show</>}
                         </button>
                     </div>
                     <input

@@ -2,6 +2,7 @@ package backend.model;
 
 import backend.enums.DentalSpecialty;
 import backend.enums.RequestStatus;
+import backend.util.CityListConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,6 +10,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -29,8 +32,9 @@ public class DentalRequest {
     @Column(name = "description",columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "preferred_city", length = 100)
-    private String preferredCity;
+    @Convert(converter = CityListConverter.class)
+    @Column(name = "preferred_cities", length = 400)
+    private List<String> preferredCities = new ArrayList<>();
 
     @Column(name = "budget_max")
     private Double budgetMax;
@@ -56,12 +60,12 @@ public class DentalRequest {
     private LocalDate availableTo;
 
     public DentalRequest(UUID patientPublicId, DentalSpecialty specialty,
-                         String description, String preferredCity, Double budgetMax,
+                         String description, List<String> preferredCities, Double budgetMax,
                          LocalDate availableFrom, LocalDate availableTo) {
         this.patientPublicId = patientPublicId;
         this.specialty = specialty;
         this.description = description;
-        this.preferredCity = preferredCity;
+        this.preferredCities = preferredCities != null ? preferredCities : new ArrayList<>();
         this.budgetMax = budgetMax;
         this.availableFrom = availableFrom;
         this.availableTo = availableTo;

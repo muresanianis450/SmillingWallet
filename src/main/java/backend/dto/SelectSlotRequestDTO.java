@@ -5,13 +5,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Getter
 @Setter
 @NoArgsConstructor
 public class SelectSlotRequestDTO {
 
-    @NotNull(message = "Selected slot is required")
-    private LocalDateTime selectedSlot;
+    @NotNull(message = "Selected start date is required")
+    private LocalDate selectedStartDate;
+
+    @NotNull(message = "Selected end date is required")
+    private LocalDate selectedEndDate;
 }

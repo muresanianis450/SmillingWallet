@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
 import { BlobBackground } from '../../shared/BlobBackground';
+import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from '../Login/LoginPage.module.css';
 
@@ -84,7 +85,7 @@ export function ResetPasswordPage({ setPage }: Props) {
                                     type="button"
                                     onClick={() => setShowPassword(p => !p)}
                                 >
-                                    {showPassword ? 'Hide' : '👁 Show'}
+                                    {showPassword ? <><Icon name="eye-off" size={14} /> Hide</> : <><Icon name="eye" size={14} /> Show</>}
                                 </button>
                             </div>
                             <input
@@ -106,7 +107,7 @@ export function ResetPasswordPage({ setPage }: Props) {
                                     type="button"
                                     onClick={() => setShowConfirm(p => !p)}
                                 >
-                                    {showConfirm ? 'Hide' : '👁 Show'}
+                                    {showConfirm ? <><Icon name="eye-off" size={14} /> Hide</> : <><Icon name="eye" size={14} /> Show</>}
                                 </button>
                             </div>
                             <input

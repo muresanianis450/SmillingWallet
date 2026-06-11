@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -102,14 +103,15 @@ class DashboardServiceTest {
     }
 
     private Offer mockOffer(OfferStatus status, BigDecimal price) {
-        Offer o = new Offer(UUID.randomUUID(), dentistId, price, 5, "note", false, false, null, null, null);
+        Offer o = new Offer(UUID.randomUUID(), dentistId, price, 5, "note", false, false,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(5), null, null);
         o.setStatus(status);
         return o;
     }
 
     private Appointment mockAppointment(AppointmentStatus status) {
         Appointment a = new Appointment(UUID.randomUUID(), patientId, dentistId,
-                LocalDateTime.now().plusDays(1), BigDecimal.valueOf(200));
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(5), BigDecimal.valueOf(200));
         a.setStatus(status);
         return a;
     }
