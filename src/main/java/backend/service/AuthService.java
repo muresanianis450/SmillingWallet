@@ -1,6 +1,7 @@
 package backend.service;
 
 import backend.dto.*;
+import backend.enums.AuthProvider;
 import backend.enums.DentalSpecialty;
 import backend.enums.Role;
 import backend.exception.ConflictException;
@@ -138,6 +139,15 @@ public class AuthService {
             throw new IllegalArgumentException("Account not yet activated. Please check your invitation email.");
         }
 
+        return issueLoginResponse(user);
+    }
+
+    /**
+     * Final step of any successful first-factor authentication (password or Google):
+     * returns an MFA challenge if the account has email-2FA or TOTP enabled, otherwise
+     * a full token pair. Shared so social login honors the same 2FA settings as password login.
+     */
+    private LoginResponseDTO issueLoginResponse(User user) {
         if (user.isEmail2faEnabled()) {
             String code = String.format("%06d", new java.util.Random().nextInt(1_000_000));
             String tempToken = UUID.randomUUID().toString().replace("-", "")
@@ -156,6 +166,68 @@ public class AuthService {
 
         AuthResponseDTO auth = issueTokenPair(user);
         return LoginResponseDTO.full(auth.getToken(), auth.getRefreshToken(), auth.getUser());
+    }
+
+    // ── GOOGLE LOGIN ──────────────────────────────────────────────────────────
+
+    /**
+     * Logs in (or creates, on first sign-in) a user from a Google-verified profile.
+     * New social users become PATIENTs (dentists are invite-only). The profile is
+     * fetched outside this transaction by the controller. 2FA is still honored via
+     * {@link #issueLoginResponse(User)} — a linked account with 2FA gets challenged.
+     */
+    public LoginResponseDTO loginWithGoogle(GoogleOAuthService.GoogleProfile profile) {
+        if (!profile.emailVerified()) {
+            throw new IllegalArgumentException("Your Google email is not verified");
+        }
+
+        User user = userRepository.findByEmail(profile.email()).orElse(null);
+
+        if (user == null) {
+            user = new User();
+            user.setEmail(profile.email());
+            user.setUsername(deriveUsername(profile));
+            user.setPassword(null);                 // no local password for social accounts
+            user.setRole(Role.PATIENT);             // dentists are invite-only
+            user.setCreatedAt(java.time.LocalDateTime.now());
+            user.setEmailRemindersEnabled(true);
+            user.setAccountActive(true);
+            user.setAuthProvider(AuthProvider.GOOGLE);
+            user.setProviderId(profile.sub());
+            user.setProfilePicture(safePicture(profile.picture()));
+            userRepository.save(user);
+            log.info("Created new Google account for {}", profile.email());
+        } else if (user.getProviderId() == null) {
+            // Existing local account with the same (Google-verified) email — link it.
+            user.setAuthProvider(AuthProvider.GOOGLE);
+            user.setProviderId(profile.sub());
+            if (user.getProfilePicture() == null) {
+                user.setProfilePicture(safePicture(profile.picture()));
+            }
+            userRepository.save(user);
+            log.info("Linked existing account {} to Google", profile.email());
+        }
+
+        if (!user.isAccountActive()) {
+            throw new IllegalArgumentException("Account not yet activated.");
+        }
+
+        return issueLoginResponse(user);
+    }
+
+    /** profile_picture is VARCHAR(255); drop over-length avatar URLs rather than failing the insert. */
+    private String safePicture(String picture) {
+        return (picture != null && picture.length() <= 255) ? picture : null;
+    }
+
+    /** Builds a 3–50 char username from the Google display name, falling back to the email prefix. */
+    private String deriveUsername(GoogleOAuthService.GoogleProfile profile) {
+        String base = profile.name() != null && !profile.name().isBlank()
+                ? profile.name().trim()
+                : profile.email().split("@")[0];
+        if (base.length() < 3)  base = (base + "___").substring(0, 3);
+        if (base.length() > 50) base = base.substring(0, 50);
+        return base;
     }
 
     // ── REFRESH ───────────────────────────────────────────────────────────────
