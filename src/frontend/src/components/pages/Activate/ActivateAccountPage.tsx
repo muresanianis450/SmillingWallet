@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
 import { BlobBackground } from '../../shared/BlobBackground';
+import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from '../Login/LoginPage.module.css';
 
@@ -108,8 +109,8 @@ export function ActivateAccountPage({ setPage }: Props) {
 
                 {done ? (
                     <>
-                        <p style={{ textAlign: 'center', color: '#27ae60', marginBottom: '0.5rem' }}>
-                            🎉 Account activated successfully!
+                        <p style={{ textAlign: 'center', color: '#27ae60', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <Icon name="check-circle" size={18} /> Account activated successfully!
                         </p>
                         <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '14px', marginBottom: '1.5rem' }}>
                             You can now log in with your email and new password.
@@ -139,7 +140,7 @@ export function ActivateAccountPage({ setPage }: Props) {
                                     type="button"
                                     onClick={() => setShowPassword(p => !p)}
                                 >
-                                    {showPassword ? 'Hide' : '👁 Show'}
+                                    {showPassword ? <><Icon name="eye-off" size={14} /> Hide</> : <><Icon name="eye" size={14} /> Show</>}
                                 </button>
                             </div>
                             <input
@@ -162,7 +163,7 @@ export function ActivateAccountPage({ setPage }: Props) {
                                     type="button"
                                     onClick={() => setShowConfirm(p => !p)}
                                 >
-                                    {showConfirm ? 'Hide' : '👁 Show'}
+                                    {showConfirm ? <><Icon name="eye-off" size={14} /> Hide</> : <><Icon name="eye" size={14} /> Show</>}
                                 </button>
                             </div>
                             <input

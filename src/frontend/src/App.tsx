@@ -117,7 +117,7 @@ export function App() {
         'my-offers':       role === 'PATIENT' || role === 'ADMIN',
         'forgot-password': !user,
         appointments:      role === 'PATIENT' || role === 'ADMIN',
-        about:             role === 'PATIENT' || role === 'ADMIN',
+        about:             true,
         requests:          role === 'DENTIST'  || role === 'ADMIN',
         dashboard:         role === 'DENTIST'  || role === 'ADMIN',
         'reset-password':  true,

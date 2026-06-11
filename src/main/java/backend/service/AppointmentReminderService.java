@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,17 +23,16 @@ public class AppointmentReminderService {
     private final UserRepository userRepository;
     private final EmailService emailService;
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 9 * * *")
     public void sendUpcomingAppointmentReminders() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime from = now.plusHours(23);
-        LocalDateTime to   = now.plusHours(25);
+        // Treatment is day-based: remind patients whose treatment starts tomorrow.
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
 
-        List<Appointment> upcoming = appointmentRepository.findUpcomingInWindow(
-                from, to,
+        List<Appointment> upcoming = appointmentRepository.findStartingOn(
+                tomorrow,
                 List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED));
 
-        log.info("Reminder job: found {} appointment(s) in the 24h window", upcoming.size());
+        log.info("Reminder job: found {} appointment(s) starting tomorrow ({})", upcoming.size(), tomorrow);
 
         for (Appointment appointment : upcoming) {
             Optional<User> patientOpt = userRepository.findById(appointment.getPatientPublicId());

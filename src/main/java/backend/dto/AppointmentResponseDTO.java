@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -20,7 +21,8 @@ public class AppointmentResponseDTO {
     private UUID offerId;
     private UUID patientPublicId;
     private UUID dentistPublicId;
-    private LocalDateTime scheduledAt;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private BigDecimal confirmedPrice;
     private AppointmentStatus status;
     private LocalDateTime createdAt;
@@ -38,7 +40,8 @@ public class AppointmentResponseDTO {
         dto.offerId          = a.getOfferId();
         dto.patientPublicId  = a.getPatientPublicId();
         dto.dentistPublicId  = a.getDentistPublicId();
-        dto.scheduledAt      = a.getScheduledAt();
+        dto.startDate        = a.getStartDate();
+        dto.endDate          = a.getEndDate();
         dto.confirmedPrice   = a.getConfirmedPrice();
         dto.status           = a.getStatus();
         dto.createdAt        = a.getCreatedAt();
@@ -65,7 +68,7 @@ public class AppointmentResponseDTO {
     /**
      * Maps a raw Object[] row from the _ph_appointments temp table.
      * Column order: id, offer_id, patient_public_id, dentist_public_id,
-     *               scheduled_at, confirmed_price, created_at, status
+     *               start_date, end_date, confirmed_price, created_at, status
      */
     public static AppointmentResponseDTO fromRow(Object[] row) {
         AppointmentResponseDTO dto = new AppointmentResponseDTO();
@@ -73,10 +76,11 @@ public class AppointmentResponseDTO {
         dto.offerId          = UUID.fromString(row[1].toString());
         dto.patientPublicId  = UUID.fromString(row[2].toString());
         dto.dentistPublicId  = UUID.fromString(row[3].toString());
-        dto.scheduledAt      = row[4] != null ? ((java.sql.Timestamp) row[4]).toLocalDateTime() : null;
-        dto.confirmedPrice   = row[5] != null ? (BigDecimal) row[5] : null;
-        dto.createdAt        = row[6] != null ? ((java.sql.Timestamp) row[6]).toLocalDateTime() : null;
-        dto.status           = row[7] != null ? AppointmentStatus.valueOf(row[7].toString()) : null;
+        dto.startDate        = row[4] != null ? ((java.sql.Date) row[4]).toLocalDate() : null;
+        dto.endDate          = row[5] != null ? ((java.sql.Date) row[5]).toLocalDate() : null;
+        dto.confirmedPrice   = row[6] != null ? (BigDecimal) row[6] : null;
+        dto.createdAt        = row[7] != null ? ((java.sql.Timestamp) row[7]).toLocalDateTime() : null;
+        dto.status           = row[8] != null ? AppointmentStatus.valueOf(row[8].toString()) : null;
         return dto;
     }
 }

@@ -4,6 +4,7 @@ import { AuthUser, PageName } from '@/types/types.ts';
 import styles from './Nav.module.css';
 import { DEFAULT_AVATAR } from '../../assets/avatars';
 import { SmilingWallet_LogoIcon } from '../shared/Icons';
+import { Icon } from '../shared/Icon';
 
 interface NavProps {
     page: PageName;
@@ -43,7 +44,10 @@ export function Nav({ page, setPage, user }: NavProps) {
     const links = user?.role === 'ADMIN'   ? ADMIN_LINKS
         : user?.role === 'DENTIST'  ? CLINIC_LINKS
             : user?.role === 'PATIENT' ? PATIENT_LINKS
-                : [{ label: 'Home', page: 'home' }];
+                : [
+                    { label: 'Home',  page: 'home' },
+                    { label: 'About', page: 'about' },
+                ];
 
     useEffect(() => { setMenuOpen(false); }, [page]);
 
@@ -144,7 +148,7 @@ export function Nav({ page, setPage, user }: NavProps) {
                         type="button"
                         aria-label="Close menu"
                     >
-                        ✕
+                        <Icon name="close" size={20} />
                     </button>
 
                     {links.map((link) => (

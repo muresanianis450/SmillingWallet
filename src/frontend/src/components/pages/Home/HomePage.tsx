@@ -1,5 +1,6 @@
 import { PageName } from '../../../types/types.ts';
 import { Button } from '../../shared/Button';
+import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from './HomePage.module.css';
 import {
@@ -15,6 +16,16 @@ import { DENTIST_AVATARS } from '../../../assets/avatars';
 
 interface HomePageProps {
     setPage: (page: PageName) => void;
+}
+
+function StarRow({ filled }: { filled: number }) {
+    return (
+        <>
+            {[1, 2, 3, 4, 5].map((n) => (
+                <Icon key={n} name="star" size={14} fill={n <= filled ? 'currentColor' : 'none'} />
+            ))}
+        </>
+    );
 }
 
 const SERVICES = [
@@ -78,7 +89,7 @@ export function HomePage({ setPage }: HomePageProps) {
                 <div className={styles.heroVisual}>
                     <div className={styles.heroCard}>
                         <div className={styles.heroCardTop}>
-                            <span className={styles.heroCardBadge}>🏆 Best Value</span>
+                            <span className={styles.heroCardBadge}><Icon name="trophy" size={14} /> Best Value</span>
                             <span className={styles.heroCardScore}>94% match</span>
                         </div>
                         <div className={styles.heroCardDoctorRow}>
@@ -86,18 +97,18 @@ export function HomePage({ setPage }: HomePageProps) {
                             <span className={styles.heroCardDoctor}>Dr. #1</span>
                         </div>
                         <div className={styles.heroCardPrice}>€410</div>
-                        <div className={styles.heroCardStars}>★★★★★ <span>4.8</span></div>
+                        <div className={styles.heroCardStars}><StarRow filled={5} /> <span>4.8</span></div>
                         <div className={styles.heroCardLock}>Identity hidden until you accept</div>
                     </div>
                     <div className={styles.heroCardSmall}>
                         <div className={styles.heroCardDoctor}>Dr. #2</div>
                         <div className={styles.heroCardPrice}>€475</div>
-                        <div className={styles.heroCardStars}>★★★★☆ <span>4.5</span></div>
+                        <div className={styles.heroCardStars}><StarRow filled={4} /> <span>4.5</span></div>
                     </div>
                     <div className={styles.heroCardSmallAlt}>
                         <div className={styles.heroCardDoctor}>Dr. #3</div>
                         <div className={styles.heroCardPrice}>€390</div>
-                        <div className={styles.heroCardStars}>★★★★☆ <span>4.2</span></div>
+                        <div className={styles.heroCardStars}><StarRow filled={4} /> <span>4.2</span></div>
                     </div>
                 </div>
             </section>

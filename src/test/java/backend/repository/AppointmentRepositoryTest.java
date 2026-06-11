@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,11 +49,11 @@ class AppointmentRepositoryTest {
         offerId2 = UUID.randomUUID();
         offerId3 = UUID.randomUUID();
 
-        LocalDateTime future = LocalDateTime.now().plusDays(7);
+        LocalDate future = LocalDate.now().plusDays(7);
 
-        appt1 = new Appointment(offerId1, patientA, dentistA, future, new BigDecimal("800.00"));
-        appt2 = new Appointment(offerId2, patientA, dentistB, future.plusDays(1), new BigDecimal("950.00"));
-        appt3 = new Appointment(offerId3, patientB, dentistA, future.plusDays(2), new BigDecimal("600.00"));
+        appt1 = new Appointment(offerId1, patientA, dentistA, future, future.plusDays(2), new BigDecimal("800.00"));
+        appt2 = new Appointment(offerId2, patientA, dentistB, future.plusDays(1), future.plusDays(3), new BigDecimal("950.00"));
+        appt3 = new Appointment(offerId3, patientB, dentistA, future.plusDays(2), future.plusDays(4), new BigDecimal("600.00"));
 
         appointmentRepository.save(appt1);
         appointmentRepository.save(appt2);

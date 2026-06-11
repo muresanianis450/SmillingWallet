@@ -3,6 +3,7 @@ import { PageName } from '../../../types/types.ts';
 import { api, AUTH_COOKIE } from '../../../services/api';
 import { DEFAULT_AVATAR } from '../../../assets/avatars';
 import { getCookie } from '../../../tracking/cookies';
+import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from './AppointmentsPage.module.css';
 
@@ -12,7 +13,8 @@ interface AppointmentsPageProps {
 
 interface AppointmentDTO {
     id: string;
-    scheduledAt: string;
+    startDate: string;
+    endDate: string;
     confirmedPrice: number;
     status: string;
     dentistPublicId: string;
@@ -36,8 +38,9 @@ function StarRating({ rating }: { rating: number }) {
                 <span
                     key={n}
                     className={n <= Math.round(rating) ? styles.starFilled : styles.starEmpty}
+                    style={{ display: 'inline-flex' }}
                 >
-                    ★
+                    <Icon name="star" size={14} fill={n <= Math.round(rating) ? 'currentColor' : 'none'} />
                 </span>
             ))}
             <span className={styles.ratingNum}>{rating.toFixed(1)}</span>
@@ -46,19 +49,39 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString();
+    return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
+/**
+ * Builds a "Add to Google Calendar" template URL for an appointment.
+ * Uses an all-day event spanning the treatment interval (Google's end date
+ * is exclusive, so we add one day).
+ */
+function googleCalendarUrl(appt: AppointmentDTO, clinic: ClinicInfo) {
+    const compact = (iso: string) => iso.replace(/-/g, '');
+    const endExclusive = new Date(appt.endDate + 'T00:00:00');
+    endExclusive.setDate(endExclusive.getDate() + 1);
+    const endStr = `${endExclusive.getFullYear()}${String(endExclusive.getMonth() + 1).padStart(2, '0')}${String(endExclusive.getDate()).padStart(2, '0')}`;
+
+    const params = new URLSearchParams({
+        action: 'TEMPLATE',
+        text: `Dental Treatment — ${clinic.name}`,
+        dates: `${compact(appt.startDate)}/${endStr}`,
+        details: `Treatment with ${clinic.doctorName}. Confirmed price: €${appt.confirmedPrice?.toFixed(2)}. Exact times are arranged with the clinic by phone (${clinic.phone}).`,
+        location: clinic.address,
     });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
+
+const UNKNOWN_CLINIC: ClinicInfo = {
+    name: 'Unknown', doctorName: 'Unknown', rating: 0, phone: 'N/A', email: 'N/A', address: 'N/A', specialty: '',
+};
 
 export function AppointmentsPage({}: AppointmentsPageProps) {
     const [appointments, setAppointments] = useState<AppointmentDTO[]>([]);
-    const [clinic, setClinic] = useState<ClinicInfo | null>(null);
+    // Clinic details keyed by dentistPublicId — appointments may span several clinics.
+    const [clinics, setClinics] = useState<Record<string, ClinicInfo>>({});
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     const user = JSON.parse(getCookie(AUTH_COOKIE) || '{}');
@@ -73,45 +96,53 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
             .then(async (res) => {
                 const appts: AppointmentDTO[] = res.data.appointments || [];
                 setAppointments(appts);
+                setSelectedId(appts[0]?.id ?? null);
 
-                if (appts.length > 0) {
-                    try {
-                        const dentistRes = await api.get(`/auth/user/${appts[0].dentistPublicId}`);
-                        const d = dentistRes.data;
-                        setClinic({
-                            name: d.username,
-                            doctorName: d.username,
-                            rating: d.rating ?? 0,
-                            phone: d.phone || 'N/A',
-                            email: d.email || 'N/A',
-                            address: d.address || d.city || 'N/A',
-                            specialty: d.specialty || '',
-                            profilePicture: d.profilePicture || null,
-                        });
-                    } catch {
-                        setClinic({ name: 'Unknown', doctorName: 'Unknown', rating: 0, phone: 'N/A', email: 'N/A', address: 'N/A', specialty: '' });
-                    }
-                } else {
-                    setClinic(null);
-                }
+                // Fetch clinic details for every distinct dentist across appointments.
+                const dentistIds = [...new Set(appts.map((a) => a.dentistPublicId))];
+                const entries = await Promise.all(
+                    dentistIds.map(async (id) => {
+                        try {
+                            const d = (await api.get(`/auth/user/${id}`)).data;
+                            return [id, {
+                                name: d.username,
+                                doctorName: d.username,
+                                rating: d.rating ?? 0,
+                                phone: d.phone || 'N/A',
+                                email: d.email || 'N/A',
+                                address: d.address || d.city || 'N/A',
+                                specialty: d.specialty || '',
+                                profilePicture: d.profilePicture || null,
+                            } as ClinicInfo] as const;
+                        } catch {
+                            return [id, UNKNOWN_CLINIC] as const;
+                        }
+                    })
+                );
+                setClinics(Object.fromEntries(entries));
             })
-            .catch(() => setClinic(null))
+            .catch(() => { setAppointments([]); setClinics({}); })
             .finally(() => setLoading(false));
     }, []);
 
     if (loading) return <div className={styles.wrap}>Loading...</div>;
 
+    const selectedAppt = appointments.find((a) => a.id === selectedId) ?? null;
+    const clinic = selectedAppt ? clinics[selectedAppt.dentistPublicId] ?? null : null;
+    const hasAppointments = appointments.length > 0;
+    const multipleClinics = new Set(appointments.map((a) => a.dentistPublicId)).size > 1;
+
     return (
         <div className={styles.wrap}>
             <div className={styles.hero}>
-                <div className={styles.heroIcon}>{clinic ? '🎉' : '📋'}</div>
-                <h1 className={styles.heroTitle}>{clinic ? 'Congratulations!' : 'My Appointments'}</h1>
+                <div className={styles.heroIcon}>{hasAppointments ? <Icon name="celebrate" size={44} /> : <Icon name="clipboard" size={44} />}</div>
+                <h1 className={styles.heroTitle}>{hasAppointments ? 'Congratulations!' : 'My Appointments'}</h1>
                 <p className={styles.heroSub}>
-                    {clinic ? 'Your Perfect Smile is on its way.' : 'No appointments yet. Accept an offer to get started.'}
+                    {hasAppointments ? 'Your Perfect Smile is on its way.' : 'No appointments yet. Accept an offer to get started.'}
                 </p>
                 {clinic && (
                     <div className={styles.clinicReveal}>
-                        <span className={styles.clinicRevealLabel}>Matched Clinic</span>
+                        <span className={styles.clinicRevealLabel}>Selected Clinic</span>
                         <span className={styles.clinicRevealName}>{clinic.name}</span>
                     </div>
                 )}
@@ -121,12 +152,16 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                 {/* APPOINTMENTS */}
                 <section className={styles.section}>
                     <h2 className={styles.sectionTitle}>Confirmed Appointments</h2>
+                    {multipleClinics && (
+                        <p className={styles.selectHint}>Select an appointment to view that clinic's details below.</p>
+                    )}
                     <div className={styles.tableCard}>
                         <table className={styles.table}>
                             <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Time</th>
+                                <th>Clinic</th>
+                                <th>Treatment Dates</th>
+                                <th>Days</th>
                                 <th>Price</th>
                                 <th>Status</th>
                             </tr>
@@ -134,21 +169,33 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                             <tbody>
                             {appointments.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4}>No appointments yet</td>
+                                    <td colSpan={5}>No appointments yet</td>
                                 </tr>
                             ) : (
-                                appointments.map((apt) => (
-                                    <tr key={apt.id}>
-                                        <td>{formatDate(apt.scheduledAt)}</td>
-                                        <td>{formatTime(apt.scheduledAt)}</td>
+                                appointments.map((apt) => {
+                                    const days = Math.round(
+                                        (new Date(apt.endDate + 'T00:00:00').getTime() - new Date(apt.startDate + 'T00:00:00').getTime())
+                                        / 86400000) + 1;
+                                    const isSelected = apt.id === selectedId;
+                                    return (
+                                    <tr
+                                        key={apt.id}
+                                        className={`${styles.row} ${isSelected ? styles.rowActive : ''}`}
+                                        onClick={() => setSelectedId(apt.id)}
+                                        aria-selected={isSelected}
+                                    >
+                                        <td>{clinics[apt.dentistPublicId]?.name ?? '—'}</td>
+                                        <td>{formatDate(apt.startDate)} → {formatDate(apt.endDate)}</td>
+                                        <td>{days} day{days !== 1 ? 's' : ''}</td>
                                         <td>€{apt.confirmedPrice?.toFixed(2)}</td>
                                         <td>
                                                 <span className={styles.statusBadge}>
-                                                    ✓ {apt.status}
+                                                    <Icon name="check" size={14} /> {apt.status}
                                                 </span>
                                         </td>
                                     </tr>
-                                ))
+                                    );
+                                })
                             )}
                             </tbody>
                         </table>
@@ -187,15 +234,15 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                         <div className={styles.card}>
                             <div className={styles.contactList}>
                                 <div className={styles.contactItem}>
-                                    <span>📞</span>
+                                    <span className={styles.contactIcon}><Icon name="phone" size={17} /></span>
                                     <span>{clinic.phone}</span>
                                 </div>
                                 <div className={styles.contactItem}>
-                                    <span>✉️</span>
+                                    <span className={styles.contactIcon}><Icon name="mail" size={17} /></span>
                                     <span>{clinic.email}</span>
                                 </div>
                                 <div className={styles.contactItem}>
-                                    <span>📍</span>
+                                    <span className={styles.contactIcon}><Icon name="pin" size={17} /></span>
                                     <span>{clinic.address}</span>
                                 </div>
                             </div>
@@ -204,25 +251,51 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                 </div>
                 )}
 
-                {/* MAP */}
-                {clinic && (
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Directions</h2>
-                    <div className={styles.mapPlaceholder}>
-                        <div className={styles.mapPin}>📍</div>
-                        <div className={styles.mapAddress}>{clinic.address}</div>
+                {/* CALENDAR + MAP */}
+                {clinic && selectedAppt && (
+                <div className={styles.twoCol}>
+                    {/* Google Calendar sync — left of Directions */}
+                    <section className={styles.section}>
+                        <h2 className={styles.sectionTitle}>Add to Calendar</h2>
+                        <div className={styles.calendarCard}>
+                            <div className={styles.calendarIcon}><Icon name="calendar" size={30} /></div>
+                            <div className={styles.calendarBody}>
+                                <div className={styles.calendarTitle}>
+                                    {formatDate(selectedAppt.startDate)} → {formatDate(selectedAppt.endDate)}
+                                </div>
+                                <p className={styles.calendarText}>
+                                    Save your treatment dates to Google Calendar so you never miss an appointment.
+                                </p>
+                            </div>
+                            <a
+                                href={googleCalendarUrl(selectedAppt, clinic)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.calendarBtn}
+                            >
+                                <Icon name="calendar" size={16} /> Sync with Google Calendar
+                            </a>
+                        </div>
+                    </section>
+
+                    {/* Directions with faded map preview */}
+                    <section className={styles.section}>
+                        <h2 className={styles.sectionTitle}>Directions</h2>
                         <a
-                            href={`https://maps.google.com/?q=${encodeURIComponent(
-                                clinic.address
-                            )}`}
+                            href={`https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={styles.mapLink}
+                            className={styles.mapPlaceholder}
+                            aria-label={`Open ${clinic.address} in Google Maps`}
                         >
-                            Open in Google Maps →
+                            <div className={styles.mapOverlay}>
+                                <div className={styles.mapPin}><Icon name="pin" size={32} /></div>
+                                <div className={styles.mapAddress}>{clinic.address}</div>
+                                <span className={styles.mapLink}>Open in Google Maps →</span>
+                            </div>
                         </a>
-                    </div>
-                </section>
+                    </section>
+                </div>
                 )}
 
             </div>

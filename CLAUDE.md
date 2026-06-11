@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SmillingWallet is a two-sided dental marketplace. **Patients** submit treatment requests; **Dentists** browse them and send price offers. When a patient accepts an offer, an appointment is created. Both sides can chat in real-time via WebSocket once an appointment exists. There is also an **Admin** role with access to all views.
 
+The scheduling model is **day-interval based, not time-of-day** (exact times are arranged privately between patient and dentist by phone). A patient request carries up to **3 preferred cities** and one shared availability window (`availableFrom`/`availableTo`). An offer carries a **procedure length in days** plus **1–2 date-range variations** (each a contiguous block of `procedureDays` days inside the patient's window); the patient picks one variation to confirm the appointment, which is stored as a `startDate`/`endDate` interval.
+
 ## Running the app
 
 Two terminals required. PostgreSQL (port 5432, db `smilingwallet`) and Redis (port 6379) must be running first.
@@ -66,11 +68,18 @@ npm run build      # tsc + Vite build (catches type errors)
 
 **Database:** PostgreSQL with Flyway migrations in `src/main/resources/db/migration/`. Schema: `users`, `dental_requests`, `offers`, `appointments`, `notifications`, `refresh_tokens`, `password_reset_tokens`. `ddl-auto: validate` — Hibernate never modifies the schema; all changes go through Flyway scripts.
 
+**Request → offer → appointment flow (day-interval model):**
+- `DentalRequest` — `preferredCities` is a `List<String>` (max 3) persisted to the single `preferred_cities` column via `util/CityListConverter` (comma-joined; the codebase deliberately avoids JPA associations). `availableFrom`/`availableTo` are the one shared availability window. The dentist marketplace city filter matches if *any* preferred city equals the filter.
+- `Offer` — `procedureDays` (int) + two optional date-range variations: `variant1Start`/`variant1End` (required) and `variant2Start`/`variant2End` (optional). `OfferService` validates each variation spans exactly `procedureDays` days and sits inside the request's window (422 otherwise). There is no time-of-day and no `estimatedWaitDays`.
+- `Offer` exposes variations to the frontend as `OfferResponseDTO.variations` (a list of `{startDate, endDate}`) plus `procedureDays`.
+- Accepting: `POST /offers/{id}/select-slot` with `{selectedStartDate, selectedEndDate}` — must match one of the offer's variations. Reschedule: `request-reschedule` then dentist `repropose-slots` (carries `procedureDays` + the variants again).
+- `Appointment` — stores the chosen `startDate`/`endDate` (dates, not a timestamp). The reminder job (`AppointmentReminderService`, daily at 09:00) emails patients whose treatment `startDate` is tomorrow.
+
 **WebSocket (chat):** STOMP over SockJS. Endpoint: `/ws-smiling-wallet`. Messages published to `/app/chat.send`, broadcast on `/topic/chat/{appointmentId}`. Only works after an appointment exists (offer accepted).
 
 **Fake data generator:** `POST /api/admin/generator/start` / `stop` — seeds random data via `FakeDataService` (admin only).
 
-**Profile completion:** `ProfileCompletion.calculate(User)` computes a 0–100 score — Patient: username + phone + city (33% each); Dentist: those three + specialty (25% each). Result is always included in `UserResponseDTO`. Guards: `RequestService.create()` throws 422 if patient city is blank; `OfferService.sendOffer()` throws 422 if dentist specialty is null.
+**Profile completion:** `ProfileCompletion.calculate(User)` computes a 0–100 score — Patient: username + phone + city (33% each); Dentist: those three + specialty (25% each). Result is always included in `UserResponseDTO`. Guard: `OfferService.sendOffer()` throws 422 if dentist specialty is null (it also throws 422 if any proposed date variation falls outside the patient's window or doesn't match `procedureDays`).
 
 ### Frontend — React 18 / TypeScript / Vite
 
@@ -81,10 +90,10 @@ npm run build      # tsc + Vite build (catches type errors)
 **API layer:** Single Axios instance in `src/frontend/src/services/api.ts` with `baseURL: "/api"`. Vite proxies `/api` → `https://localhost:8080`. `OfferService.ts` adds offline-sync on top (queues to `localStorage` when offline).
 
 **Key pages:**
-- `DashboardPage` — Dentist view: offer table + real-time chat per appointment
-- `ReviewRequestsPage` — Dentist marketplace: browse open requests, send offers
-- `SendRequestPage` — Patient: submit a treatment request
-- `MyOffersPage` — Patient: view offers received on their requests
+- `DashboardPage` — Dentist view: offer table + real-time chat per appointment; reschedule requests are answered via a "Propose New Dates" modal (procedure length + 1–2 start dates, end derived)
+- `ReviewRequestsPage` — Dentist marketplace: browse open requests, send offers. `SendOfferModal` collects price + procedure length (days) + 1–2 start dates; the end date is derived (`start + days − 1`) so the span always matches
+- `SendRequestPage` — Patient: submit a treatment request; picks up to 3 cities (chips) + one availability window
+- `MyOffersPage` — Patient: view offers received on their requests; "Choose Treatment Dates" lists the offer's 1–2 date-range variations
 - `ProfilePage` — All users: view/edit profile, animated progress bar, missing-field highlights. Account settings section has three toggles: **Authenticator App (TOTP)**, **Email Verification Code**, and **Email Reminders**. Each 2FA method has its own enable modal and disable modal; they are independent.
 - `ProfileBanner` (shared component) — Dismissible banner shown globally when `profileCompletionPct < 100`; 24h suppress via localStorage key `profileBannerDismissedAt`
 

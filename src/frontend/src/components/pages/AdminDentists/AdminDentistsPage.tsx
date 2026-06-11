@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
+import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from './AdminDentistsPage.module.css';
 
@@ -105,7 +106,7 @@ function InviteModal({ onClose, onSuccess }: ModalProps) {
     return (
         <div className={styles.backdrop} onClick={e => e.target === e.currentTarget && onClose()}>
             <div className={styles.modal}>
-                <button className={styles.closeBtn} onClick={onClose} type="button">✕</button>
+                <button className={styles.closeBtn} onClick={onClose} type="button" aria-label="Close"><Icon name="close" size={18} /></button>
                 <h2 className={styles.modalTitle}>Invite a Dentist</h2>
                 <p className={styles.modalSubtitle}>
                     An invitation email will be sent to the clinic so they can set their password.
@@ -205,7 +206,7 @@ function InviteModal({ onClose, onSuccess }: ModalProps) {
                             className={styles.submitBtn}
                             disabled={loading}
                         >
-                            {loading ? 'Sending invite…' : '✉ Send Invitation'}
+                            {loading ? 'Sending invite…' : <><Icon name="mail" size={16} /> Send Invitation</>}
                         </button>
                     </div>
                 </form>

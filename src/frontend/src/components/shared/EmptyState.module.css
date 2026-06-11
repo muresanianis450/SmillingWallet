@@ -5,8 +5,11 @@
 }
 
 .icon {
-  font-size: 48px;
+  display: flex;
+  justify-content: center;
   margin-bottom: 12px;
+  color: var(--purple);
+  opacity: 0.55;
 }
 
 .wrap p {

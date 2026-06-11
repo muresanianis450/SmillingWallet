@@ -46,6 +46,12 @@ export type PaymentMethod = 'Insurance' | 'Self-Pay' | 'Financing';
 
 // ─── Entity Interfaces ───────────────────────────────────────────────────────
 
+/** A contiguous block of days a dentist proposes for a treatment (day-only, no time). */
+export interface DateVariation {
+  startDate: string;   // ISO date (yyyy-MM-dd)
+  endDate: string;     // ISO date (yyyy-MM-dd)
+}
+
 export interface Offer {
   id: string;
   patientId: string;
@@ -58,14 +64,15 @@ export interface Offer {
   treatmentReq: string;
   ctScan: string | null;
   symptoms: string;
-  proposedSlots?: string[];
+  procedureDays?: number;
+  variations?: DateVariation[];
 }
 export interface DentalRequest {
   id: string;
   patientPublicId: string;
   specialty: string;
   description: string;
-  preferredCity: string;
+  preferredCities: string[];
 
   status: string;
   createdAt: string;
@@ -80,11 +87,11 @@ export interface ClientOffer {
   avatar?: string;   // optional — generated at runtime from avatarSeed when not provided
   id: string;
   doctorLabel: string;       // "Dr. #1", "Dr. #2" …
+  city: string;              // clinic (dentist) city
+  specialty: string;         // clinic (dentist) specialty, display label
   avatarSeed: string;        // for deterministic placeholder
   rating: number;            // 1–5 fractional
   reviewCount: number;
-  priceMin: number;
-  priceMax: number;
   exactQuote: number;
   date: string;
   time: string;
@@ -94,7 +101,8 @@ export interface ClientOffer {
   validUntil: string;        // ISO date string
   treatmentCategory: string;
   isBestValue: boolean;
-  proposedSlots: string[];   // ISO datetime strings from the dentist
+  procedureDays: number;          // how many days the treatment takes
+  variations: DateVariation[];    // 1–2 date-range options from the dentist
   offerStatus: string;
 }
 
@@ -102,7 +110,7 @@ export interface SendRequestFormFields {
   // Personal
   firstName: string;
   lastName: string;
-  location: string;
+  cities: string[];
   availableFrom: string;
   availableTo: string;
   phone: string;
@@ -154,11 +162,12 @@ export interface OfferFormFields {
 
 export interface SendOfferFormFields {
   priceQuote: string | number;
-  estimatedWaitDays: string | number;
+  procedureDays: string | number;
   notes: string;
-  proposedSlot1: string;
-  proposedSlot2: string;
-  proposedSlot3: string;
+  variant1Start: string;
+  variant1End: string;
+  variant2Start: string;
+  variant2End: string;
 }
 
 // ─── Validation ──────────────────────────────────────────────────────────────

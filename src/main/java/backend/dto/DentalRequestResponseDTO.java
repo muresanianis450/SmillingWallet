@@ -10,7 +10,11 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -20,7 +24,7 @@ public class DentalRequestResponseDTO {
     private UUID patientPublicId;
     private DentalSpecialty specialty;
     private String description;
-    private String preferredCity;
+    private List<String> preferredCities;
     private Double budgetMax;
     private RequestStatus status;
     private LocalDateTime createdAt;
@@ -35,7 +39,7 @@ public class DentalRequestResponseDTO {
         dto.patientPublicId = r.getPatientPublicId();
         dto.specialty = r.getSpecialty();
         dto.description = r.getDescription();
-        dto.preferredCity = r.getPreferredCity();
+        dto.preferredCities = r.getPreferredCities() != null ? r.getPreferredCities() : new ArrayList<>();
         dto.budgetMax = r.getBudgetMax();
         dto.status = r.getStatus();
         dto.createdAt = r.getCreatedAt();
@@ -55,7 +59,7 @@ public class DentalRequestResponseDTO {
 
     /**
      * Maps a raw Object[] row from the _ph_requests temp table.
-     * Column order: id, patient_public_id, description, preferred_city,
+     * Column order: id, patient_public_id, description, preferred_cities,
      *               budget_max, created_at, updated_at, status, specialty
      */
     public static DentalRequestResponseDTO fromRow(Object[] row) {
@@ -63,7 +67,10 @@ public class DentalRequestResponseDTO {
         dto.id               = UUID.fromString(row[0].toString());
         dto.patientPublicId  = UUID.fromString(row[1].toString());
         dto.description      = row[2] != null ? row[2].toString() : null;
-        dto.preferredCity    = row[3] != null ? row[3].toString() : null;
+        dto.preferredCities  = row[3] != null
+                ? Arrays.stream(row[3].toString().split(","))
+                        .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList())
+                : new ArrayList<>();
         dto.budgetMax        = row[4] != null ? ((Number) row[4]).doubleValue() : null;
         dto.createdAt        = row[5] != null ? ((java.sql.Timestamp) row[5]).toLocalDateTime() : null;
         dto.updatedAt        = row[6] != null ? ((java.sql.Timestamp) row[6]).toLocalDateTime() : null;

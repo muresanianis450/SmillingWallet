@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {AuthUser, PageName} from '../../../types/types';
 import { BlobBackground } from '../../shared/BlobBackground';
+import { Icon } from '../../shared/Icon';
 // @ts-ignore
 import styles from './RegisterPage.module.css';
 import { api } from '../../../services/api';
@@ -134,7 +135,7 @@ export function RegisterPage({ setPage, onLogin }: RegisterPageProps) {
                             onClick={() => setShowPassword(p => !p)}
                             type="button"
                         >
-                            {showPassword ? 'Hide' : '👁 Show'}
+                            {showPassword ? <><Icon name="eye-off" size={14} /> Hide</> : <><Icon name="eye" size={14} /> Show</>}
                         </button>
                     </div>
                     <input

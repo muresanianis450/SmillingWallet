@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -31,8 +32,8 @@ public class Offer {
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "estimated_wait_days",  nullable = false)
-    private int estimatedWaitDays;
+    @Column(name = "procedure_days", nullable = false)
+    private int procedureDays;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
@@ -53,29 +54,36 @@ public class Offer {
     @Column(name = "status", nullable = false, length = 30)
     private OfferStatus status;
 
-    @Column(name = "proposed_slot_1")
-    private LocalDateTime proposedSlot1;
+    // Variation A (required) and Variation B (optional) — each a contiguous
+    // block of `procedureDays` days within the patient's availability window.
+    @Column(name = "variant1_start")
+    private LocalDate variant1Start;
 
-    @Column(name = "proposed_slot_2")
-    private LocalDateTime proposedSlot2;
+    @Column(name = "variant1_end")
+    private LocalDate variant1End;
 
-    @Column(name = "proposed_slot_3")
-    private LocalDateTime proposedSlot3;
+    @Column(name = "variant2_start")
+    private LocalDate variant2Start;
+
+    @Column(name = "variant2_end")
+    private LocalDate variant2End;
 
     public Offer(UUID requestId, UUID dentistPublicId, BigDecimal price,
-                 int estimatedWaitDays, String notes,
+                 int procedureDays, String notes,
                  boolean includesXray, boolean includesAnesthesia,
-                 LocalDateTime proposedSlot1, LocalDateTime proposedSlot2, LocalDateTime proposedSlot3) {
+                 LocalDate variant1Start, LocalDate variant1End,
+                 LocalDate variant2Start, LocalDate variant2End) {
         this.requestId = requestId;
         this.dentistPublicId = dentistPublicId;
         this.price = price;
-        this.estimatedWaitDays = estimatedWaitDays;
+        this.procedureDays = procedureDays;
         this.notes = notes;
         this.includesXray = includesXray;
         this.includesAnesthesia = includesAnesthesia;
-        this.proposedSlot1 = proposedSlot1;
-        this.proposedSlot2 = proposedSlot2;
-        this.proposedSlot3 = proposedSlot3;
+        this.variant1Start = variant1Start;
+        this.variant1End = variant1End;
+        this.variant2Start = variant2Start;
+        this.variant2End = variant2End;
         this.status = OfferStatus.PENDING;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();

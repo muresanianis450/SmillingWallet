@@ -3,6 +3,7 @@ import { Button } from '../../shared/Button';
 // @ts-ignore
 import styles from './AboutPage.module.css';
 import { SendRequestIcon, SmilingWallet_LogoIcon, GraphIcon, HandshakeIcon } from '../../shared/Icons';
+import { Icon } from '../../shared/Icon';
 
 interface AboutPageProps {
   setPage: (page: PageName) => void;
@@ -35,7 +36,7 @@ const HOW_STEPS = [
 const STATS = [
   { value: '500+', label: 'Verified Clinics' },
   { value: '10k+', label: 'Happy Patients' },
-  { value: '4.9★', label: 'Average Rating' },
+  { value: <>4.9<Icon name="star" size={20} fill="currentColor" style={{ marginLeft: 2 }} /></>, label: 'Average Rating' },
   { value: '1%', label: 'Success Fee' },
 ];
 

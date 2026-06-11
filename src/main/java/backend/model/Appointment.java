@@ -8,6 +8,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -32,8 +33,11 @@ public class Appointment {
     @Column(name = "dentist_public_id",nullable = false)
     private UUID dentistPublicId;
 
-    @Column(name = "scheduled_at",nullable = false)
-    private LocalDateTime scheduledAt;
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate;
+
+    @Column(name = "end_date", nullable = false)
+    private LocalDate endDate;
 
     @Column(name = "confirmed_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal confirmedPrice;
@@ -47,12 +51,13 @@ public class Appointment {
 
 
     public Appointment(UUID offerId, UUID patientPublicId, UUID dentistPublicId,
-                       LocalDateTime scheduledAt, BigDecimal confirmedPrice) {
+                       LocalDate startDate, LocalDate endDate, BigDecimal confirmedPrice) {
 
         this.offerId = offerId;
         this.patientPublicId = patientPublicId;
         this.dentistPublicId = dentistPublicId;
-        this.scheduledAt = scheduledAt;
+        this.startDate = startDate;
+        this.endDate = endDate;
         this.confirmedPrice = confirmedPrice;
         this.status = AppointmentStatus.CONFIRMED;
         this.createdAt = LocalDateTime.now();

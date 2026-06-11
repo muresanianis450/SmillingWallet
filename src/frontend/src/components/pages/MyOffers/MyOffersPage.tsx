@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
-import { PageName, ClientOffer } from '../../../types/types.ts';
+import { PageName, ClientOffer, DateVariation } from '../../../types/types.ts';
 import { useToast } from '../../../hooks/useToast';
 import { usePagination } from '../../../hooks/usePagination';
 import { Pagination } from '../../shared/Pagination';
 import { Toast } from '../../shared/Toast';
 import { Button } from '../../shared/Button';
 import { EmptyState } from '../../shared/EmptyState';
+import { Icon } from '../../shared/Icon';
 import { api, AUTH_COOKIE } from '../../../services/api';
 import { getCookie } from '../../../tracking/cookies';
 import { DEFAULT_AVATAR } from '../../../assets/avatars';
@@ -24,7 +25,9 @@ function StarRating({ rating }: { rating: number }) {
     return (
         <div className={styles.stars}>
             {[1, 2, 3, 4, 5].map((n) => (
-                <span key={n} className={n <= Math.round(rating) ? styles.starFilled : styles.starEmpty}>★</span>
+                <span key={n} className={n <= Math.round(rating) ? styles.starFilled : styles.starEmpty} style={{ display: 'inline-flex' }}>
+                    <Icon name="star" size={14} fill={n <= Math.round(rating) ? 'currentColor' : 'none'} />
+                </span>
             ))}
             <span className={styles.ratingNum}>{rating.toFixed(1)}</span>
         </div>
@@ -69,25 +72,36 @@ function PieChart({ segments }: { segments: { label: string; value: number; colo
     );
 }
 
+const SPECIALTY_DISPLAY: Record<string, string> = {
+    GENERAL_DENTISTRY:   'General Dentistry',
+    IMPLANTS:            'Implant Dentistry',
+    ORTHODONTICS:        'Orthodontics',
+    COSMETIC_DENTISTRY:  'Cosmetic Dentistry',
+    PEDIATRIC_DENTISTRY: 'Pediatric Dentistry',
+    ORAL_SURGERY:        'Oral Surgery',
+    PERIODONTICS:        'Periodontics',
+    ENDODONTICS:         'Endodontics',
+};
+
 function mapToClientOffer(o: any, avgPrice: number): ClientOffer {
     const price = Number(o.price);
     const specialMentions: string[] = [];
     if (o.notes) specialMentions.push(o.notes);
     if (o.includesXray) specialMentions.push('X-ray included');
     if (o.includesAnesthesia) specialMentions.push('Anesthesia included');
-    if (o.estimatedWaitDays > 0) specialMentions.push(`Est. ${o.estimatedWaitDays}-day wait`);
+    if (o.procedureDays > 0) specialMentions.push(`${o.procedureDays}-day procedure`);
     if (specialMentions.length === 0) specialMentions.push('Standard consultation');
     const validUntilDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const proposedSlots: string[] = (o.proposedSlots || []).filter(Boolean);
+    const variations: DateVariation[] = (o.variations || []).filter((v: any) => v && v.startDate && v.endDate);
     return {
         id: o.id,
         doctorLabel: `Dr. #${String(o.dentistPublicId).substring(0, 6)}`,
+        city: o.dentistCity || '',
+        specialty: o.dentistSpecialty ? (SPECIALTY_DISPLAY[o.dentistSpecialty] || o.dentistSpecialty) : '',
         avatarSeed: String(o.dentistPublicId),
         avatar: o.dentistProfilePicture || '',
         rating: 0,
         reviewCount: 0,
-        priceMin: Math.round(price * 0.9),
-        priceMax: Math.round(price * 1.1),
         exactQuote: price,
         date: new Date(o.createdAt).toLocaleDateString('ro-RO'),
         time: new Date(o.createdAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }),
@@ -97,7 +111,8 @@ function mapToClientOffer(o: any, avgPrice: number): ClientOffer {
         validUntil: validUntilDate.toISOString().split('T')[0],
         treatmentCategory: '',
         isBestValue: false,
-        proposedSlots,
+        procedureDays: o.procedureDays || 0,
+        variations,
         offerStatus: o.status || 'PENDING',
     };
 }
@@ -151,11 +166,14 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
     }, []);
     useNotificationSocket(handlePush);
 
-    async function handleSelectSlot(slot: string) {
+    async function handleSelectSlot(variation: DateVariation) {
         if (!selected) return;
         setActioning(true);
         try {
-            await api.patch(`/offers/${selected.id}/select-slot`, { selectedSlot: slot });
+            await api.patch(`/offers/${selected.id}/select-slot`, {
+                selectedStartDate: variation.startDate,
+                selectedEndDate: variation.endDate,
+            });
             showToast('Appointment confirmed!', 'success');
             setSlotModal(false);
             setTimeout(() => setPage('appointments'), 1800);
@@ -198,7 +216,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
     if (loading) {
         return (
             <div className={styles.wrap}>
-                <EmptyState icon="⏳" message="Loading your offers…" />
+                <EmptyState icon="clock" message="Loading your offers…" />
             </div>
         );
     }
@@ -209,7 +227,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                 <div className={styles.pageHead}>
                     <h1 className={styles.title}>My Offers</h1>
                 </div>
-                <EmptyState icon="📭" message="No offers yet. Submit a request and clinics will respond." />
+                <EmptyState icon="inbox" message="No offers yet. Submit a request and clinics will respond." />
                 <Toast toast={toast} />
             </div>
         );
@@ -228,7 +246,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                     className={`${styles.statsToggle} ${showStats ? styles.statsToggleActive : ''}`}
                     onClick={() => setShowStats((s) => !s)}
                 >
-                    {showStats ? '📊 Hide Statistics' : '📊 Show Statistics'}
+                    <Icon name="chart" size={15} /> {showStats ? 'Hide Statistics' : 'Show Statistics'}
                 </button>
             </div>
 
@@ -245,11 +263,17 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                                 <img src={offer.avatar || DEFAULT_AVATAR} className={styles.doctorAvatarImg} alt="" />
                                 <div className={styles.doctorInfo}>
                                     <div className={styles.doctorName}>{offer.doctorLabel}</div>
+                                    {offer.specialty && (
+                                        <div className={styles.doctorSpecialty}>{offer.specialty}</div>
+                                    )}
+                                    {offer.city && (
+                                        <div className={styles.doctorCity}><Icon name="pin" size={12} /> {offer.city}</div>
+                                    )}
                                     <StarRating rating={offer.rating} />
                                 </div>
                                 <div className={styles.doctorPrice}>
-                                    <div className={styles.priceRange}>€{offer.priceMin}–€{offer.priceMax}</div>
-                                    <div className={styles.exactQuote}>€{offer.exactQuote} quoted</div>
+                                    <div className={styles.exactQuote}>€{offer.exactQuote}</div>
+                                    <div className={styles.priceCaption}>quoted</div>
                                 </div>
                             </div>
                         </div>
@@ -263,22 +287,30 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                             <img src={current.avatar || DEFAULT_AVATAR} className={styles.detailDoctorAvatarImg} alt="Doctor" />
                             <div className={styles.doctorInfoText}>
                                 <h2 className={styles.detailDoctor}>{current.doctorLabel}</h2>
+                                {current.specialty && (
+                                    <span className={styles.specialtyChip}>{current.specialty}</span>
+                                )}
+                                {current.city && (
+                                    <div className={styles.detailCity}><Icon name="pin" size={14} /> {current.city}</div>
+                                )}
                                 <StarRating rating={current.rating} />
                             </div>
                         </div>
-                        {current.isBestValue && <span className={styles.bestBadgeLg}>🏆 Best Value</span>}
+                        {current.isBestValue && <span className={styles.bestBadgeLg}><Icon name="trophy" size={15} /> Best Value</span>}
                     </div>
 
                     <div className={styles.sectionBox}>
                         <div className={styles.detailGrid}>
                             <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>Price Range</span>
-                                <span className={styles.detailVal}>€{current.priceMin} – €{current.priceMax}</span>
-                            </div>
-                            <div className={styles.detailItem}>
-                                <span className={styles.detailLabel}>Exact Quote</span>
+                                <span className={styles.detailLabel}>Price</span>
                                 <span className={`${styles.detailVal} ${styles.teal}`}>€{current.exactQuote}</span>
                             </div>
+                            {current.procedureDays > 0 && (
+                                <div className={styles.detailItem}>
+                                    <span className={styles.detailLabel}>Treatment Length</span>
+                                    <span className={styles.detailVal}>{current.procedureDays} day{current.procedureDays !== 1 ? 's' : ''}</span>
+                                </div>
+                            )}
                             <div className={styles.detailItem}>
                                 <span className={styles.detailLabel}>Offer Received</span>
                                 <span className={styles.detailVal}>{current.date}</span>
@@ -306,7 +338,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                             <span className={styles.detailLabel}>Details</span>
                             <ul className={styles.mentionList}>
                                 {current.specialMentions.map((m, i) => (
-                                    <li key={i} className={styles.mentionItem}>✓ {m}</li>
+                                    <li key={i} className={styles.mentionItem}><Icon name="check" size={14} /> {m}</li>
                                 ))}
                             </ul>
                         </div>
@@ -315,15 +347,15 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                     <div className={styles.detailActions}>
                         {current.offerStatus === 'RESCHEDULE_REQUESTED' ? (
                             <p style={{ color: '#f59e0b', fontSize: '0.9rem', margin: 0 }}>
-                                ⏳ Waiting for the clinic to propose new times…
+                                <Icon name="clock" size={15} /> Waiting for the clinic to propose new times…
                             </p>
-                        ) : current.proposedSlots.length > 0 ? (
+                        ) : current.variations.length > 0 ? (
                             <Button variant="cta" onClick={() => setSlotModal(true)}>
-                                Choose a Time Slot
+                                Choose Treatment Dates
                             </Button>
                         ) : (
                             <p style={{ color: '#aaa', fontSize: '0.9rem', margin: 0 }}>
-                                No time slots proposed yet
+                                No date options proposed yet
                             </p>
                         )}
                     </div>
@@ -340,19 +372,26 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                         background: '#fff', borderRadius: '12px', padding: '32px',
                         maxWidth: '440px', width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
                     }}>
-                        <h3 style={{ marginBottom: '8px' }}>Choose a Time Slot</h3>
+                        <h3 style={{ marginBottom: '8px' }}>Choose Treatment Dates</h3>
                         <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.9rem' }}>
                             From <strong>{current.doctorLabel}</strong> — €{current.exactQuote}
+                            {current.procedureDays > 0 && <> · {current.procedureDays}-day treatment</>}
+                            <br />
+                            <span style={{ fontSize: '0.8rem', color: '#999' }}>
+                                Exact times are arranged with the clinic by phone.
+                            </span>
                         </p>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-                            {current.proposedSlots.map((slot, i) => {
-                                const d = new Date(slot);
+                            {current.variations.map((variation, i) => {
+                                const start = new Date(variation.startDate + 'T00:00:00');
+                                const end = new Date(variation.endDate + 'T00:00:00');
+                                const fmt = (d: Date) => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
                                 return (
                                     <button
                                         key={i}
                                         disabled={actioning}
-                                        onClick={() => handleSelectSlot(slot)}
+                                        onClick={() => handleSelectSlot(variation)}
                                         style={{
                                             padding: '14px 18px', borderRadius: '10px',
                                             border: '2px solid #7b68ee', background: '#f5f4ff',
@@ -363,9 +402,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                                         onMouseEnter={(e) => (e.currentTarget.style.background = '#ece9ff')}
                                         onMouseLeave={(e) => (e.currentTarget.style.background = '#f5f4ff')}
                                     >
-                                        📅 {d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                                        &nbsp;·&nbsp;
-                                        {d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                        <Icon name="calendar" size={15} /> {fmt(start)} → {fmt(end)}
                                     </button>
                                 );
                             })}
@@ -373,7 +410,7 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
 
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Button variant="secondary" onClick={handleRequestReschedule} disabled={actioning}>
-                                Request Another Time
+                                Request Other Dates
                             </Button>
                             <Button variant="secondary" onClick={() => setSlotModal(false)} disabled={actioning}>
                                 Cancel
@@ -385,20 +422,20 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
 
             {showStats && (
                 <div className={styles.analyticsSection}>
-                    <h2 className={styles.analyticsTitle}>📊 Offer Analytics</h2>
+                    <h2 className={styles.analyticsTitle}><Icon name="chart" size={20} /> Offer Analytics</h2>
                     <div className={styles.statCards}>
                         <div className={styles.statCard}>
-                            <div className={styles.statIcon}>💰</div>
+                            <div className={styles.statIcon}><Icon name="dollar" size={24} /></div>
                             <div className={styles.statLabel}>Average Price</div>
                             <div className={styles.statVal}>€{avgPrice}</div>
                         </div>
                         <div className={styles.statCard}>
-                            <div className={styles.statIcon}>⭐</div>
+                            <div className={styles.statIcon}><Icon name="star" size={24} fill="currentColor" /></div>
                             <div className={styles.statLabel}>Best Value</div>
                             <div className={`${styles.statVal} ${styles.teal}`}>€{bestOffer?.exactQuote ?? '—'}</div>
                         </div>
                         <div className={styles.statCard}>
-                            <div className={styles.statIcon}>📋</div>
+                            <div className={styles.statIcon}><Icon name="clipboard" size={24} /></div>
                             <div className={styles.statLabel}>Total Offers</div>
                             <div className={`${styles.statVal} ${styles.purple}`}>{offers.length}</div>
                         </div>

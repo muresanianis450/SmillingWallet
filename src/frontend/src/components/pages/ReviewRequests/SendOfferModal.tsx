@@ -27,30 +27,67 @@ function formatDateRange(from?: string | null, to?: string | null): string {
   const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   if (from && to) return `${fmt(from)} → ${fmt(to)}`;
   if (from) return `From ${fmt(from)}`;
-  return `Until ${to ? new Date(to).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}`;
+  return `Until ${to ? fmt(to) : ''}`;
 }
 
-function validateFields(fields: SendOfferFormFields): ValidationErrors {
-  const errors: ValidationErrors = {} as ValidationErrors;
-  if (!fields.priceQuote || Number(fields.priceQuote) <= 0)
-    (errors as any).priceQuote = 'Price is required';
-  if (!fields.proposedSlot1)
-    (errors as any).proposedSlot1 = 'At least one time slot is required';
-  return errors;
+/** Adds (days - 1) calendar days to an ISO date string, yielding the inclusive end date.
+ *  Formats from local components (not toISOString) to avoid a UTC shift that would
+ *  push the date back a day in positive-offset timezones. */
+function endDateFor(startISO: string, days: number): string {
+  if (!startISO || !days || days < 1) return '';
+  const d = new Date(startISO + 'T00:00:00');
+  d.setDate(d.getDate() + days - 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function fmtLong(iso: string): string {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export function SendOfferModal({ request, onClose, onSend }: SendOfferModalProps) {
   const [fields, setFields] = useState<SendOfferFormFields>({
     priceQuote: '',
-    estimatedWaitDays: '',
+    procedureDays: '',
     notes: '',
-    proposedSlot1: '',
-    proposedSlot2: '',
-    proposedSlot3: '',
+    variant1Start: '',
+    variant1End: '',
+    variant2Start: '',
+    variant2End: '',
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const days = parseInt(String(fields.procedureDays), 10);
+  const winFrom = request.availableFrom || undefined;
+  const winTo = request.availableTo || undefined;
+
+  const variant1End = endDateFor(fields.variant1Start, days);
+  const variant2End = fields.variant2Start ? endDateFor(fields.variant2Start, days) : '';
+
+  function validateFields(f: SendOfferFormFields): ValidationErrors {
+    const errs: ValidationErrors = {} as ValidationErrors;
+    if (!f.priceQuote || Number(f.priceQuote) <= 0)
+      (errs as any).priceQuote = 'Price is required';
+    if (!f.procedureDays || Number(f.procedureDays) < 1)
+      (errs as any).procedureDays = 'Enter how many days the procedure takes';
+    if (!f.variant1Start)
+      (errs as any).variant1Start = 'At least one date option is required';
+    // Window checks (only when we have a procedure length and a window)
+    if (days >= 1) {
+      const checkInWindow = (start: string, end: string, key: string) => {
+        if (!start) return;
+        if (winFrom && start < winFrom) (errs as any)[key] = 'Starts before the patient is available';
+        else if (winTo && end > winTo)  (errs as any)[key] = 'Ends after the patient leaves';
+      };
+      checkInWindow(f.variant1Start, endDateFor(f.variant1Start, days), 'variant1Start');
+      checkInWindow(f.variant2Start, endDateFor(f.variant2Start, days), 'variant2Start');
+    }
+    return errs;
+  }
 
   function set<K extends keyof SendOfferFormFields>(key: K, value: SendOfferFormFields[K]) {
     const next = { ...fields, [key]: value };
@@ -63,32 +100,29 @@ export function SendOfferModal({ request, onClose, onSend }: SendOfferModalProps
     e.preventDefault();
     const errs = validateFields(fields);
     setErrors(errs);
-    setTouched({ priceQuote: true, proposedSlot1: true });
+    setTouched({ priceQuote: true, procedureDays: true, variant1Start: true, variant2Start: true });
     if (Object.keys(errs).length) return;
 
-    const slots: string[] = [];
-    if (fields.proposedSlot1) slots.push(fields.proposedSlot1);
-    if (fields.proposedSlot2) slots.push(fields.proposedSlot2);
-    if (fields.proposedSlot3) slots.push(fields.proposedSlot3);
-
     onSend({
-      requestId:         request.id,
-      price:             fields.priceQuote,
-      estimatedWaitDays: fields.estimatedWaitDays || 0,
-      notes:             fields.notes || '',
-      proposedSlot1:     slots[0] || null,
-      proposedSlot2:     slots[1] || null,
-      proposedSlot3:     slots[2] || null,
+      requestId:     request.id,
+      price:         fields.priceQuote,
+      procedureDays: Number(fields.procedureDays),
+      notes:         fields.notes || '',
+      variant1Start: fields.variant1Start,
+      variant1End:   variant1End,
+      variant2Start: fields.variant2Start || null,
+      variant2End:   fields.variant2Start ? variant2End : null,
     });
   }
 
-  const minSlot = request.availableFrom
-    ? request.availableFrom + 'T08:00'
-    : new Date(Date.now() + 3600_000).toISOString().slice(0, 16);
-  const maxSlot = request.availableTo ? request.availableTo + 'T23:59' : undefined;
-
   const displayCategory = SPECIALTY_DISPLAY[request.specialty] || request.specialty;
   const hasBlockingErrors = Object.keys(errors).length > 0 && Object.keys(touched).length > 0;
+
+  const dateInputStyle = (hasError: boolean) => ({
+    width: '100%', padding: '8px 10px', borderRadius: '6px',
+    border: hasError ? '1px solid red' : '1px solid var(--border, #ddd)',
+    fontSize: '0.875rem',
+  });
 
   return (
     <Modal title={`Send Offer — ${displayCategory} · #${request.id.substring(0, 8)}`} onClose={onClose}>
@@ -105,7 +139,8 @@ export function SendOfferModal({ request, onClose, onSend }: SendOfferModalProps
           <strong>Patient availability:</strong> {formatDateRange(request.availableFrom, request.availableTo)}
           <br />
           <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>
-            Propose up to 3 time slots within this window.
+            Choose how many days the treatment takes, then propose 1–2 start dates inside this window.
+            Exact times are arranged with the patient by phone.
           </span>
         </div>
 
@@ -118,48 +153,70 @@ export function SendOfferModal({ request, onClose, onSend }: SendOfferModalProps
             />
           </FormField>
 
-          <FormField label="Estimated Wait Days">
+          <FormField
+            label="Procedure Length (days)"
+            error={touched.procedureDays ? (errors as any).procedureDays : undefined}
+          >
             <Input
               type="number"
-              placeholder="e.g. 0"
-              value={String(fields.estimatedWaitDays)}
-              hasError={false}
-              onChange={(e) => set('estimatedWaitDays', e.target.value)}
+              placeholder="e.g. 3"
+              value={String(fields.procedureDays)}
+              hasError={!!(touched.procedureDays && (errors as any).procedureDays)}
+              onChange={(e) => set('procedureDays', e.target.value)}
             />
           </FormField>
 
-          {/* Time slot pickers */}
+          {/* Date-range options */}
           <div style={{ marginBottom: '12px' }}>
             <label style={{ fontWeight: 600, fontSize: '0.875rem', display: 'block', marginBottom: '8px' }}>
-              Proposed Time Slots <span style={{ color: 'red' }}>*</span>
+              Proposed Date Options <span style={{ color: 'red' }}>*</span>
             </label>
-            {[
-              { key: 'proposedSlot1' as const, label: 'Slot 1 (required)' },
-              { key: 'proposedSlot2' as const, label: 'Slot 2 (optional)' },
-              { key: 'proposedSlot3' as const, label: 'Slot 3 (optional)' },
-            ].map(({ key, label }) => (
-              <div key={key} style={{ marginBottom: '8px' }}>
-                <label style={{ fontSize: '0.8rem', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
-                  {label}
-                </label>
-                <input
-                  type="datetime-local"
-                  value={fields[key]}
-                  min={minSlot}
-                  max={maxSlot}
-                  onChange={(e) => set(key, e.target.value)}
-                  style={{
-                    width: '100%', padding: '8px 10px', borderRadius: '6px',
-                    border: key === 'proposedSlot1' && touched.proposedSlot1 && (errors as any).proposedSlot1
-                      ? '1px solid red' : '1px solid var(--border, #ddd)',
-                    fontSize: '0.875rem',
-                  }}
-                />
-              </div>
-            ))}
-            {touched.proposedSlot1 && (errors as any).proposedSlot1 && (
-              <span style={{ color: 'red', fontSize: '0.8rem' }}>{(errors as any).proposedSlot1}</span>
-            )}
+
+            {/* Option A */}
+            <div style={{ marginBottom: '10px' }}>
+              <label style={{ fontSize: '0.8rem', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
+                Option A — start date (required)
+              </label>
+              <input
+                type="date"
+                value={fields.variant1Start}
+                min={winFrom}
+                max={winTo}
+                onChange={(e) => set('variant1Start', e.target.value)}
+                style={dateInputStyle(!!(touched.variant1Start && (errors as any).variant1Start))}
+              />
+              {fields.variant1Start && days >= 1 && (
+                <span style={{ fontSize: '0.8rem', color: '#4a3fbf', display: 'block', marginTop: '4px' }}>
+                  → {fmtLong(fields.variant1Start)} – {fmtLong(variant1End)} ({days} day{days > 1 ? 's' : ''})
+                </span>
+              )}
+              {touched.variant1Start && (errors as any).variant1Start && (
+                <span style={{ color: 'red', fontSize: '0.8rem' }}>{(errors as any).variant1Start}</span>
+              )}
+            </div>
+
+            {/* Option B */}
+            <div style={{ marginBottom: '8px' }}>
+              <label style={{ fontSize: '0.8rem', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
+                Option B — start date (optional)
+              </label>
+              <input
+                type="date"
+                value={fields.variant2Start}
+                min={winFrom}
+                max={winTo}
+                onChange={(e) => set('variant2Start', e.target.value)}
+                style={dateInputStyle(!!(touched.variant2Start && (errors as any).variant2Start))}
+              />
+              {fields.variant2Start && days >= 1 && (
+                <span style={{ fontSize: '0.8rem', color: '#4a3fbf', display: 'block', marginTop: '4px' }}>
+                  → {fmtLong(fields.variant2Start)} – {fmtLong(variant2End)} ({days} day{days > 1 ? 's' : ''})
+                </span>
+              )}
+              {touched.variant2Start && (errors as any).variant2Start && (
+                <span style={{ color: 'red', fontSize: '0.8rem' }}>{(errors as any).variant2Start}</span>
+              )}
+            </div>
           </div>
 
           <FormField label="Notes (optional)">

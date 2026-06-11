@@ -54,7 +54,7 @@ public class RequestService {
                 dto.getPatientPublicId(),
                 dto.getSpecialty(),
                 dto.getDescription(),
-                dto.getPreferredCity(),
+                dto.getPreferredCities(),
                 dto.getBudgetMax(),
                 dto.getAvailableFrom(),
                 dto.getAvailableTo()
@@ -81,11 +81,22 @@ public class RequestService {
                 .map(o -> o.getRequestId())
                 .collect(Collectors.toSet());
 
+        // A dentist only serves their own city: scope the marketplace to requests
+        // whose preferred cities include the dentist's city. The explicit `city`
+        // query param can narrow further but cannot widen beyond the home city.
+        String dentistCity = userRepository.findById(dentistId)
+                .map(User::getCity)
+                .filter(c -> c != null && !c.isBlank())
+                .orElse(null);
+
         List<DentalRequestResponseDTO> all = requestRepository.findAll().stream()
                 .filter(r -> r.getStatus() == RequestStatus.OPEN)
                 .filter(r -> !alreadyOffered.contains(r.getId()))
                 .filter(r -> specialty == null || r.getSpecialty() == specialty)
-                .filter(r -> city == null || r.getPreferredCity().equalsIgnoreCase(city))
+                .filter(r -> dentistCity == null || (r.getPreferredCities() != null
+                        && r.getPreferredCities().stream().anyMatch(c -> c.equalsIgnoreCase(dentistCity))))
+                .filter(r -> city == null || (r.getPreferredCities() != null
+                        && r.getPreferredCities().stream().anyMatch(c -> c.equalsIgnoreCase(city))))
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .map(r -> {
                     User patient = userRepository.findById(r.getPatientPublicId()).orElse(null);
@@ -141,9 +152,11 @@ public class RequestService {
         }
 
         request.setDescription(dto.getDescription());
-        request.setPreferredCity(dto.getPreferredCity());
+        request.setPreferredCities(dto.getPreferredCities());
         request.setBudgetMax(dto.getBudgetMax());
         request.setSpecialty(dto.getSpecialty());
+        request.setAvailableFrom(dto.getAvailableFrom());
+        request.setAvailableTo(dto.getAvailableTo());
 
         return DentalRequestResponseDTO.from(requestRepository.save(request));
     }
