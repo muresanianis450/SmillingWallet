@@ -1,8 +1,11 @@
 package backend.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -31,9 +34,29 @@ public class PagedResponseDTO<T>{
         int fromIndex = page * size;
         int toIndex = Math.min(fromIndex + size, allItems.size());
 
+        // Wrap in a plain ArrayList: a subList/List.of() view serializes as an
+        // exotic list type that the Redis default-typing deserializer can't rebuild.
         this.content = (fromIndex >= allItems.size())
-                ? List.of()
-                : allItems.subList(fromIndex,toIndex);
+                ? new ArrayList<>()
+                : new ArrayList<>(allItems.subList(fromIndex, toIndex));
+    }
+
+    // Used by Jackson when reading a cached page back from Redis. The primary
+    // constructor computes the paging fields, so it can't be used for deserialization.
+    @JsonCreator
+    public PagedResponseDTO(
+            @JsonProperty("content") List<T> content,
+            @JsonProperty("page") int page,
+            @JsonProperty("size") int size,
+            @JsonProperty("totalElements") long totalElements,
+            @JsonProperty("totalPages") int totalPages,
+            @JsonProperty("last") boolean last) {
+        this.content = content;
+        this.page = page;
+        this.size = size;
+        this.totalElements = totalElements;
+        this.totalPages = totalPages;
+        this.last = last;
     }
 
 }
