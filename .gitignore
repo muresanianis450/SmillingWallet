@@ -50,3 +50,5 @@ build/
 
 ### Claude Code ###
 .claude/settings.local.json
+scripts/delete_clinic1_appointments.sql
+*.sql
