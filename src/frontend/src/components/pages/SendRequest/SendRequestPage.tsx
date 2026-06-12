@@ -88,6 +88,27 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
         }
     }
 
+    // Client-side guard before upload — backend re-validates by magic bytes.
+    const MAX_FILE_BYTES = 200 * 1024 * 1024;
+    const ALLOWED_EXT = ['dcm', 'jpg', 'jpeg', 'png'];
+
+    function handleFile(file: File | null) {
+        if (!file) {
+            setForm((prev) => ({ ...prev, ctScan: null }));
+            return;
+        }
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        if (!ALLOWED_EXT.includes(ext)) {
+            showToast('Unsupported file type. Allowed: DCM, JPG, PNG.', 'error');
+            return;
+        }
+        if (file.size > MAX_FILE_BYTES) {
+            showToast('File is too large (max 200MB).', 'error');
+            return;
+        }
+        setForm((prev) => ({ ...prev, ctScan: file }));
+    }
+
     function addCity(city: string) {
         const trimmed = city.trim();
         if (!trimmed) return;
@@ -117,7 +138,7 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
         setSubmitting(true);
         try {
             const description = `${form.treatmentRequirement}. ${form.symptomSummary}`.trim();
-            await api.post('/requests', {
+            const { data: created } = await api.post('/requests', {
                 patientPublicId: user.id,
                 specialty:       SPECIALTY_MAP[form.treatmentCategory] || 'GENERAL_DENTISTRY',
                 description,
@@ -126,6 +147,25 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                 availableFrom:   form.availableFrom,
                 availableTo:     form.availableTo,
             });
+
+            // Upload the CT scan / X-ray (if any) against the freshly created request.
+            // The request itself already succeeded, so a failed upload only warns.
+            if (form.ctScan && created?.id) {
+                try {
+                    const fd = new FormData();
+                    fd.append('file', form.ctScan);
+                    await api.post(`/requests/${created.id}/files`, fd, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                } catch (uploadErr: any) {
+                    showToast(
+                        uploadErr?.response?.data?.message ||
+                        'Request saved, but the scan failed to upload. You can add it later.',
+                        'error',
+                    );
+                }
+            }
+
             showToast('Request submitted! Clinics will respond shortly.', 'success');
             setTimeout(() => setPage('my-offers'), 1800);
         } catch (err: any) {
@@ -322,17 +362,14 @@ export function SendRequestPage({ setPage }: SendRequestPageProps) {
                         <div className={styles.uploadBox}>
                             <span className={styles.uploadIcon}><Icon name="folder" size={28} /></span>
                             <span className={styles.uploadText}>
-                {form.ctScan ? form.ctScan : 'Click to upload or drag and drop'}
+                {form.ctScan ? form.ctScan.name : 'Click to upload or drag and drop'}
               </span>
-                            <span className={styles.uploadSub}>DCM, CDM, JPG, PNG — max 50MB</span>
+                            <span className={styles.uploadSub}>DCM, JPG, PNG — max 200MB</span>
                             <input
                                 type="file"
                                 className={styles.uploadInput}
-                                accept=".dcm,.cdm,.jpg,.jpeg,.png"
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleChange('ctScan', file.name);
-                                }}
+                                accept=".dcm,.jpg,.jpeg,.png"
+                                onChange={(e) => handleFile(e.target.files?.[0] || null)}
                             />
                         </div>
                     </div>

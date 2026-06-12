@@ -4,6 +4,7 @@ import { Modal } from '../../shared/Modal';
 import { FormField } from '../../shared/FormField';
 import { Input, PriceInput } from '../../shared/Input';
 import { Button } from '../../shared/Button';
+import { RequestFiles } from '../../shared/RequestFiles';
 // @ts-ignore
 import styles from './SendOfferModal.module.css';
 
@@ -130,6 +131,9 @@ export function SendOfferModal({ request, onClose, onSend }: SendOfferModalProps
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted, #888)', marginBottom: '8px' }}>
           {request.description}
         </p>
+
+        {/* Patient-uploaded CT scans / X-rays */}
+        <RequestFiles requestId={request.id} />
 
         {/* Availability window banner */}
         <div style={{
