@@ -118,12 +118,23 @@ export interface SendRequestFormFields {
   // Clinical
   treatmentCategory: string;
   treatmentRequirement: string;
-  ctScan: string | null;
+  ctScan: File | null;
   symptomSummary: string;
   // Insurance & Payment
   paymentMethod: PaymentMethod;
 
   insuranceProvider: string;
+}
+
+/** An attachment (CT scan / X-ray) on a dental request, as returned by the API. */
+export interface RequestFile {
+  id: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  previewable: boolean;
+  url: string;
+  createdAt: string;
 }
 
 export interface ConfirmedAppointment {

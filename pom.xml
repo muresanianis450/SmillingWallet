@@ -28,7 +28,22 @@
     </scm>
     <properties>
         <java.version>21</java.version>
+        <aws.sdk.version>2.28.16</aws.sdk.version>
     </properties>
+
+    <!-- AWS SDK v2 BOM — keeps all aws sdk modules on one consistent version -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <!-- Core web -->
         <dependency>
@@ -190,6 +205,17 @@
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
             <version>3.5.2</version>
+        </dependency>
+
+        <!-- Cloudflare R2 (S3-compatible) — object storage for CT scans / X-rays -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
+        <!-- Sync HTTP client for the S3Client (presigner does local signing, but putObject needs this) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>apache-client</artifactId>
         </dependency>
 
     </dependencies>

@@ -18,6 +18,7 @@ import { getCookie } from '../../../tracking/cookies';
 import styles from './DashboardPage.module.css';
 import { IconView, IconEdit, IconDelete } from '../../shared/Icons';
 import { Icon } from '../../shared/Icon';
+import { RequestFiles } from '../../shared/RequestFiles';
 import { trackEvent } from '../../../tracking/tracker';
 
 const PER_PAGE = 5;
@@ -290,6 +291,7 @@ export function DashboardPage() {
               <th>Patient</th>
               <th>Phone</th>
               <th>Email</th>
+              <th>Scans</th>
               <th>Price</th>
               <th>Status</th>
             </tr>
@@ -297,7 +299,7 @@ export function DashboardPage() {
           <tbody>
             {appointments.length === 0 ? (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={8}>
                   <EmptyState icon="calendar" message="No accepted appointments yet" />
                 </td>
               </tr>
@@ -318,6 +320,7 @@ export function DashboardPage() {
                   </td>
                   <td>{apt.patientPhone || '—'}</td>
                   <td>{apt.patientEmail || '—'}</td>
+                  <td>{apt.requestId ? <RequestFiles requestId={String(apt.requestId)} compact title="" /> : '—'}</td>
                   <td className={styles.priceTeal}>€{apt.confirmedPrice}</td>
                   <td>{apt.status}</td>
                 </tr>

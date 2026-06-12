@@ -31,8 +31,24 @@ spring:
     username: ${SPRING_MAIL_USERNAME}
     password: ${SPRING_MAIL_PASSWORD}
 
+  servlet:
+    multipart:
+      max-file-size: 200MB      # .dcm / CBCT scans can be large
+      max-request-size: 210MB
+
 jwt:
   secret: ${JWT_SECRET}
 
 totp:
   encryption-key: ${APP_TOTP_ENCRYPTION_KEY}
+
+# ── Cloudflare R2 (S3-compatible object storage for CT scans / X-rays) ─────────
+# Optional: blank values are tolerated so the app still boots without R2 (uploads
+# then return a clear 422). Set these env vars to enable file attachments.
+r2:
+  account-id: ${R2_ACCOUNT_ID:}
+  access-key-id: ${R2_ACCESS_KEY_ID:}
+  secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+  bucket: ${R2_BUCKET:}
+  endpoint: ${R2_ENDPOINT:}
+  presign-expiry-minutes: 15

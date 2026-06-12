@@ -29,13 +29,16 @@ public class RequestService {
     private final RequestRepository requestRepository;
     private final UserRepository userRepository;
     private final OfferRepository offerRepository;
+    private final FileStorageService fileStorageService;
 
     public RequestService(RequestRepository requestRepository,
                           UserRepository userRepository,
-                          OfferRepository offerRepository) {
+                          OfferRepository offerRepository,
+                          FileStorageService fileStorageService) {
         this.requestRepository = requestRepository;
         this.userRepository = userRepository;
         this.offerRepository = offerRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     /**
@@ -194,6 +197,10 @@ public class RequestService {
         if (request.getStatus() != RequestStatus.OPEN) {
             throw new ConflictException("Only OPEN requests can be deleted");
         }
+
+        // Purge attachments from R2 first; the FK cascade only removes DB metadata
+        // and would otherwise leave the blobs orphaned in the bucket.
+        fileStorageService.deleteAllForRequest(id);
 
         requestRepository.deleteById(id);
     }

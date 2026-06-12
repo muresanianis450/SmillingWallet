@@ -11,6 +11,7 @@ import backend.model.DentalRequest;
 import backend.model.User;
 import backend.repository.OfferRepository;
 import backend.repository.UserRepository;
+import backend.service.FileStorageService;
 import backend.service.RequestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test; // Fixed: Changed from TestNG to JUnit 5
@@ -33,6 +34,7 @@ class RequestServiceTest {
     @Mock private RequestRepository requestRepository;
     @Mock private UserRepository userRepository;
     @Mock private OfferRepository offerRepository;
+    @Mock private FileStorageService fileStorageService;
     @InjectMocks private RequestService requestService;
 
     private UUID patientId;
