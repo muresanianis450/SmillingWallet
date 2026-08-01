@@ -1,4 +1,4 @@
-import { TreatmentCategory, OfferStatus } from '../types/types';
+import {OfferStatus, TreatmentCategory} from '../types/types';
 
 // ─── Enums / Constant Lists ──────────────────────────────────────────────────
 
@@ -17,6 +17,28 @@ export const OFFER_STATUSES: OfferStatus[] = [
   'Declined',
   'Pending',
 ];
+
+/** Mirrors the backend `DentalSpecialty` enum. A clinic may offer several. */
+export const DENTAL_SPECIALTIES = [
+    {value: 'GENERAL_DENTISTRY', label: 'General Dentistry'},
+    {value: 'IMPLANTS', label: 'Implant Dentistry'},
+    {value: 'ORTHODONTICS', label: 'Orthodontics'},
+    {value: 'COSMETIC_DENTISTRY', label: 'Cosmetic Dentistry'},
+    {value: 'PEDIATRIC_DENTISTRY', label: 'Pediatric Dentistry'},
+    {value: 'ORAL_SURGERY', label: 'Oral Surgery'},
+    {value: 'PERIODONTICS', label: 'Periodontics'},
+    {value: 'ENDODONTICS', label: 'Endodontics'},
+] as const;
+
+export const SPECIALTY_LABELS: Record<string, string> = Object.fromEntries(
+    DENTAL_SPECIALTIES.map(s => [s.value, s.label])
+);
+
+/** Formats a clinic's specialty list for display; falls back to the raw enum name. */
+export function formatSpecialties(values: string[] | null | undefined): string {
+    if (!values || values.length === 0) return '—';
+    return values.map(v => SPECIALTY_LABELS[v] ?? v).join(', ');
+}
 
 export const BUDGET_RANGES = [
   'Under €500',

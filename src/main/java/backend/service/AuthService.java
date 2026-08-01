@@ -2,9 +2,7 @@ package backend.service;
 
 import backend.dto.*;
 import backend.enums.AuthProvider;
-import backend.enums.DentalSpecialty;
 import backend.enums.Role;
-import backend.exception.ConflictException;
 import backend.exception.ResourceNotFoundException;
 import backend.model.PasswordResetToken;
 import backend.model.RefreshToken;
@@ -23,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Transactional
@@ -104,7 +101,7 @@ public class AuthService {
         if (dto.getRole() == Role.DENTIST) {
             if (dto.getCity() == null || dto.getCity().isBlank())
                 throw new IllegalArgumentException("City is required for dentists");
-            if (dto.getSpecialty() == null)
+            if (dto.getSpecialties() == null || dto.getSpecialties().isEmpty())
                 throw new IllegalArgumentException("Specialty is required for dentists");
         }
 
@@ -118,7 +115,8 @@ public class AuthService {
         user.setCity(dto.getCity());
         user.setAddress(dto.getAddress());
         user.setRating(dto.getRating());
-        user.setSpecialty(dto.getSpecialty());
+        user.setSpecialties(dto.getSpecialties() == null
+                ? new ArrayList<>() : new ArrayList<>(dto.getSpecialties()));
         userRepository.save(user);
 
         return issueTokenPair(user);
@@ -472,37 +470,9 @@ public class AuthService {
         return LoginResponseDTO.full(auth.getToken(), auth.getRefreshToken(), auth.getUser());
     }
 
-    // ── DENTIST INVITE ────────────────────────────────────────────────────────
-
-    public UserResponseDTO createDentistInvite(CreateDentistRequestDTO dto) {
-        if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new ConflictException("An account with this email already exists");
-        }
-
-        User user = new User(
-                dto.getEmail(),
-                dto.getClinicName(),
-                passwordEncoder.encode(UUID.randomUUID().toString()),  // locked random password
-                dto.getPhone(),
-                Role.DENTIST
-        );
-        user.setCity(dto.getCity());
-        user.setAddress(dto.getAddress());
-        user.setSpecialty(dto.getSpecialty());
-        user.setAccountActive(false);   // activated only when they set their password
-        userRepository.save(user);
-
-        PasswordResetToken prt = new PasswordResetToken();
-        prt.setUser(user);
-        prt.setToken(UUID.randomUUID().toString());
-        prt.setCreatedAt(Instant.now());
-        prt.setExpiresAt(Instant.now().plusSeconds(72 * 3600)); // 72 hours
-        passwordResetTokenRepository.save(prt);
-
-        emailService.sendDentistInvite(user.getEmail(), user.getUsername(), prt.getToken());
-
-        return UserResponseDTO.from(user);
-    }
+    // ── LEGACY DENTIST ACTIVATION ─────────────────────────────────────────────
+    // New clinics join via ClinicInvitationService. These two remain so that
+    // invite links already sent under the old flow keep working.
 
     public void verifyInviteToken(String token) {
         PasswordResetToken prt = passwordResetTokenRepository
@@ -567,7 +537,7 @@ public class AuthService {
 
         if (user.getRole() == Role.DENTIST) {
             if (dto.getRating() != null) user.setRating(dto.getRating());
-            if (dto.getSpecialty() != null) user.setSpecialty(dto.getSpecialty());
+            if (dto.getSpecialties() != null) user.setSpecialties(new ArrayList<>(dto.getSpecialties()));
         }
 
         userRepository.save(user);
@@ -597,7 +567,10 @@ public class AuthService {
 
     // ── PRIVATE ───────────────────────────────────────────────────────────────
 
-    private AuthResponseDTO issueTokenPair(User user) {
+    /**
+     * Public so ClinicInvitationService can log a clinic straight in after it accepts an invite.
+     */
+    public AuthResponseDTO issueTokenPair(User user) {
         String accessToken  = jwtService.generateAccessToken(
                 user.getId().toString(),
                 user.getEmail(),

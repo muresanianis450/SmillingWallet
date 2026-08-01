@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import {useState} from 'react';
 import {AuthUser, PageName} from '../../../types/types';
-import { BlobBackground } from '../../shared/BlobBackground';
-import { Icon } from '../../shared/Icon';
-// @ts-ignore
+import {BlobBackground} from '../../shared/BlobBackground';
+import {Icon} from '../../shared/Icon';
 import styles from './LoginPage.module.css';
-import { api } from '../../../services/api';
-import { useGoogleAuth } from '../../../hooks/useGoogleAuth';
+import {api} from '../../../services/api';
+import {useGoogleAuth} from '../../../hooks/useGoogleAuth';
 
 interface LoginPageProps {
     setPage: (page: PageName) => void;
@@ -43,7 +42,7 @@ export function LoginPage({ setPage, onLogin }: LoginPageProps) {
     function validatePassword(val: string): string {
         if (val.length < 8)            return 'Password must be at least 8 characters';
         if (!/\d/.test(val))           return 'Must contain at least 1 digit';
-        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val))
+        if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(val))
             return 'Must contain at least 1 special character';
         return '';
     }

@@ -27,7 +27,7 @@ public class UserResponseDTO {
     private String city;
     private String address;
     private Double rating;
-    private DentalSpecialty specialty;
+    private List<DentalSpecialty> specialties;
     private LocalDateTime createdAt;
     private String profilePicture;
     private boolean twoFactorEnabled;
@@ -48,7 +48,7 @@ public class UserResponseDTO {
         dto.city = user.getCity();
         dto.address = user.getAddress();
         dto.rating = user.getRating();
-        dto.specialty = user.getSpecialty();
+        dto.specialties = user.getSpecialties() == null ? List.of() : List.copyOf(user.getSpecialties());
         dto.createdAt = user.getCreatedAt();
         dto.profilePicture = user.getProfilePicture();
         dto.twoFactorEnabled = user.isTotpEnabled() || user.isEmail2faEnabled();

@@ -123,13 +123,15 @@
 \resumeSubHeadingListStart
 
 \resumeProjectHeading
-{\textbf{\href{https://github.com/muresanianis450/SmillingWallet}{\underline{SmillingWallet}}} $|$ \emph{Java, Spring Boot, React 18, TypeScript, PostgreSQL, Flyway, JWT $|$ Deployed on Railway}}{}
+{\textbf{\href{https://github.com/muresanianis450/SmillingWallet}{\underline{SmillingWallet}}} $|$ \emph{Java, Spring Boot, React 18, TypeScript, PostgreSQL, Redis, Cloudflare R2, Flyway $|$ Railway}}{}
 
 \resumeItemListStart
-    \resumeItem{Designed and built a full-stack two-sided dental marketplace (Patient / Dentist / Admin) with a React 18 + TypeScript SPA and a Spring Boot REST API, deployed on Railway with HTTPS and environment-based CORS configuration.}
-    \resumeItem{Implemented a layered auth system: BCrypt + stateless JWT (15-min access / 7-day refresh with rotation), TOTP two-factor authentication with AES-256-GCM encrypted secrets, BCrypt-hashed one-time backup codes, and a time-limited dentist account-activation flow triggered by admin invite.}
-    \resumeItem{Automated business rules at the database layer using PostgreSQL stored procedures (clinic acceptance-rate analytics, patient history) and triggers (auto-reject competing offers, auto-close requests on appointment creation), with all schema changes managed via Flyway migrations.}
-    \resumeItem{Built a multi-step offer negotiation flow (propose 3 slots → patient reschedule request → dentist repropose) with async email notifications: 24-hour appointment reminders with Google Calendar and Maps links, password reset, and dentist onboarding invitations.}
+    \resumeItem{Sole architect and engineer: designed and built the entire system end-to-end --- a React 18 + TypeScript SPA and a Spring Boot REST API for a two-sided dental marketplace (Patient / Dentist / Admin), deployed on Railway with HTTPS and environment-based CORS.}
+    \resumeItem{Designed a statistics and data-processing layer combining PostgreSQL stored procedures with JPA aggregations to compute clinic acceptance-rate and revenue analytics, average offer price by dental specialty, open-request distribution by city, and per-dentist wait-time averages.}
+    \resumeItem{Implemented a layered auth system: BCrypt + stateless JWT (15-min access / 7-day refresh with rotation), TOTP and email two-factor authentication with AES-256-GCM encrypted secrets, BCrypt-hashed one-time backup codes, and an admin-triggered dentist account-activation flow.}
+    \resumeItem{Integrated Cloudflare R2 object storage through the AWS S3 SDK (S3-compatible API, path-style access) for patient CT-scan / X-ray uploads, serving files via short-lived presigned download URLs.}
+    \resumeItem{Added a Redis caching layer (Spring Cache, per-region TTLs with graceful DB fallback on cache errors) and real-time patient--dentist chat over WebSocket (STOMP / SockJS); enforced business rules via DB triggers (auto-reject competing offers, auto-close on booking), versioned with Flyway.}
+    \resumeItem{Built a multi-step offer negotiation flow (propose slots $\rightarrow$ patient reschedule $\rightarrow$ dentist repropose) with async email notifications: 24-hour appointment reminders with Google Calendar and Maps links, password reset, and dentist onboarding invitations.}
 \resumeItemListEnd
 
 \resumeProjectHeading
@@ -158,13 +160,6 @@
     \resumeItem{Designed step-by-step state execution with persistent logging and a layered thread-safe architecture.}
 \resumeItemListEnd
 
-\resumeProjectHeading
-{\textbf{\href{https://github.com/muresanianis450/connect_four}{\underline{Connect Four}}} $|$ \emph{Python, Pygame}}{}
-\resumeItemListStart
-    \resumeItem{Developed a layered game with both console and GUI interfaces.}
-    \resumeItem{Implemented a Human vs Computer gameplay system with three difficulty levels powered by a Minimax-based AI.}
-\resumeItemListEnd
-
 \resumeSubHeadingListEnd
 
 
@@ -175,7 +170,7 @@
      \textbf{Languages (Proficient)}{: Java, C\#, C++, Python, SQL (PostgreSQL, MSSQL), TypeScript} \\
      \textbf{Languages (Familiar)}{: HTML/CSS, JavaScript, NASM (86x), Bash, Lisp, Prolog, COBOL} \\
      \textbf{Frameworks}{: Spring Boot, JPA/Hibernate, React 18, Vite, .NET, ASP.NET, JavaFX, Qt} \\
-     \textbf{Infrastructure \& Tools}{: Git, GitHub, Docker, Railway, Flyway, JWT/TOTP, REST APIs} \\
+     \textbf{Infrastructure \& Tools}{: Git, GitHub, Docker, Railway, Redis, Cloudflare R2 / AWS S3, Flyway, JWT/TOTP, REST APIs, WebSocket} \\
      \textbf{Developer Tools}{: IntelliJ, VS Code, CLion, PyCharm, Visual Studio, SSMS, draw.io} \\
      \textbf{Certifications}{: Database Design (Oracle), ECDL START BAC Profile} \\
      \textbf{Spoken Languages}{: Romanian - Native, English - C1 (Cambridge Certificate), German - A2}

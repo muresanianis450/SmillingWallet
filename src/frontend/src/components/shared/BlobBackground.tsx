@@ -1,4 +1,3 @@
-// @ts-ignore
 import styles from './BlobBackground.module.css';
 
 export function BlobBackground() {

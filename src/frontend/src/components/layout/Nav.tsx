@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { AuthUser, PageName } from '@/types/types.ts';
-// @ts-ignore
+import {useEffect, useState} from 'react';
+import {AuthUser, PageName} from '@/types/types.ts';
 import styles from './Nav.module.css';
-import { DEFAULT_AVATAR } from '../../assets/avatars';
-import { SmilingWallet_LogoIcon } from '../shared/Icons';
-import { Icon } from '../shared/Icon';
+import {DEFAULT_AVATAR} from '../../assets/avatars';
+import {SmilingWallet_LogoIcon} from '../shared/Icons';
+import {Icon} from '../shared/Icon';
 
 interface NavProps {
     page: PageName;
@@ -34,7 +33,7 @@ const ADMIN_LINKS = [
     { label: 'Appointments',    page: 'appointments' },
     { label: 'Dashboard',       page: 'dashboard' },
     { label: 'Requests',        page: 'requests' },
-    { label: 'Manage Dentists', page: 'admin-dentists' },
+    {label: 'Manage Clinics', page: 'admin-clinics'},
     { label: 'About',           page: 'about' },
 ];
 

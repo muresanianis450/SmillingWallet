@@ -128,7 +128,7 @@ public class OfferService {
         User dentist = userRepository.findById(dto.getDentistPublicId())
                 .orElseThrow(() -> new ResourceNotFoundException("Dentist not found: " + dto.getDentistPublicId()));
 
-        if (dentist.getSpecialty() == null) {
+        if (dentist.getSpecialties() == null || dentist.getSpecialties().isEmpty()) {
             throw new UnprocessableEntityException("Please set your specialty in your profile before sending offers");
         }
 

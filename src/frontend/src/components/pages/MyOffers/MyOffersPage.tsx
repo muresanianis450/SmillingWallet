@@ -1,17 +1,16 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
-import { PageName, ClientOffer, DateVariation } from '../../../types/types.ts';
-import { useToast } from '../../../hooks/useToast';
-import { usePagination } from '../../../hooks/usePagination';
-import { Pagination } from '../../shared/Pagination';
-import { Toast } from '../../shared/Toast';
-import { Button } from '../../shared/Button';
-import { EmptyState } from '../../shared/EmptyState';
-import { Icon } from '../../shared/Icon';
-import { api, AUTH_COOKIE } from '../../../services/api';
-import { getCookie } from '../../../tracking/cookies';
-import { DEFAULT_AVATAR } from '../../../assets/avatars';
-// @ts-ignore
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useNotificationSocket} from '../../../hooks/useNotificationSocket';
+import {ClientOffer, DateVariation, PageName} from '../../../types/types.ts';
+import {useToast} from '../../../hooks/useToast';
+import {usePagination} from '../../../hooks/usePagination';
+import {Pagination} from '../../shared/Pagination';
+import {Toast} from '../../shared/Toast';
+import {Button} from '../../shared/Button';
+import {EmptyState} from '../../shared/EmptyState';
+import {Icon} from '../../shared/Icon';
+import {api, AUTH_COOKIE} from '../../../services/api';
+import {getCookie} from '../../../tracking/cookies';
+import {DEFAULT_AVATAR} from '../../../assets/avatars';
 import styles from './MyOffersPage.module.css';
 
 interface MyOffersPageProps {
@@ -97,7 +96,9 @@ function mapToClientOffer(o: any, avgPrice: number): ClientOffer {
         id: o.id,
         doctorLabel: `Dr. #${String(o.dentistPublicId).substring(0, 6)}`,
         city: o.dentistCity || '',
-        specialty: o.dentistSpecialty ? (SPECIALTY_DISPLAY[o.dentistSpecialty] || o.dentistSpecialty) : '',
+        specialty: (o.dentistSpecialties ?? [])
+            .map((v: string) => SPECIALTY_DISPLAY[v] || v)
+            .join(', '),
         avatarSeed: String(o.dentistPublicId),
         avatar: o.dentistProfilePicture || '',
         rating: 0,
@@ -141,7 +142,9 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
                         const offRes = await api.get(`/offers/request/${req.id}?page=0&size=20`);
                         const offerList: any[] = offRes.data.content || [];
                         allRaw.push(...offerList);
-                    } catch {}
+                    } catch {
+                        // One request's offers failing shouldn't blank the whole page.
+                    }
                 })
             );
             const prices = allRaw.map((o) => Number(o.price));
@@ -153,7 +156,9 @@ export function MyOffersPage({ setPage }: MyOffersPageProps) {
             }
             setOffers(mapped);
             if (mapped.length > 0 && !selected) setSelected(mapped[0]);
-        } catch {}
+        } catch {
+            // Leaves the list empty; the empty state explains it to the user.
+        }
         setLoading(false);
     }
 

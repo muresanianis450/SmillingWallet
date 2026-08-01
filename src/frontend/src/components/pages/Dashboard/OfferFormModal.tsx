@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
-import { Offer, OfferFormFields, ValidationErrors } from '../../../types/types.ts';
-import { validateOffer } from '../../../utils/validation';
-import { toInputDate, toInputTime, formatDisplayDate, formatDisplayTime } from '../../../utils/formatters';
-import { Modal } from '../../shared/Modal';
-import { FormField } from '../../shared/FormField';
-import { Input, PriceInput } from '../../shared/Input';
-import { Button } from '../../shared/Button';
-import { Icon } from '../../shared/Icon';
-// @ts-ignore
+import React, {useState} from 'react';
+import {Offer, OfferFormFields, ValidationErrors} from '../../../types/types.ts';
+import {validateOffer} from '../../../utils/validation';
+import {formatDisplayDate, formatDisplayTime, toInputDate, toInputTime} from '../../../utils/formatters';
+import {Modal} from '../../shared/Modal';
+import {FormField} from '../../shared/FormField';
+import {Input, PriceInput} from '../../shared/Input';
+import {Button} from '../../shared/Button';
+import {Icon} from '../../shared/Icon';
 import styles from './OfferFormModal.module.css';
 
 interface OfferFormModalProps {

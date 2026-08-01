@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect, forwardRef } from 'react';
-import { ROMANIAN_CITIES } from '../../data/constants';
-// @ts-ignore
+import {forwardRef, useEffect, useRef, useState} from 'react';
+import {ROMANIAN_CITIES} from '../../data/constants';
 import styles from './CityPicker.module.css';
 
 interface CityPickerProps {

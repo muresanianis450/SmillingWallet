@@ -1,18 +1,17 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
-import { TREATMENT_CATEGORIES } from '../../../data/constants';
-import { usePagination } from '../../../hooks/usePagination';
-import { useToast } from '../../../hooks/useToast';
-import { Pagination } from '../../shared/Pagination';
-import { EmptyState } from '../../shared/EmptyState';
-import { Toast } from '../../shared/Toast';
-import { SendOfferModal } from './SendOfferModal';
-import { Icon } from '../../shared/Icon';
-import { api } from '../../../services/api';
-// @ts-ignore
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useNotificationSocket} from '../../../hooks/useNotificationSocket';
+import {TREATMENT_CATEGORIES} from '../../../data/constants';
+import {usePagination} from '../../../hooks/usePagination';
+import {useToast} from '../../../hooks/useToast';
+import {Pagination} from '../../shared/Pagination';
+import {EmptyState} from '../../shared/EmptyState';
+import {Toast} from '../../shared/Toast';
+import {SendOfferModal} from './SendOfferModal';
+import {Icon} from '../../shared/Icon';
+import {api} from '../../../services/api';
 import styles from './ReviewRequestsPage.module.css';
-import { AuthUser, DentalRequest, PageName } from '../../../types/types.ts';
-import { DEFAULT_AVATAR } from '../../../assets/avatars';
+import {AuthUser, DentalRequest, PageName} from '../../../types/types.ts';
+import {DEFAULT_AVATAR} from '../../../assets/avatars';
 
 const PER_PAGE = 7;
 

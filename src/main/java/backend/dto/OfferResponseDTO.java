@@ -33,7 +33,7 @@ public class OfferResponseDTO {
     private String patientProfilePicture;
     private String dentistProfilePicture;
     private String dentistCity;
-    private String dentistSpecialty;
+    private List<String> dentistSpecialties;
     private List<Variation> variations;
 
     @Getter
@@ -77,7 +77,8 @@ public class OfferResponseDTO {
         if (dentist != null) {
             dto.dentistProfilePicture = dentist.getProfilePicture();
             dto.dentistCity = dentist.getCity();
-            dto.dentistSpecialty = dentist.getSpecialty() != null ? dentist.getSpecialty().name() : null;
+            dto.dentistSpecialties = dentist.getSpecialties() == null ? List.of()
+                    : dentist.getSpecialties().stream().map(Enum::name).toList();
         }
         return dto;
     }

@@ -25,5 +25,3 @@ public interface AppointmentRepository extends JpaRepository<Appointment,UUID> {
             @Param("date") LocalDate date,
             @Param("statuses") List<AppointmentStatus> statuses);
 }
-
-

@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:ui": "vitest --ui",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
@@ -31,9 +32,10 @@
     "@types/stompjs": "^2.3.10",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "@vitejs/plugin-react": "^4.0.0",
+    "@vitejs/plugin-react": "^6.0.5",
     "@vitest/ui": "^4.1.4",
     "eslint": "^8.0.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "jsdom": "^24.0.0",
     "typescript": "^5.0.0",
     "vite": "^8.0.9",

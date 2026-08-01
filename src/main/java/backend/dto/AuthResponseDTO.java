@@ -12,4 +12,3 @@ public class AuthResponseDTO {
     private String refreshToken;
     private UserResponseDTO user;
 }
-

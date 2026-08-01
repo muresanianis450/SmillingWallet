@@ -1,16 +1,15 @@
-import { useState, useEffect } from 'react';
-import { PageName, SendRequestFormFields, PaymentMethod, ValidationErrors } from '../../../types/types.ts';
-import { TREATMENT_CATEGORIES, INSURANCE_PROVIDERS } from '../../../data/constants';
-import { CityPicker } from '../../shared/CityPicker';
-import { useToast } from '../../../hooks/useToast';
-import { api, AUTH_COOKIE } from '../../../services/api';
-import { getCookie } from '../../../tracking/cookies';
-import { Toast } from '../../shared/Toast';
-import { Button } from '../../shared/Button';
-import { Icon } from '../../shared/Icon';
-// @ts-ignore
+import {useEffect, useState} from 'react';
+import {PageName, PaymentMethod, SendRequestFormFields, ValidationErrors} from '../../../types/types.ts';
+import {INSURANCE_PROVIDERS, TREATMENT_CATEGORIES} from '../../../data/constants';
+import {CityPicker} from '../../shared/CityPicker';
+import {useToast} from '../../../hooks/useToast';
+import {api, AUTH_COOKIE} from '../../../services/api';
+import {getCookie} from '../../../tracking/cookies';
+import {Toast} from '../../shared/Toast';
+import {Button} from '../../shared/Button';
+import {Icon} from '../../shared/Icon';
 import styles from './SendRequestPage.module.css';
-import { BlobBackground } from '../../shared/BlobBackground';
+import {BlobBackground} from '../../shared/BlobBackground';
 
 interface SendRequestPageProps {
     setPage: (page: PageName) => void;

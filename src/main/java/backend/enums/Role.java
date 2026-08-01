@@ -5,4 +5,3 @@ public enum Role {
     DENTIST,
     ADMIN
 }
-

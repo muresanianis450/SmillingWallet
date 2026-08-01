@@ -1,22 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { api } from '../../../services/api';
-import { AuthUser, PageName } from '../../../types/types';
-import { BlobBackground } from '../../shared/BlobBackground';
-import { CityPicker } from '../../shared/CityPicker';
-// @ts-ignore
+import {useEffect, useRef, useState} from 'react';
+import {api} from '../../../services/api';
+import {AuthUser, PageName} from '../../../types/types';
+import {BlobBackground} from '../../shared/BlobBackground';
+import {CityPicker} from '../../shared/CityPicker';
+import {SpecialtyPicker} from '../../shared/SpecialtyPicker';
 import styles from './ProfilePage.module.css';
-import { DENTIST_AVATARS, PATIENT_AVATARS, DEFAULT_AVATAR } from '../../../assets/avatars';
-
-const SPECIALTIES = [
-    { value: 'GENERAL_DENTISTRY',   label: 'General Dentistry' },
-    { value: 'IMPLANTS',            label: 'Implants' },
-    { value: 'ORTHODONTICS',        label: 'Orthodontics' },
-    { value: 'COSMETIC_DENTISTRY',  label: 'Cosmetic Dentistry' },
-    { value: 'PEDIATRIC_DENTISTRY', label: 'Pediatric Dentistry' },
-    { value: 'ORAL_SURGERY',        label: 'Oral Surgery' },
-    { value: 'PERIODONTICS',        label: 'Periodontics' },
-    { value: 'ENDODONTICS',         label: 'Endodontics' },
-];
+import {DEFAULT_AVATAR, DENTIST_AVATARS, PATIENT_AVATARS} from '../../../assets/avatars';
 
 interface ProfileData {
     id: string;
@@ -26,7 +15,7 @@ interface ProfileData {
     role: string;
     city: string;
     address: string;
-    specialty: string | null;
+    specialties: string[] | null;
     rating: number | null;
     profileCompletionPct: number;
     missingFields: string[];
@@ -51,7 +40,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
     const [phone, setPhone]                   = useState('');
     const [city, setCity]                     = useState('');
     const [address, setAddress]               = useState('');
-    const [specialty, setSpecialty]           = useState('');
+    const [specialties, setSpecialties] = useState<string[]>([]);
     const [avatar, setAvatar]                 = useState<string | null>(null);
     const [emailReminders, setEmailReminders] = useState(true);
     const [saving, setSaving]                 = useState(false);
@@ -103,7 +92,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
     const usernameRef  = useRef<HTMLInputElement>(null);
     const phoneRef     = useRef<HTMLInputElement>(null);
     const cityRef      = useRef<HTMLInputElement>(null);
-    const specialtyRef = useRef<HTMLSelectElement>(null);
+    const specialtyRef = useRef<HTMLDivElement>(null);
 
     const fieldRefs: Record<string, React.RefObject<any>> = {
         username: usernameRef,
@@ -122,7 +111,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                 setPhone(data.phone || '');
                 setCity(data.city || '');
                 setAddress(data.address || '');
-                setSpecialty(data.specialty || '');
+                setSpecialties(data.specialties ?? []);
                 setAvatar(data.profilePicture || null);
                 setTwoFactor(data.twoFactorEnabled ?? false);
                 setEmailTfa(data.email2faEnabled ?? false);
@@ -157,7 +146,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                 profilePicture: src,
                 emailRemindersEnabled: emailReminders,
             };
-            if (user.role === 'DENTIST' && specialty) body.specialty = specialty;
+            if (user.role === 'DENTIST' && specialties.length) body.specialties = specialties;
             const res = await api.put(`/auth/user/${user.id}`, body);
             const updated: ProfileData = res.data;
             setProfile(updated);
@@ -187,7 +176,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
                 profilePicture: avatar,
                 emailRemindersEnabled: emailReminders,
             };
-            if (user.role === 'DENTIST' && specialty) body.specialty = specialty;
+            if (user.role === 'DENTIST' && specialties.length) body.specialties = specialties;
             const res = await api.put(`/auth/user/${user.id}`, body);
             const updated: ProfileData = res.data;
             setProfile(updated);
@@ -195,7 +184,7 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
             setPhone(updated.phone || '');
             setCity(updated.city || '');
             setAddress(updated.address || '');
-            setSpecialty(updated.specialty || '');
+            setSpecialties(updated.specialties ?? []);
             setAvatar(updated.profilePicture || null);
             setEmailReminders(updated.emailRemindersEnabled ?? true);
             setSaved(true);
@@ -563,21 +552,18 @@ export function ProfilePage({ user, focusField, onProfileUpdate, onLogout }: Pro
 
                 {isDentist && (
                     <div className={`${styles.field} ${missing.has('specialty') ? styles.fieldRequired : ''}`}>
-                        <label className={styles.label}>Specialty</label>
-                        <select
+                        <label className={styles.label}>Specialties</label>
+                        <SpecialtyPicker
                             ref={specialtyRef}
-                            className={`${styles.select} ${missing.has('specialty') ? styles.inputMissing : ''}`}
-                            value={specialty}
-                            onChange={e => setSpecialty(e.target.value)}
-                        >
-                            <option value="">— select specialty —</option>
-                            {SPECIALTIES.map(s => (
-                                <option key={s.value} value={s.value}>{s.label}</option>
-                            ))}
-                        </select>
-                        {missing.has('specialty') && (
-                            <p className={styles.hint}>Required to send offers</p>
-                        )}
+                            value={specialties}
+                            onChange={setSpecialties}
+                            hasError={missing.has('specialty')}
+                        />
+                        <p className={styles.hint}>
+                            {missing.has('specialty')
+                                ? 'Pick at least one — required to send offers'
+                                : 'Select every treatment your clinic offers'}
+                        </p>
                     </div>
                 )}
 

@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,5 +42,8 @@ public class RegisterRequestDTO {
     @DecimalMax(value = "5.0", message = "Rating must be at most 5.0")
     private Double rating;
 
-    private DentalSpecialty specialty;
+    /**
+     * Clinics may offer several treatments; required (non-empty) for DENTIST.
+     */
+    private List<DentalSpecialty> specialties;
 }
