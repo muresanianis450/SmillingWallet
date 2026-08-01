@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
-import { PageName } from '../../../types/types.ts';
-import { api, AUTH_COOKIE } from '../../../services/api';
-import { DEFAULT_AVATAR } from '../../../assets/avatars';
-import { getCookie } from '../../../tracking/cookies';
-import { Icon } from '../../shared/Icon';
-// @ts-ignore
+import {useEffect, useState} from 'react';
+import {PageName} from '../../../types/types.ts';
+import {api, AUTH_COOKIE} from '../../../services/api';
+import {DEFAULT_AVATAR} from '../../../assets/avatars';
+import {getCookie} from '../../../tracking/cookies';
+import {Icon} from '../../shared/Icon';
 import styles from './AppointmentsPage.module.css';
 
 interface AppointmentsPageProps {
@@ -77,7 +76,7 @@ const UNKNOWN_CLINIC: ClinicInfo = {
     name: 'Unknown', doctorName: 'Unknown', rating: 0, phone: 'N/A', email: 'N/A', address: 'N/A', specialty: '',
 };
 
-export function AppointmentsPage({}: AppointmentsPageProps) {
+export function AppointmentsPage(_props: AppointmentsPageProps) {
     const [appointments, setAppointments] = useState<AppointmentDTO[]>([]);
     // Clinic details keyed by dentistPublicId — appointments may span several clinics.
     const [clinics, setClinics] = useState<Record<string, ClinicInfo>>({});
@@ -111,7 +110,7 @@ export function AppointmentsPage({}: AppointmentsPageProps) {
                                 phone: d.phone || 'N/A',
                                 email: d.email || 'N/A',
                                 address: d.address || d.city || 'N/A',
-                                specialty: d.specialty || '',
+                                specialty: (d.specialties ?? []).join(', '),
                                 profilePicture: d.profilePicture || null,
                             } as ClinicInfo] as const;
                         } catch {

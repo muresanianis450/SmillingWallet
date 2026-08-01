@@ -7,7 +7,6 @@ import backend.enums.DentalSpecialty;
 import backend.enums.RequestStatus;
 import backend.exception.ConflictException;
 import backend.exception.ResourceNotFoundException;
-import backend.exception.UnprocessableEntityException;
 import backend.model.DentalRequest;
 import backend.model.User;
 import backend.repository.OfferRepository;

@@ -31,7 +31,7 @@ public class ProfileCompletion {
             filled++;
         }
         if (isDentist) {
-            if (user.getSpecialty() == null) {
+            if (user.getSpecialties() == null || user.getSpecialties().isEmpty()) {
                 missing.add("specialty");
             } else {
                 filled++;

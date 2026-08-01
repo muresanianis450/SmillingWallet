@@ -1,9 +1,8 @@
-import { PageName } from '../../../types/types.ts';
-import { Button } from '../../shared/Button';
-// @ts-ignore
+import {PageName} from '../../../types/types.ts';
+import {Button} from '../../shared/Button';
 import styles from './AboutPage.module.css';
-import { SendRequestIcon, SmilingWallet_LogoIcon, GraphIcon, HandshakeIcon } from '../../shared/Icons';
-import { Icon } from '../../shared/Icon';
+import {GraphIcon, HandshakeIcon, SendRequestIcon, SmilingWallet_LogoIcon} from '../../shared/Icons';
+import {Icon} from '../../shared/Icon';
 
 interface AboutPageProps {
   setPage: (page: PageName) => void;

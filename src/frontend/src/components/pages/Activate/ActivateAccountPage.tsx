@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { api } from '../../../services/api';
-import { BlobBackground } from '../../shared/BlobBackground';
-import { Icon } from '../../shared/Icon';
-// @ts-ignore
+import {useEffect, useState} from 'react';
+import {api} from '../../../services/api';
+import {BlobBackground} from '../../shared/BlobBackground';
+import {Icon} from '../../shared/Icon';
 import styles from '../Login/LoginPage.module.css';
 
 interface Props { setPage: (page: any) => void; }
@@ -48,7 +47,7 @@ export function ActivateAccountPage({ setPage }: Props) {
     function validatePassword(val: string): string {
         if (val.length < 8)       return 'Password must be at least 8 characters';
         if (!/\d/.test(val))      return 'Must contain at least 1 digit';
-        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val))
+        if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(val))
             return 'Must contain at least 1 special character';
         return '';
     }

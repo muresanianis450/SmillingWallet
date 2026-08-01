@@ -1,23 +1,24 @@
 import {useEffect, useRef, useState} from 'react';
-import { PageName, AuthUser } from './types/types';
-import { Nav } from './components/layout/Nav';
-import { AboutPage } from './components/pages/About/AboutPage';
-import { ReviewRequestsPage } from './components/pages/ReviewRequests/ReviewRequestsPage';
-import { DashboardPage } from './components/pages/Dashboard/DashboardPage';
-import { HomePage } from './components/pages/Home/HomePage';
-import { SendRequestPage } from './components/pages/SendRequest/SendRequestPage';
-import { MyOffersPage } from './components/pages/MyOffers/MyOffersPage';
-import { AppointmentsPage } from './components/pages/Appointments/AppointmentsPage';
-import { LoginPage } from './components/pages/Login/LoginPage';
-import { RegisterPage } from './components/pages/Register/RegisterPage';
-import { ProfilePage } from './components/pages/Profile/ProfilePage';
-import { ProfileBanner } from './components/shared/ProfileBanner';
+import {AuthUser, PageName} from './types/types';
+import {Nav} from './components/layout/Nav';
+import {AboutPage} from './components/pages/About/AboutPage';
+import {ReviewRequestsPage} from './components/pages/ReviewRequests/ReviewRequestsPage';
+import {DashboardPage} from './components/pages/Dashboard/DashboardPage';
+import {HomePage} from './components/pages/Home/HomePage';
+import {SendRequestPage} from './components/pages/SendRequest/SendRequestPage';
+import {MyOffersPage} from './components/pages/MyOffers/MyOffersPage';
+import {AppointmentsPage} from './components/pages/Appointments/AppointmentsPage';
+import {LoginPage} from './components/pages/Login/LoginPage';
+import {RegisterPage} from './components/pages/Register/RegisterPage';
+import {ProfilePage} from './components/pages/Profile/ProfilePage';
+import {ProfileBanner} from './components/shared/ProfileBanner';
 import {ForgotPasswordPage} from './components/pages/ForgotPassword/ForgotPasswordPage';
-import { ResetPasswordPage } from './components/pages/ResetPassword/ResetPasswordPage';
-import { ActivateAccountPage } from './components/pages/Activate/ActivateAccountPage';
-import { AdminDentistsPage } from './components/pages/AdminDentists/AdminDentistsPage';
-import { getCookie, setCookie, deleteCookie } from './tracking/cookies';
-import { AUTH_COOKIE } from './services/api';
+import {ResetPasswordPage} from './components/pages/ResetPassword/ResetPasswordPage';
+import {ActivateAccountPage} from './components/pages/Activate/ActivateAccountPage';
+import {JoinClinicPage} from './components/pages/JoinClinic/JoinClinicPage';
+import {AdminClinicsPage} from './components/pages/AdminClinics/AdminClinicsPage';
+import {deleteCookie, getCookie, setCookie} from './tracking/cookies';
+import {AUTH_COOKIE} from './services/api';
 
 export function App() {
     const [page, setPage]               = useState<PageName>('home');
@@ -42,7 +43,9 @@ export function App() {
         // Check if arriving from an email link (invite or password reset)
         const params   = new URLSearchParams(window.location.search);
         const pathname = window.location.pathname;
-        if (pathname === '/activate' && params.get('token')) {
+        if (pathname === '/join' && params.get('token')) {
+            setPage('join-clinic');
+        } else if (pathname === '/activate' && params.get('token')) {
             setPage('activate');
         } else if (params.get('token')) {
             setPage('reset-password');
@@ -122,7 +125,8 @@ export function App() {
         dashboard:         role === 'DENTIST'  || role === 'ADMIN',
         'reset-password':  true,
         'activate':        true,
-        'admin-dentists':  role === 'ADMIN',
+        'join-clinic': true,
+        'admin-clinics': role === 'ADMIN',
     } satisfies Record<PageName, boolean>;
 
     // Guard: if current page is not allowed, bounce to home
@@ -150,6 +154,7 @@ export function App() {
             {page === 'forgot-password' && <ForgotPasswordPage setPage={setPage} />}
             {page === 'reset-password' && <ResetPasswordPage setPage={setPage} />}
             {page === 'activate'       && <ActivateAccountPage setPage={setPage} />}
+            {page === 'join-clinic' && <JoinClinicPage setPage={setPage} onLogin={handleLogin}/>}
 
             {/* ── Patient ── */}
             {canSee['send-request'] && page === 'send-request' && <SendRequestPage  setPage={setPage} />}
@@ -162,7 +167,7 @@ export function App() {
             {canSee['dashboard'] && page === 'dashboard' && <DashboardPage />}
 
             {/* ── Admin ── */}
-            {canSee['admin-dentists'] && page === 'admin-dentists' && <AdminDentistsPage />}
+            {canSee['admin-clinics'] && page === 'admin-clinics' && <AdminClinicsPage/>}
 
             {/* ── Profile ── */}
             {canSee['profile'] && page === 'profile' && user && (

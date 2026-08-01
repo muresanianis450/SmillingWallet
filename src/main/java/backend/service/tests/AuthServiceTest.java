@@ -9,18 +9,14 @@ import backend.model.User;
 import backend.repository.PasswordResetTokenRepository;
 import backend.repository.RefreshTokenRepository;
 import backend.repository.UserRepository;
-import backend.service.AuthService;
-import backend.service.EmailService;
-import backend.service.JwtService;
-import backend.service.TotpEncryptionService;
-import backend.service.TotpService;
+import backend.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -31,7 +27,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -99,7 +96,7 @@ class AuthServiceTest {
     @Test
     void register_shouldThrow_whenDentistMissingCity() {
         registerDto.setRole(Role.DENTIST);
-        registerDto.setSpecialty(DentalSpecialty.ORTHODONTICS);
+        registerDto.setSpecialties(List.of(DentalSpecialty.ORTHODONTICS));
         when(userRepository.existsByEmail(any())).thenReturn(false);
 
         assertThatThrownBy(() -> authService.register(registerDto))
@@ -111,6 +108,18 @@ class AuthServiceTest {
     void register_shouldThrow_whenDentistMissingSpecialty() {
         registerDto.setRole(Role.DENTIST);
         registerDto.setCity("Cluj");
+        when(userRepository.existsByEmail(any())).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.register(registerDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Specialty is required");
+    }
+
+    @Test
+    void register_shouldThrow_whenDentistSpecialtyListIsEmpty() {
+        registerDto.setRole(Role.DENTIST);
+        registerDto.setCity("Cluj");
+        registerDto.setSpecialties(List.of());
         when(userRepository.existsByEmail(any())).thenReturn(false);
 
         assertThatThrownBy(() -> authService.register(registerDto))

@@ -3,12 +3,15 @@ package backend.model;
 import backend.enums.AuthProvider;
 import backend.enums.DentalSpecialty;
 import backend.enums.Role;
+import backend.util.SpecialtyListConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -45,9 +48,12 @@ public class User {
     @Column(name = "rating")
     private Double rating;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "specialty", length = 50)
-    private DentalSpecialty specialty;
+    /**
+     * The treatments this clinic offers. Empty for patients.
+     */
+    @Convert(converter = SpecialtyListConverter.class)
+    @Column(name = "specialties", length = 500)
+    private List<DentalSpecialty> specialties = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)

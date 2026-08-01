@@ -5,7 +5,10 @@ import backend.enums.OfferStatus;
 import backend.exception.ResourceNotFoundException;
 import backend.model.Appointment;
 import backend.model.Offer;
-import backend.repository.*;
+import backend.repository.AppointmentRepository;
+import backend.repository.OfferRepository;
+import backend.repository.RequestRepository;
+import backend.repository.UserRepository;
 import backend.service.DashboardService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,12 +19,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DashboardServiceTest {

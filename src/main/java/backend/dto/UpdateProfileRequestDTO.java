@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,7 +28,7 @@ public class UpdateProfileRequestDTO {
     @DecimalMax(value = "5.0", message = "Rating must be at most 5.0")
     private Double rating;
 
-    private DentalSpecialty specialty;
+    private List<DentalSpecialty> specialties;
 
     private String profilePicture;
     private Boolean emailRemindersEnabled;

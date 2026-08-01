@@ -5,8 +5,8 @@ import backend.enums.RequestStatus;
 import backend.util.CityListConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

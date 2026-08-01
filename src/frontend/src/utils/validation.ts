@@ -1,5 +1,39 @@
-import { OfferFormFields, SendOfferFormFields, ValidationErrors } from '../types/types.ts';
-import { OFFER_STATUSES } from '../data/constants';
+import {OfferFormFields, SendOfferFormFields, ValidationErrors} from '../types/types.ts';
+import {OFFER_STATUSES} from '../data/constants';
+
+// ─── Phone Validation ────────────────────────────────────────────────────────
+
+/**
+ * Reduces a Romanian number to canonical `+40XXXXXXXXX`, or null if it isn't one.
+ * Accepts the formats people actually type — 0712 345 678, +40 712 345 678,
+ * 0040-712-345-678 — and both mobile (07) and landline (02/03) prefixes.
+ */
+export function normalizeRomanianPhone(raw: string): string | null {
+    const digits = (raw ?? '').replace(/[\s\-().]/g, '');
+
+    let national: string;
+    if (/^\+40\d{9}$/.test(digits)) national = '0' + digits.slice(3);
+    else if (/^0040\d{9}$/.test(digits)) national = '0' + digits.slice(4);
+    else if (/^40\d{9}$/.test(digits)) national = '0' + digits.slice(2);
+    else if (/^0\d{9}$/.test(digits)) national = digits;
+    else return null;
+
+    // 07 = mobile, 02/03 = landline. Anything else isn't a dialable clinic number.
+    return /^0[237]\d{8}$/.test(national) ? '+40' + national.slice(1) : null;
+}
+
+/** Returns an error message, or '' when the number is valid. */
+export function validateRomanianPhone(raw: string): string {
+    const value = (raw ?? '').trim();
+    if (!value) return 'Phone is required';
+    if (!/^[+\d\s\-().]+$/.test(value)) {
+        return 'Phone can only contain digits, spaces and + - ( ) .';
+    }
+    if (!normalizeRomanianPhone(value)) {
+        return 'Enter a Romanian number, e.g. 0712 345 678 or +40 712 345 678';
+    }
+    return '';
+}
 
 // ─── Offer Form Validation ───────────────────────────────────────────────────
 

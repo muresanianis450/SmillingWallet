@@ -152,12 +152,13 @@ public class EmailService {
         sendHtml(toEmail, "Smiling Wallet – Your verification code", html);
     }
 
+    /**
+     * The admin only knows the clinic's email — the link leads to an intro page where they fill in the rest.
+     */
     @Async
-    public void sendDentistInvite(String toEmail, String clinicName, String token) {
-        String activationLink = frontendUrl + "/activate?token=" + token;
-        String html = INVITE_HTML_TEMPLATE
-                .replace("{{CLINIC_NAME}}", clinicName)
-                .replace("{{ACTIVATION_LINK}}", activationLink);
+    public void sendClinicInvite(String toEmail, String token) {
+        String joinLink = frontendUrl + "/join?token=" + token;
+        String html = INVITE_HTML_TEMPLATE.replace("{{JOIN_LINK}}", joinLink);
         sendHtml(toEmail, "Invitation to Join Smiling Wallet", html);
     }
 
@@ -301,7 +302,6 @@ public class EmailService {
                                 <tr><td class="header"><a href="#" class="header-logo">Smiling Wallet</a></td></tr>
                                 <tr><td class="content">
                                     <h1>Grow your clinic with new patients.</h1>
-                                    <p>Hello {{CLINIC_NAME}},</p>
                                     <p>We are excited to invite you to join <strong>Smiling Wallet</strong>, the smart new way patients are finding their perfect dental care providers.</p>
                                     <div class="steps">
                                         <div class="step-item">
@@ -318,7 +318,7 @@ public class EmailService {
                                         </div>
                                     </div>
                                     <div class="btn-container">
-                                        <a href="{{ACTIVATION_LINK}}" class="btn">Create Your Clinic Account</a>
+                                        <a href="{{JOIN_LINK}}" class="btn">Create Your Clinic Account</a>
                                     </div>
                                     <p style="font-size:14px; margin-bottom:0;">
                                         Best regards,<br><strong>The Smiling Wallet Team</strong>
@@ -327,7 +327,7 @@ public class EmailService {
                             </table>
                             <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:600px;">
                                 <tr><td class="footer">
-                                    <p style="margin-bottom:8px;">This invitation link expires in 72 hours.</p>
+                                    <p style="margin-bottom:8px;">This invitation link expires in 14 days.</p>
                                     <p style="margin-bottom:0;">&copy; 2026 Smiling Wallet. All rights reserved.</p>
                                 </td></tr>
                             </table>

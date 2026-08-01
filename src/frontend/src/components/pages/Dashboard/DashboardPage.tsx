@@ -1,25 +1,24 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
-import { Offer, ModalState, OfferStatus } from '../../../types/types.ts';
-import { OFFER_STATUSES } from '../../../data/constants';
-import { usePagination } from '../../../hooks/usePagination';
-import { useToast } from '../../../hooks/useToast';
-import { StatusBadge } from '../../shared/StatusBadge';
-import { Pagination } from '../../shared/Pagination';
-import { Toast } from '../../shared/Toast';
-import { EmptyState } from '../../shared/EmptyState';
-import { OfferFormModal } from './OfferFormModal';
-import { DeleteModal } from './DeleteModal';
-import { usePageTracking } from '../../../hooks/useTracking';
-import { api, AUTH_COOKIE } from '../../../services/api';
-import { DEFAULT_AVATAR } from '../../../assets/avatars';
-import { getCookie } from '../../../tracking/cookies';
-// @ts-ignore
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useNotificationSocket} from '../../../hooks/useNotificationSocket';
+import {ModalState, Offer, OfferStatus} from '../../../types/types.ts';
+import {OFFER_STATUSES} from '../../../data/constants';
+import {usePagination} from '../../../hooks/usePagination';
+import {useToast} from '../../../hooks/useToast';
+import {StatusBadge} from '../../shared/StatusBadge';
+import {Pagination} from '../../shared/Pagination';
+import {Toast} from '../../shared/Toast';
+import {EmptyState} from '../../shared/EmptyState';
+import {OfferFormModal} from './OfferFormModal';
+import {DeleteModal} from './DeleteModal';
+import {usePageTracking} from '../../../hooks/useTracking';
+import {api, AUTH_COOKIE} from '../../../services/api';
+import {DEFAULT_AVATAR} from '../../../assets/avatars';
+import {getCookie} from '../../../tracking/cookies';
 import styles from './DashboardPage.module.css';
-import { IconView, IconEdit, IconDelete } from '../../shared/Icons';
-import { Icon } from '../../shared/Icon';
-import { RequestFiles } from '../../shared/RequestFiles';
-import { trackEvent } from '../../../tracking/tracker';
+import {IconDelete, IconEdit, IconView} from '../../shared/Icons';
+import {Icon} from '../../shared/Icon';
+import {RequestFiles} from '../../shared/RequestFiles';
+import {trackEvent} from '../../../tracking/tracker';
 
 const PER_PAGE = 5;
 

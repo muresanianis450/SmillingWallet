@@ -1,26 +1,14 @@
-// @ts-ignore
 import TeethIconImg from '../../../assets/Teeth_About_Page.png';
-// @ts-ignore
 import DentistIconImg from '../../../assets/DentistIcon.png';
-// @ts-ignore
 import GraphIconImg from '../../../assets/graphIcon.png';
-// @ts-ignore
 import HandshakeImg from '../../../assets/handshakeIcon.png';
-// @ts-ignore
 import GeneralDentistryImg from '../../../assets/General Dentistry.png';
-// @ts-ignore
 import DentalImplantImg from '../../../assets/Dental Implant.png';
-// @ts-ignore
 import OrthodonticsImg from '../../../assets/Orthodontics.png';
-// @ts-ignore
 import CosmeticDentistryImg from '../../../assets/CosmeticDentistry.png';
-// @ts-ignore
 import PediatricDentistryImg from '../../../assets/PediatricDentistry.png';
-// @ts-ignore
 import EmergencyCareImg from '../../../assets/EmergencyCare.png';
-// @ts-ignore
 import SmilingWalletImg from '../../../assets/SmilingWallet_Logo.png';
-// @ts-ignore
 import RequestIconImg from '../../../assets/RequestIcon.png';
 
 

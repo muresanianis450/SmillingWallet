@@ -10,4 +10,3 @@ public enum DentalSpecialty {
     PERIODONTICS,
     ENDODONTICS
 }
-

@@ -1,5 +1,4 @@
-import { ReactNode } from 'react';
-// @ts-ignore
+import {ReactNode} from 'react';
 import styles from './Modal.module.css';
 
 interface ModalProps {

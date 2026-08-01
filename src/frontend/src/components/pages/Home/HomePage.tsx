@@ -1,17 +1,16 @@
-import { PageName } from '../../../types/types.ts';
-import { Button } from '../../shared/Button';
-import { Icon } from '../../shared/Icon';
-// @ts-ignore
+import {PageName} from '../../../types/types.ts';
+import {Button} from '../../shared/Button';
+import {Icon} from '../../shared/Icon';
 import styles from './HomePage.module.css';
 import {
-    GeneralDentistryIcon,
-    DentalImplantIcon,
-    OrthodonticsIcon,
     CosmeticDentistryIcon,
-    PediatricDentistryIcon, EmergencyCareIcon
+    DentalImplantIcon,
+    EmergencyCareIcon,
+    GeneralDentistryIcon,
+    OrthodonticsIcon,
+    PediatricDentistryIcon
 } from '../../shared/Icons';
-// @ts-ignore
-import { DENTIST_AVATARS } from '../../../assets/avatars';
+import {DENTIST_AVATARS} from '../../../assets/avatars';
 
 
 interface HomePageProps {

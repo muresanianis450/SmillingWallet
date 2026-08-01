@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { validateOffer, validateSendOffer } from '../utils/validation';
+import {describe, expect, it} from 'vitest';
+import {normalizeRomanianPhone, validateOffer, validateRomanianPhone, validateSendOffer,} from '../utils/validation';
 
 // ─── Helper: a valid future date ─────────────────────────────────────────────
 const futureDate = new Date(Date.now() + 86_400_000 * 2)
@@ -158,4 +158,66 @@ describe('validateSendOffer', () => {
     const errors = validateSendOffer({ priceQuote: 300, date: '', time: '' });
     expect(Object.keys(errors)).toHaveLength(0);
   });
+});
+
+// ─── Romanian Phone ───────────────────────────────────────────────────────────
+describe('validateRomanianPhone', () => {
+    it('rejects an empty value', () => {
+        expect(validateRomanianPhone('')).toMatch(/required/i);
+        expect(validateRomanianPhone('   ')).toMatch(/required/i);
+    });
+
+    it('accepts national mobile format, however it is spaced', () => {
+        expect(validateRomanianPhone('0712345678')).toBe('');
+        expect(validateRomanianPhone('0712 345 678')).toBe('');
+        expect(validateRomanianPhone('0712-345-678')).toBe('');
+        expect(validateRomanianPhone('(0712) 345.678')).toBe('');
+    });
+
+    it('accepts international prefixes', () => {
+        expect(validateRomanianPhone('+40712345678')).toBe('');
+        expect(validateRomanianPhone('+40 712 345 678')).toBe('');
+        expect(validateRomanianPhone('0040712345678')).toBe('');
+        expect(validateRomanianPhone('40712345678')).toBe('');
+    });
+
+    it('accepts landlines', () => {
+        expect(validateRomanianPhone('0213456789')).toBe('');   // Bucharest
+        expect(validateRomanianPhone('0364123456')).toBe('');   // regional
+    });
+
+    it('rejects wrong lengths', () => {
+        expect(validateRomanianPhone('071234567')).toMatch(/Romanian/);    // one short
+        expect(validateRomanianPhone('07123456789')).toMatch(/Romanian/);  // one long
+    });
+
+    it('rejects prefixes that are not mobile or landline', () => {
+        expect(validateRomanianPhone('0512345678')).toMatch(/Romanian/);
+        expect(validateRomanianPhone('0912345678')).toMatch(/Romanian/);
+    });
+
+    it('rejects a non-Romanian country code', () => {
+        expect(validateRomanianPhone('+44712345678')).toMatch(/Romanian/);
+    });
+
+    it('rejects letters and stray symbols', () => {
+        expect(validateRomanianPhone('07123abcde')).toMatch(/can only contain/i);
+        expect(validateRomanianPhone('0712/345678')).toMatch(/can only contain/i);
+    });
+});
+
+describe('normalizeRomanianPhone', () => {
+    it('canonicalises every accepted format to +40…', () => {
+        for (const input of [
+            '0712345678', '0712 345 678', '+40712345678',
+            '+40 712 345 678', '0040712345678', '40712345678',
+        ]) {
+            expect(normalizeRomanianPhone(input)).toBe('+40712345678');
+        }
+    });
+
+    it('returns null for anything invalid', () => {
+        expect(normalizeRomanianPhone('nope')).toBeNull();
+        expect(normalizeRomanianPhone('')).toBeNull();
+    });
 });

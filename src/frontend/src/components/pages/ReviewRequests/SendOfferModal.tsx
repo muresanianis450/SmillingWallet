@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { DentalRequest, SendOfferFormFields, ValidationErrors } from '../../../types/types.ts';
-import { Modal } from '../../shared/Modal';
-import { FormField } from '../../shared/FormField';
-import { Input, PriceInput } from '../../shared/Input';
-import { Button } from '../../shared/Button';
-import { RequestFiles } from '../../shared/RequestFiles';
-// @ts-ignore
+import React, {useState} from 'react';
+import {DentalRequest, SendOfferFormFields, ValidationErrors} from '../../../types/types.ts';
+import {Modal} from '../../shared/Modal';
+import {FormField} from '../../shared/FormField';
+import {Input, PriceInput} from '../../shared/Input';
+import {Button} from '../../shared/Button';
+import {RequestFiles} from '../../shared/RequestFiles';
 import styles from './SendOfferModal.module.css';
 
 const SPECIALTY_DISPLAY: Record<string, string> = {

@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { api } from '../../../services/api';
-import { BlobBackground } from '../../shared/BlobBackground';
-// @ts-ignore
+import {useState} from 'react';
+import {api} from '../../../services/api';
+import {BlobBackground} from '../../shared/BlobBackground';
 import styles from '../Login/LoginPage.module.css';
 
 interface Props { setPage: (page: any) => void; }

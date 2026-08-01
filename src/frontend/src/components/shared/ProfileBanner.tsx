@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { PageName } from '../../types/types';
-// @ts-ignore
+import {useEffect, useState} from 'react';
+import {PageName} from '../../types/types';
 import styles from './ProfileBanner.module.css';
 
 const DISMISS_KEY = 'profileBannerDismissedAt';
